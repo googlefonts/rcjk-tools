@@ -137,8 +137,8 @@ def parseGlyph(p):
     return g
 
 
-_glyphNamePat = re.compile(rb"<glyph\s+name\s*=\s*\"([^\"]+)\"")
-_unicodePat = re.compile(rb"<unicode\s+hex\s*=\s*\"([^\"]+)\"")
+_glyphNamePat = re.compile(rb'<glyph\s+name\s*=\s*"([^"]+)"')
+_unicodePat = re.compile(rb'<unicode\s+hex\s*=\s*"([^"]+)"')
 
 
 class GlyphSet:
