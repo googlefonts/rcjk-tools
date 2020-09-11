@@ -49,7 +49,7 @@ class RoboCJKPreviewer:
             for glyphName, unicodes in self.project.getGlyphNamesAndUnicodes().items()]
         glyphList.sort(key=lambda item: (item["unicode"], item["glyphName"]))
 
-        self.w = Window((1000, 400), f"RoboCJKPreviewer — {rcjkProjectPath}",
+        self.w = Window((1000, 400), f"RoboCJK Previewer — {rcjkProjectPath}",
             minSize=(1000, 400), autosaveName="RoboCJKPreviewer")
         self.w.axisSlider = Slider((10, 8, 180, 20), value=0, minValue=0, maxValue=1,
             callback=self.axisSliderCallback)
