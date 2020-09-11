@@ -126,7 +126,7 @@ class RoboCJKPreviewer:
         db.stroke(0.2, 0.3, 1)
         db.rect(0, 0, 1000, 1000)
         db.stroke(None)
-        db.translate(0, 150)  # ???
+        db.translate(0, 120)  # Baseline at 120 from the bottom of the Ideographic Em Square
         db.fill(0, 1, 0, 0.3)
         db.stroke(0)
         dcSelection = set(self.w.deepComponentList.getSelection())
