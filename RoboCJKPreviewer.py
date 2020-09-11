@@ -41,7 +41,7 @@ class UnicodesFormatter(NSFormatter, metaclass=ClassNameIncrementer):
 
 
 
-class RoboCJKPreview:
+class RoboCJKPreviewer:
 
     def __init__(self, rcjkProjectPath):
         self.project = RoboCJKProject(rcjkProjectPath)
@@ -49,7 +49,7 @@ class RoboCJKPreview:
             for glyphName, unicodes in self.project.getGlyphNamesAndUnicodes().items()]
         glyphList.sort(key=lambda item: (item["unicode"], item["glyphName"]))
 
-        self.w = Window((1000, 400), "RoboCJKPreview", minSize=(1000, 400), autosaveName="RoboCJKPreview")
+        self.w = Window((1000, 400), "RoboCJKPreviewer", minSize=(1000, 400), autosaveName="RoboCJKPreviewer")
         self.w.axisSlider = Slider((10, 8, 180, 20), value=0, minValue=0, maxValue=1,
             callback=self.axisSliderCallback)
 
@@ -161,5 +161,4 @@ if __name__ == "__main__":
     from vanilla.dialogs import getFolder
     result = getFolder("Please select a .rcjk project folder")
     if result:
-        RoboCJKPreview(result[0])
-    # uni348A interpol bug
+        RoboCJKPreviewer(result[0])
