@@ -51,7 +51,8 @@ class RoboCJKPreviewer:
 
         self.w = Window((1000, 400), f"RoboCJK Previewer — {rcjkProjectPath}",
             minSize=(1000, 400), autosaveName="RoboCJKPreviewer")
-        self.w.axisSlider = Slider((10, 8, 180, 20), value=0, minValue=0, maxValue=1,
+        self.w.findGlyphField = EditText((10, 10, 180, 20), callback=self.findGlyphFieldCallback)
+        self.w.axisSlider = Slider((210, 8, 180, 20), value=0, minValue=0, maxValue=1,
             callback=self.axisSliderCallback)
 
         top = 40
@@ -78,6 +79,15 @@ class RoboCJKPreviewer:
         self.w.dbView = DrawView((600, 0, 0, 0))  # The DrawBot PDF view
         self.w.characterGlyphList.setSelection([])
         self.w.open()
+
+    def findGlyphFieldCallback(self, sender):
+        pat = sender.get().lower()
+        sel = []
+        for index, item in enumerate(self.w.characterGlyphList):
+            if pat in item["glyphName"].lower():
+                sel = [index]
+                break
+        self.w.characterGlyphList.setSelection(sel)
 
     def characterGlyphListSelectionChangedCallback(self, sender):
         self.updateCurrentGlyph()
