@@ -45,9 +45,9 @@ class RoboCJKPreviewer:
 
     def __init__(self, rcjkProjectPath):
         self.project = RoboCJKProject(rcjkProjectPath)
-        glyphList = [dict(glyphName=glyphName, unicode=unicodes)
+        self.glyphList = [dict(glyphName=glyphName, unicode=unicodes)
             for glyphName, unicodes in self.project.getGlyphNamesAndUnicodes().items()]
-        glyphList.sort(key=lambda item: (item["unicode"], item["glyphName"]))
+        self.glyphList.sort(key=lambda item: (item["unicode"], item["glyphName"]))
 
         self.w = Window((1000, 400), f"RoboCJK Previewer — {rcjkProjectPath}",
             minSize=(1000, 400), autosaveName="RoboCJKPreviewer")
@@ -60,9 +60,11 @@ class RoboCJKPreviewer:
             dict(title="glyph name", key="glyphName"),
             dict(title="unicode", key="unicode", formatter=UnicodesFormatter.alloc().init()),
         ]
-        self.w.characterGlyphList = List((0, top, 200, 0), glyphList,
+        self.w.characterGlyphList = List((0, top, 200, 0), self.glyphList,
             columnDescriptions=columnDescriptions,
             allowsMultipleSelection=False,
+            allowsSorting=False,
+            showColumnTitles=False,
             drawFocusRing=False,
             selectionCallback=self.characterGlyphListSelectionChangedCallback)
 
@@ -82,12 +84,15 @@ class RoboCJKPreviewer:
 
     def findGlyphFieldCallback(self, sender):
         pat = sender.get().lower()
-        sel = []
-        for index, item in enumerate(self.w.characterGlyphList):
-            if pat in item["glyphName"].lower():
-                sel = [index]
-                break
-        self.w.characterGlyphList.setSelection(sel)
+        if not pat:
+            self.w.characterGlyphList.set(self.glyphList)
+        else:
+            items = []
+            for item in self.glyphList:
+                if pat in item["glyphName"].lower():
+                    items.append(item)
+            self.w.characterGlyphList.set(items)
+        self.w.characterGlyphList.setSelection([])
 
     def characterGlyphListSelectionChangedCallback(self, sender):
         self.updateCurrentGlyph()
