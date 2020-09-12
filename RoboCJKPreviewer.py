@@ -87,10 +87,7 @@ class RoboCJKPreviewer:
         if not pat:
             self.w.characterGlyphList.set(self.glyphList)
         else:
-            items = []
-            for item in self.glyphList:
-                if pat in item["glyphName"].lower():
-                    items.append(item)
+            items = [item for item in self.glyphList if pat in item["glyphName"].lower()]
             self.w.characterGlyphList.set(items)
         self.w.characterGlyphList.setSelection([])
 
