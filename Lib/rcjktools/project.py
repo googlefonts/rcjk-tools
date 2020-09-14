@@ -26,22 +26,18 @@ class RoboCJKProject:
 
     def drawCharacterGlyph(self, glyphName, location):
         glyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
-        components, axes = _interpolateComponents(glyph, location, "robocjk.fontVariationGlyphs")
+        glyph = glyph.instantiate(location)
         deepItems = []
-        for component in components:
+        for component in glyph.components:
             deepItem = self.drawDeepComponent(component.name, component.coord, makeTransform(**component.transform))
             deepItems.append((component.name, deepItem))
-        if glyph.outline.isEmpty():
-            outline = None
-        else:
-            outline = _interpolateOutline(glyph, axes, location, self.characterGlyphGlyphSet)
-        return outline, deepItems
+        return glyph.outline, deepItems
 
     def drawDeepComponent(self, glyphName, location, transform):
         glyph = self.deepComponentGlyphSet.getGlyph(glyphName)
-        components, axes = _interpolateComponents(glyph, location, "robocjk.glyphVariationGlyphs")
+        glyph = glyph.instantiate(location)
         atomicOutlines = []
-        for component in components:
+        for component in glyph.components:
             t = transform.transform(makeTransform(**component.transform))
             atomicOutline = self.drawAtomicElement(component.name, component.coord, t)
             atomicOutlines.append((component.name, atomicOutline))
@@ -49,10 +45,8 @@ class RoboCJKProject:
 
     def drawAtomicElement(self, glyphName, location, transform):
         glyph = self.atomicElementGlyphSet.getGlyph(glyphName)
-        axes = [(axisName, variations["layerName"], variations["minValue"], variations["maxValue"])
-                for axisName, variations in glyph.lib["robocjk.glyphVariationGlyphs"].items()]
-        outline = _interpolateOutline(glyph, axes, location, self.atomicElementGlyphSet)
-        return outline.transform(transform)
+        glyph = glyph.instantiate(location)
+        return glyph.outline.transform(transform)
 
 
 _glyphNamePat = re.compile(rb'<glyph\s+name\s*=\s*"([^"]+)"')
@@ -117,6 +111,9 @@ class _MathMixin:
 class Glyph(_MathMixin):
 
     def __init__(self):
+        self.name = None
+        self.width = 0
+        self.unicodes = []
         self.outline = MathOutline()
         self.components = []
         self.lib = {}
@@ -324,49 +321,11 @@ def makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery):
     return t
 
 
-def _interpolateComponents(glyph, location, varKey):
-    # neutral
-    neutralComponents = []
-    for dc in glyph.lib["robocjk.deepComponents"]:
-        neutralComponents.append(_unpackDeepComponent(dc))
-
-    # variations
-    components = list(neutralComponents)
-    axes = []
-    for axisName, variations in glyph.lib[varKey].items():
-        axes.append((axisName, variations["layerName"], variations["minValue"], variations["maxValue"]))
-        scalar = location.get(axisName, 0)
-        if not scalar:
-            continue
-        varComponents = []
-        for dc in variations["content"]["deepComponents"]:
-            varComponents.append(_unpackDeepComponent(dc))
-        assert len(varComponents) == len(components)
-        for i in range(len(components)):
-            deltaComponent = varComponents[i] - neutralComponents[i]
-            components[i] += scalar * deltaComponent
-    return components, axes
-
-
 def _unpackDeepComponent(dc):
     name = dc.get("name")
     coord = dc["coord"]
     transform = {k: v for k, v in dc.items() if k not in {"coord", "name"}}
     return Component(name, MathDict(coord), MathDict(transform))
-
-
-def _interpolateOutline(glyph, axes, location, glyphSet):
-    glyphName = glyph.name
-    outline = neutralOutline = glyph.outline
-    for axisName, layerName, minValue, maxValue in axes:
-        scalar = location.get(axisName, 0)
-        if not scalar:
-            continue
-        layer = glyphSet.getLayer(layerName)
-        layerGlyph = layer.getGlyph(glyphName)
-        deltaOutline = layerGlyph.outline - neutralOutline
-        outline += scalar * deltaOutline
-    return outline
 
 
 if __name__ == "__main__":
@@ -400,5 +359,5 @@ if __name__ == "__main__":
             for atomicName, atomicOutline in atomicOutlines:
                 drawOutline(atomicOutline)
 
-    ig = project.characterGlyphGlyphSet.getGlyph(glyphName).instantiate({"wght": 0.5})
-    print(ig.components)
+    # ig = project.characterGlyphGlyphSet.getGlyph(glyphName).instantiate({"wght": 0.5})
+    # print(ig.components)
