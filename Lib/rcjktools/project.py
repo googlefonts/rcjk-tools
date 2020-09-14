@@ -29,7 +29,10 @@ class RoboCJKProject:
         glyph = glyph.instantiate(location)
         deepItems = []
         for component in glyph.components:
-            deepItem = self.drawDeepComponent(component.name, component.coord, makeTransform(**component.transform))
+            deepItem = self.drawDeepComponent(
+                component.name, component.coord,
+                makeTransform(**component.transform),
+            )
             deepItems.append((component.name, deepItem))
         return glyph.outline, deepItems
 
@@ -39,7 +42,9 @@ class RoboCJKProject:
         atomicOutlines = []
         for component in glyph.components:
             t = transform.transform(makeTransform(**component.transform))
-            atomicOutline = self.drawAtomicElement(component.name, component.coord, t)
+            atomicOutline = self.drawAtomicElement(
+                component.name, component.coord, t,
+            )
             atomicOutlines.append((component.name, atomicOutline))
         return atomicOutlines
 
@@ -64,14 +69,20 @@ class GlyphSet:
         glyphNames = {}
         for path in self._path.glob("*.glif"):
             with open(path, "rb") as f:
-                data = f.read(1024)  # assuming all unicodes are in the first 1024 bytes of the file
+                # assuming all unicodes are in the first 1024 bytes of the file
+                data = f.read(1024)
             m = _glyphNamePat.search(data)
             if m is None:
-                raise ValueError(f"invalid .glif file, glyph name not found ({path})")
+                raise ValueError(
+                    f"invalid .glif file, glyph name not found ({path})"
+                )
             glyphName = m.group(1).decode("utf-8")
             refFileName = userNameToFileName(glyphName, suffix=".glif")
             if refFileName != path.name:
-                logging.warning(f"actual file name does not match predicted file name: {refFileName} {path.name} {glyphName}")
+                logging.warning(
+                    f"actual file name does not match predicted file name: "
+                    f"{refFileName} {path.name} {glyphName}"
+                )
             unicodes = [int(u, 16) for u in _unicodePat.findall(data)]
             glyphNames[glyphName] = unicodes
         return glyphNames
@@ -130,10 +141,8 @@ class Glyph(_MathMixin):
         for dc in self.lib.get("robocjk.deepComponents", []):
             self.components.append(_unpackDeepComponent(dc))
 
-        for varKey in ("robocjk.fontVariationGlyphs", "robocjk.glyphVariationGlyphs"):
-            if varKey in self.lib:
-                break
-        else:
+        varKey = _getVarKey(self.lib)
+        if varKey is None:
             return
 
         for axisName, varDict in self.lib[varKey].items():
@@ -205,13 +214,25 @@ class Component(NamedTuple):
     transform: dict
 
     def __add__(self, other):
-        return Component(self.name, self.coord + other.coord, self.transform + other.transform)
+        return Component(
+            self.name,
+            self.coord + other.coord,
+            self.transform + other.transform,
+        )
 
     def __sub__(self, other):
-        return Component(self.name, self.coord - other.coord, self.transform - other.transform)
+        return Component(
+            self.name,
+            self.coord - other.coord,
+            self.transform - other.transform,
+        )
 
     def __mul__(self, scalar):
-        return Component(self.name, self.coord * scalar, self.transform * scalar)
+        return Component(
+            self.name,
+            self.coord * scalar,
+            self.transform * scalar,
+        )
 
     def __rmul__(self, scalar):
         return self.__mul__(scalar)
@@ -328,6 +349,17 @@ def _unpackDeepComponent(dc):
     return Component(name, MathDict(coord), MathDict(transform))
 
 
+def _getVarKey(lib):
+    roboVarKeys = (
+        "robocjk.fontVariationGlyphs",
+        "robocjk.glyphVariationGlyphs",
+    )
+    for varKey in roboVarKeys:
+        if varKey in lib:
+            return varKey
+    return None
+
+
 if __name__ == "__main__":
     # DrawBot test snippet
     from drawBot import BezierPath, translate, scale, fill, stroke, drawPath
@@ -337,7 +369,8 @@ if __name__ == "__main__":
         outline.drawPoints(bez)
         drawPath(bez)
 
-    project = RoboCJKProject("/Users/just/code/git/BlackFoundry/gs-cjk-rcjk/Hanzi.rcjk/")
+    testPath = "/Users/just/code/git/BlackFoundry/gs-cjk-rcjk/Hanzi.rcjk/"
+    project = RoboCJKProject(testPath)
 
     glyphName = "uni3A00"
     # glyphName = "uni2EBB"
