@@ -103,7 +103,8 @@ class Glyph:
     def __init__(self):
         self.outline = MathOutline()
         self.components = []
-        self.variations = None
+        self.variations = []
+        self.location = {}  # neutral
 
     def _postParse(self, glyphSet):
         for dc in self.lib.get("robocjk.deepComponents", []):
@@ -115,21 +116,17 @@ class Glyph:
         else:
             return
 
-        self.variations = []
         for axisName, varDict in self.lib[varKey].items():
             layerName = varDict["layerName"]
-            minValue = varDict["minValue"]
-            maxValue = varDict["maxValue"]
-            varInfo = dict(
-                location={axisName: 1.0},  # XXX later: maxValue
-                layerName=layerName,
-                minValue=minValue,
-                maxValue=maxValue,
-            )
+            # minValue = varDict["minValue"]
+            # maxValue = varDict["maxValue"]
+            # location = {axisName: 1.0}  # XXX later: maxValue
             if not self.outline.isEmpty():
                 varGlyph = glyphSet.getLayer(layerName).getGlyph(self.name)
             else:
                 varGlyph = Glyph()
+
+            varGlyph.location = {axisName: 1.0}
 
             for dc in varDict["content"]["deepComponents"]:
                 varGlyph.components.append(_unpackDeepComponent(dc))
