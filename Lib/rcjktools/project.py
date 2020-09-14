@@ -180,20 +180,20 @@ class GlyphSet:
         return layer
 
 
-class ComponentInfo(NamedTuple):
+class Component(NamedTuple):
 
     name: str
     coord: dict
     transform: dict
 
     def __add__(self, other):
-        return ComponentInfo(self.name, self.coord + other.coord, self.transform + other.transform)
+        return Component(self.name, self.coord + other.coord, self.transform + other.transform)
 
     def __sub__(self, other):
-        return ComponentInfo(self.name, self.coord - other.coord, self.transform - other.transform)
+        return Component(self.name, self.coord - other.coord, self.transform - other.transform)
 
     def __mul__(self, scalar):
-        return ComponentInfo(self.name, self.coord * scalar, self.transform * scalar)
+        return Component(self.name, self.coord * scalar, self.transform * scalar)
 
     def __rmul__(self, scalar):
         return self.__mul__(scalar)
@@ -239,7 +239,7 @@ def _unpackDeepComponent(dc):
     name = dc.get("name")
     coord = dc["coord"]
     transform = {k: v for k, v in dc.items() if k not in {"coord", "name"}}
-    return ComponentInfo(name, MathDict(coord), MathDict(transform))
+    return Component(name, MathDict(coord), MathDict(transform))
 
 
 def _interpolateOutline(glyph, axes, location, glyphSet):
