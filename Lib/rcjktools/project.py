@@ -87,6 +87,13 @@ class GlyphSet:
             glyphNames[glyphName] = unicodes
         return glyphNames
 
+    def __contains__(self, glyphName):
+        if glyphName in self._glyphs:
+            return True
+        fileName = userNameToFileName(glyphName, suffix=".glif")
+        glyphPath = self._path / fileName
+        return glyphPath.exists()
+
     def getGlyph(self, glyphName):
         glyph = self._glyphs.get(glyphName)
         if glyph is None:
@@ -151,7 +158,15 @@ class Glyph(_MathMixin):
             # maxValue = varDict["maxValue"]
             # location = {axisName: 1.0}  # XXX later: maxValue
             if not self.outline.isEmpty():
-                varGlyph = glyphSet.getLayer(layerName).getGlyph(self.name)
+                layer = glyphSet.getLayer(layerName)
+                if self.name in layer:
+                    varGlyph = layer.getGlyph(self.name)
+                else:
+                    # Layer glyph does not exist, make one up by copying
+                    # self.width and self.outline
+                    varGlyph = Glyph()
+                    varGlyph.width = self.width
+                    varGlyph.outline = self.outline
             else:
                 varGlyph = Glyph()
 
