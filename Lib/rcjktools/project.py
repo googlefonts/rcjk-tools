@@ -10,6 +10,7 @@ from fontTools.pens.recordingPen import RecordingPointPen
 from fontTools.pens.pointPen import SegmentToPointPen, PointToSegmentPen
 from fontTools.ufoLib.glifLib import readGlyphFromString
 from fontTools.ufoLib.filenames import userNameToFileName
+from fontTools.varLib.models import VariationModel
 
 
 class RoboCJKProject:
@@ -121,6 +122,8 @@ class Glyph(_MathMixin):
         self.lib = {}
         self.location = {}  # neutral
         self.variations = []
+        self.model = None
+        self.deltas = None
 
     def _postParse(self, glyphSet):
         """This gets called soon after parsing the .glif file. Any layer glyphs
@@ -154,6 +157,9 @@ class Glyph(_MathMixin):
 
             self.variations.append(varGlyph)
 
+        locations = [{}] + [variation.location for variation in self.variations]
+        self.model = VariationModel(locations)
+
     def getPointPen(self):
         return self.outline
 
@@ -167,7 +173,11 @@ class Glyph(_MathMixin):
         self.outline.draw(pen)
 
     def instantiate(self, location):
-        ...
+        if self.model is None:
+            return self  # XXX raise error?
+        if self.deltas is None:
+            self.deltas = self.model.getDeltas([self] + self.variations)
+        return self.model.interpolateFromDeltas(location, self.deltas)
 
     def _doUnaryOperator(self, scalar, op):
         result = Glyph()
@@ -389,3 +399,6 @@ if __name__ == "__main__":
         for dcName, atomicOutlines in deepItems:
             for atomicName, atomicOutline in atomicOutlines:
                 drawOutline(atomicOutline)
+
+    ig = project.characterGlyphGlyphSet.getGlyph(glyphName).instantiate({"wght": 0.5})
+    print(ig.components)
