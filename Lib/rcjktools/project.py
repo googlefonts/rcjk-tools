@@ -12,6 +12,128 @@ from fontTools.ufoLib.glifLib import readGlyphFromString
 from fontTools.ufoLib.filenames import userNameToFileName
 
 
+class RoboCJKProject:
+
+    def __init__(self, path):
+        self._path = pathlib.Path(path)
+        self.characterGlyphGlyphSet = GlyphSet(self._path / "characterGlyph")
+        self.deepComponentGlyphSet = GlyphSet(self._path / "deepComponent")
+        self.atomicElementGlyphSet = GlyphSet(self._path / "atomicElement")
+
+    def getGlyphNamesAndUnicodes(self):
+        return self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
+
+    def drawCharacterGlyph(self, glyphName, location):
+        glyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
+        components, axes = _interpolateComponents(glyph, location, "robocjk.fontVariationGlyphs")
+        deepItems = []
+        for component in components:
+            deepItem = self.drawDeepComponent(component.name, component.coord, makeTransform(**component.transform))
+            deepItems.append((component.name, deepItem))
+        if glyph.outline.isEmpty():
+            outline = None
+        else:
+            outline = _interpolateOutline(glyph, axes, location, self.characterGlyphGlyphSet)
+        return outline, deepItems
+
+    def drawDeepComponent(self, glyphName, location, transform):
+        glyph = self.deepComponentGlyphSet.getGlyph(glyphName)
+        components, axes = _interpolateComponents(glyph, location, "robocjk.glyphVariationGlyphs")
+        atomicOutlines = []
+        for component in components:
+            t = transform.transform(makeTransform(**component.transform))
+            atomicOutline = self.drawAtomicElement(component.name, component.coord, t)
+            atomicOutlines.append((component.name, atomicOutline))
+        return atomicOutlines
+
+    def drawAtomicElement(self, glyphName, location, transform):
+        glyph = self.atomicElementGlyphSet.getGlyph(glyphName)
+        axes = [(axisName, variations["layerName"], variations["minValue"], variations["maxValue"])
+                for axisName, variations in glyph.lib["robocjk.glyphVariationGlyphs"].items()]
+        outline = _interpolateOutline(glyph, axes, location, self.atomicElementGlyphSet)
+        return outline.transform(transform)
+
+
+_glyphNamePat = re.compile(rb'<glyph\s+name\s*=\s*"([^"]+)"')
+_unicodePat = re.compile(rb'<unicode\s+hex\s*=\s*"([^"]+)"')
+
+
+class GlyphSet:
+
+    def __init__(self, path):
+        self._path = path
+        self._glyphs = {}
+        self._layers = {}
+
+    def getGlyphNamesAndUnicodes(self):
+        glyphNames = {}
+        for path in self._path.glob("*.glif"):
+            with open(path, "rb") as f:
+                data = f.read(1024)  # assuming all unicodes are in the first 1024 bytes of the file
+            m = _glyphNamePat.search(data)
+            if m is None:
+                raise ValueError(f"invalid .glif file, glyph name not found ({path})")
+            glyphName = m.group(1).decode("utf-8")
+            refFileName = userNameToFileName(glyphName, suffix=".glif")
+            if refFileName != path.name:
+                logging.warning(f"actual file name does not match predicted file name: {refFileName} {path.name} {glyphName}")
+            unicodes = [int(u, 16) for u in _unicodePat.findall(data)]
+            glyphNames[glyphName] = unicodes
+        return glyphNames
+
+    def getGlyph(self, glyphName):
+        glyph = self._glyphs.get(glyphName)
+        if glyph is None:
+            fileName = userNameToFileName(glyphName, suffix=".glif")
+            glyph = parseGlyph(self._path / fileName)
+            self._glyphs[glyphName] = glyph
+        return glyph
+
+    def getLayer(self, layerName):
+        layer = self._layers.get(layerName)
+        if layer is None:
+            layer = GlyphSet(self._path / layerName)
+            self._layers[layerName] = layer
+        return layer
+
+
+class Glyph:
+
+    def __init__(self):
+        self.outline = MathOutline()
+
+    def getPointPen(self):
+        return self.outline
+
+    def getPen(self):
+        return SegmentToPointPen(self.outline)
+
+    def drawPoints(self, pen):
+        self.outline.drawPoints(pen)
+
+    def draw(self, pen):
+        self.outline.draw(pen)
+
+
+class Component(NamedTuple):
+
+    name: str
+    coord: dict
+    transform: dict
+
+    def __add__(self, other):
+        return Component(self.name, self.coord + other.coord, self.transform + other.transform)
+
+    def __sub__(self, other):
+        return Component(self.name, self.coord - other.coord, self.transform - other.transform)
+
+    def __mul__(self, scalar):
+        return Component(self.name, self.coord * scalar, self.transform * scalar)
+
+    def __rmul__(self, scalar):
+        return self.__mul__(scalar)
+
+
 class _MathMixin:
 
     def __add__(self, other):
@@ -107,26 +229,8 @@ class MathOutline(RecordingPointPen, _MathMixin):
             elif m1 == "endPath":
                 result.endPath()
             else:
-                assert False, f"unsupported method: {m}"
+                assert False, f"unsupported method: {m1}"
         return result
-
-
-class Glyph:
-
-    def __init__(self):
-        self.outline = MathOutline()
-
-    def getPointPen(self):
-        return self.outline
-
-    def getPen(self):
-        return SegmentToPointPen(self.outline)
-
-    def drawPoints(self, pen):
-        self.outline.drawPoints(pen)
-
-    def draw(self, pen):
-        self.outline.draw(pen)
 
 
 def parseGlyph(p):
@@ -135,68 +239,6 @@ def parseGlyph(p):
     g = Glyph()
     readGlyphFromString(data, g, g.getPointPen())
     return g
-
-
-_glyphNamePat = re.compile(rb'<glyph\s+name\s*=\s*"([^"]+)"')
-_unicodePat = re.compile(rb'<unicode\s+hex\s*=\s*"([^"]+)"')
-
-
-class GlyphSet:
-
-    def __init__(self, path):
-        self._path = path
-        self._glyphs = {}
-        self._layers = {}
-
-    def getGlyphNamesAndUnicodes(self):
-        glyphNames = {}
-        for path in self._path.glob("*.glif"):
-            with open(path, "rb") as f:
-                data = f.read(1024)  # assuming all unicodes are in the first 1024 bytes of the file
-            m = _glyphNamePat.search(data)
-            if m is None:
-                raise ValueError(f"invalid .glif file, glyph name not found ({path})")
-            glyphName = m.group(1).decode("utf-8")
-            refFileName = userNameToFileName(glyphName, suffix=".glif")
-            if refFileName != path.name:
-                logging.warning(f"actual file name does not match predicted file name: {refFileName} {path.name} {glyphName}")
-            unicodes = [int(u, 16) for u in _unicodePat.findall(data)]
-            glyphNames[glyphName] = unicodes
-        return glyphNames
-
-    def getGlyph(self, glyphName):
-        glyph = self._glyphs.get(glyphName)
-        if glyph is None:
-            fileName = userNameToFileName(glyphName, suffix=".glif")
-            glyph = parseGlyph(self._path / fileName)
-            self._glyphs[glyphName] = glyph
-        return glyph
-
-    def getLayer(self, layerName):
-        layer = self._layers.get(layerName)
-        if layer is None:
-            layer = GlyphSet(self._path / layerName)
-            self._layers[layerName] = layer
-        return layer
-
-
-class Component(NamedTuple):
-
-    name: str
-    coord: dict
-    transform: dict
-
-    def __add__(self, other):
-        return Component(self.name, self.coord + other.coord, self.transform + other.transform)
-
-    def __sub__(self, other):
-        return Component(self.name, self.coord - other.coord, self.transform - other.transform)
-
-    def __mul__(self, scalar):
-        return Component(self.name, self.coord * scalar, self.transform * scalar)
-
-    def __rmul__(self, scalar):
-        return self.__mul__(scalar)
 
 
 def makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery):
@@ -256,50 +298,10 @@ def _interpolateOutline(glyph, axes, location, glyphSet):
     return outline
 
 
-class RoboCJKProject:
-
-    def __init__(self, path):
-        self._path = pathlib.Path(path)
-        self.characterGlyphGlyphSet = GlyphSet(self._path / "characterGlyph")
-        self.deepComponentGlyphSet = GlyphSet(self._path / "deepComponent")
-        self.atomicElementGlyphSet = GlyphSet(self._path / "atomicElement")
-
-    def getGlyphNamesAndUnicodes(self):
-        return self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
-
-    def drawCharacterGlyph(self, glyphName, location):
-        glyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
-        components, axes = _interpolateComponents(glyph, location, "robocjk.fontVariationGlyphs")
-        deepItems = []
-        for component in components:
-            deepItem = self.drawDeepComponent(component.name, component.coord, makeTransform(**component.transform))
-            deepItems.append((component.name, deepItem))
-        if glyph.outline.isEmpty():
-            outline = None
-        else:
-            outline = _interpolateOutline(glyph, axes, location, self.characterGlyphGlyphSet)
-        return outline, deepItems
-
-    def drawDeepComponent(self, glyphName, location, transform):
-        glyph = self.deepComponentGlyphSet.getGlyph(glyphName)
-        components, axes = _interpolateComponents(glyph, location, "robocjk.glyphVariationGlyphs")
-        atomicOutlines = []
-        for component in components:
-            t = transform.transform(makeTransform(**component.transform))
-            atomicOutline = self.drawAtomicElement(component.name, component.coord, t)
-            atomicOutlines.append((component.name, atomicOutline))
-        return atomicOutlines
-
-    def drawAtomicElement(self, glyphName, location, transform):
-        glyph = self.atomicElementGlyphSet.getGlyph(glyphName)
-        axes = [(axisName, variations["layerName"], variations["minValue"], variations["maxValue"])
-                for axisName, variations in glyph.lib["robocjk.glyphVariationGlyphs"].items()]
-        outline = _interpolateOutline(glyph, axes, location, self.atomicElementGlyphSet)
-        return outline.transform(transform)
-    
-
 if __name__ == "__main__":
     # DrawBot test snippet
+    from DrawBot import BezierPath, translate, scale, fill, stroke, drawPath
+
     def drawOutline(outline):
         bez = BezierPath()
         outline.drawPoints(bez)
