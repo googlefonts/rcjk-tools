@@ -86,6 +86,7 @@ class GlyphSet:
         if glyph is None:
             fileName = userNameToFileName(glyphName, suffix=".glif")
             glyph = parseGlyph(self._path / fileName)
+            glyph._postParse(self)
             self._glyphs[glyphName] = glyph
         return glyph
 
@@ -101,6 +102,40 @@ class Glyph:
 
     def __init__(self):
         self.outline = MathOutline()
+        self.components = []
+        self.variations = None
+
+    def _postParse(self, glyphSet):
+        for dc in self.lib.get("robocjk.deepComponents", []):
+            self.components.append(_unpackDeepComponent(dc))
+
+        for varKey in ("robocjk.fontVariationGlyphs", "robocjk.glyphVariationGlyphs"):
+            if varKey in self.lib:
+                break
+        else:
+            return
+
+        self.variations = []
+        for axisName, varDict in self.lib[varKey].items():
+            layerName = varDict["layerName"]
+            minValue = varDict["minValue"]
+            maxValue = varDict["maxValue"]
+            varInfo = dict(
+                location={axisName: 1.0},  # XXX later: maxValue
+                layerName=layerName,
+                minValue=minValue,
+                maxValue=maxValue,
+            )
+            if not self.outline.isEmpty():
+                varGlyph = glyphSet.getLayer(layerName).getGlyph(self.name)
+            else:
+                varGlyph = Glyph()
+
+            for dc in varDict["content"]["deepComponents"]:
+                varGlyph.components.append(_unpackDeepComponent(dc))
+            assert len(varGlyph.components) == len(self.components)
+
+            self.variations.append(varGlyph)
 
     def getPointPen(self):
         return self.outline
@@ -300,7 +335,7 @@ def _interpolateOutline(glyph, axes, location, glyphSet):
 
 if __name__ == "__main__":
     # DrawBot test snippet
-    from DrawBot import BezierPath, translate, scale, fill, stroke, drawPath
+    from drawBot import BezierPath, translate, scale, fill, stroke, drawPath
 
     def drawOutline(outline):
         bez = BezierPath()
