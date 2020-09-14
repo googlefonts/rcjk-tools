@@ -198,6 +198,7 @@ class Glyph(_MathMixin):
             return self  # XXX raise error?
         if self.deltas is None:
             self.deltas = self.model.getDeltas([self] + self.variations)
+        location = _clampLocation(location)
         return self.model.interpolateFromDeltas(location, self.deltas)
 
     def _doUnaryOperator(self, scalar, op):
@@ -220,6 +221,10 @@ class Glyph(_MathMixin):
             for compo1, compo2 in zip(self.components, other.components)
         ]
         return result
+
+
+def _clampLocation(d):
+    return {k: min(1, max(0, v)) for k, v in d.items()}
 
 
 class Component(NamedTuple):
