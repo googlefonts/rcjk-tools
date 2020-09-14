@@ -98,15 +98,35 @@ class GlyphSet:
         return layer
 
 
-class Glyph:
+class _MathMixin:
+
+    def __add__(self, other):
+        return self._doBinaryOperator(other, operator.add)
+
+    def __sub__(self, other):
+        return self._doBinaryOperator(other, operator.sub)
+
+    def __mul__(self, scalar):
+        return self._doUnaryOperator(scalar, operator.mul)
+
+    def __rmul__(self, scalar):
+        return self._doUnaryOperator(scalar, operator.mul)
+
+
+class Glyph(_MathMixin):
 
     def __init__(self):
         self.outline = MathOutline()
         self.components = []
-        self.variations = []
+        self.lib = {}
         self.location = {}  # neutral
+        self.variations = []
 
     def _postParse(self, glyphSet):
+        """This gets called soon after parsing the .glif file. Any layer glyphs
+        and variation info is unpacked here, and put into a subglyph, as part
+        of the self.variations list.
+        """
         for dc in self.lib.get("robocjk.deepComponents", []):
             self.components.append(_unpackDeepComponent(dc))
 
@@ -146,6 +166,30 @@ class Glyph:
     def draw(self, pen):
         self.outline.draw(pen)
 
+    def instantiate(self, location):
+        ...
+
+    def _doUnaryOperator(self, scalar, op):
+        result = Glyph()
+        result.name = self.name
+        result.unicodes = self.unicodes
+        result.width = op(self.width, scalar)
+        result.outline = op(self.outline, scalar)
+        result.components = [op(compo, scalar) for compo in self.components]
+        return result
+
+    def _doBinaryOperator(self, other, op):
+        result = Glyph()
+        result.name = self.name
+        result.unicodes = self.unicodes
+        result.width = op(self.width, other.width)
+        result.outline = op(self.outline, other.outline)
+        result.components = [
+            op(compo1, compo2)
+            for compo1, compo2 in zip(self.components, other.components)
+        ]
+        return result
+
 
 class Component(NamedTuple):
 
@@ -164,21 +208,6 @@ class Component(NamedTuple):
 
     def __rmul__(self, scalar):
         return self.__mul__(scalar)
-
-
-class _MathMixin:
-
-    def __add__(self, other):
-        return self._doBinaryOperator(other, operator.add)
-
-    def __sub__(self, other):
-        return self._doBinaryOperator(other, operator.sub)
-
-    def __mul__(self, scalar):
-        return self._doUnaryOperator(scalar, operator.mul)
-
-    def __rmul__(self, scalar):
-        return self._doUnaryOperator(scalar, operator.mul)
 
 
 class MathDict(dict, _MathMixin):
