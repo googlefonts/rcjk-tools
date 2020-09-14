@@ -358,6 +358,3 @@ if __name__ == "__main__":
         for dcName, atomicOutlines in deepItems:
             for atomicName, atomicOutline in atomicOutlines:
                 drawOutline(atomicOutline)
-
-    # ig = project.characterGlyphGlyphSet.getGlyph(glyphName).instantiate({"wght": 0.5})
-    # print(ig.components)
