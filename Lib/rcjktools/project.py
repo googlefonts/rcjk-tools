@@ -94,7 +94,7 @@ class RoboCJKProject:
             except InterpolationError as e:
                 print(f"glyph {glyphName} can't be interpolated ({e})")
             else:
-                glyph.width = width
+                glyph.width = max(0, width)  # can't be negative
                 ufo[glyphName] = glyph
 
 
