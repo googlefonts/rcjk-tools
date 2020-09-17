@@ -103,7 +103,7 @@ class RoboCJKPreviewer:
         sel = self.w.characterGlyphList.getSelection()
         if sel:
             glyphName = self.w.characterGlyphList[sel[0]]["glyphName"]
-            outline, dcItems = self.project.drawCharacterGlyph(
+            outline, dcItems, width = self.project.instantiateCharacterGlyph(
                 glyphName, location={"wght": self.w.axisSlider.get()})
         else:
             outline = None

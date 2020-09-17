@@ -13,6 +13,10 @@ from fontTools.ufoLib.filenames import userNameToFileName
 from fontTools.varLib.models import VariationModel
 
 
+class InterpolationError(Exception):
+    pass
+
+
 class RoboCJKProject:
 
     def __init__(self, path):
@@ -24,34 +28,74 @@ class RoboCJKProject:
     def getGlyphNamesAndUnicodes(self):
         return self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
 
-    def drawCharacterGlyph(self, glyphName, location):
+    def drawCharacterGlyph(self, glyphName, location, pen):
+        outline, dcItems, width = self.instantiateCharacterGlyph(glyphName, location)
+        outline.draw(pen)
+        for dcName, atomicElements in dcItems:
+            for aeName, atomicOutline in atomicElements:
+                atomicOutline.draw(pen)
+        return width
+
+    def instantiateCharacterGlyph(self, glyphName, location):
         glyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
         glyph = glyph.instantiate(location)
         deepItems = []
         for component in glyph.components:
-            deepItem = self.drawDeepComponent(
+            deepItem = self.instantiateDeepComponent(
                 component.name, component.coord,
                 makeTransform(**component.transform),
             )
             deepItems.append((component.name, deepItem))
-        return glyph.outline, deepItems
+        return glyph.outline, deepItems, glyph.width
 
-    def drawDeepComponent(self, glyphName, location, transform):
+    def instantiateDeepComponent(self, glyphName, location, transform):
         glyph = self.deepComponentGlyphSet.getGlyph(glyphName)
         glyph = glyph.instantiate(location)
         atomicOutlines = []
         for component in glyph.components:
             t = transform.transform(makeTransform(**component.transform))
-            atomicOutline = self.drawAtomicElement(
+            atomicOutline = self.instantiateAtomicElement(
                 component.name, component.coord, t,
             )
             atomicOutlines.append((component.name, atomicOutline))
         return atomicOutlines
 
-    def drawAtomicElement(self, glyphName, location, transform):
+    def instantiateAtomicElement(self, glyphName, location, transform):
         glyph = self.atomicElementGlyphSet.getGlyph(glyphName)
         glyph = glyph.instantiate(location)
         return glyph.outline.transform(transform)
+
+    def saveFlattenedUFO(self, ufoPath, location, familyName, styleName):
+        from ufoLib2.objects import Font
+        ufo = Font()
+        ufo.info.familyName = familyName
+        ufo.info.styleName = styleName
+        ufo.info.unitsPerEm = 1000
+        ufo.info.descender = -120
+        ufo.info.ascender = ufo.info.unitsPerEm + ufo.info.descender
+        self.addFlattenedGlyphsToUFO(ufo, location)
+        ufo.save(ufoPath, overwrite=True)
+
+    def addFlattenedGlyphsToUFO(self, ufo, location):
+        from ufoLib2.objects import Glyph
+        revCmap = self.getGlyphNamesAndUnicodes()
+        glyphNames = sorted(revCmap)
+        for glyphName in glyphNames:
+            try:
+                glyphName.encode("ascii")
+            except UnicodeEncodeError:
+                print(f"WARNING glyph name {glyphName} is not ASCII, and will not be exported")
+                continue
+            glyph = Glyph(glyphName)
+            glyph.unicodes = revCmap[glyphName]
+            pen = glyph.getPen()
+            try:
+                width = self.drawCharacterGlyph(glyphName, location, pen)
+            except InterpolationError as e:
+                print(f"glyph {glyphName} can't be interpolated ({e})")
+            else:
+                glyph.width = width
+                ufo[glyphName] = glyph
 
 
 _glyphNamePat = re.compile(rb'<glyph\s+name\s*=\s*"([^"]+)"')
@@ -281,7 +325,8 @@ class MathDict(dict, _MathMixin):
             if isinstance(v1, (int, float)):
                 result[k] = op(v1, v2)
             else:
-                assert v1 == v2, "incompatible dicts"
+                if v1 != v2:
+                    raise InterpolationError("incompatible dicts")
                 result[k] = v1
         return result
 
@@ -324,13 +369,17 @@ class MathOutline(RecordingPointPen, _MathMixin):
 
     def _doBinaryOperator(self, other, op):
         result = MathOutline()
-        assert len(self.value) == len(other.value), "incompatible outline"
+        if len(self.value) != len(other.value):
+            raise InterpolationError("incompatible outline")
+
         for (m1, args1, kwargs1), (m2, args2, kwargs2) in zip(self.value, other.value):
-            assert m1 == m2, "incompatible outline"
+            if m1 != m2:
+                raise InterpolationError("incompatible outline")
             if m1 == "addPoint":
                 (x1, y1), seg1, smooth1, name1 = args1
                 (x2, y2), seg2, smooth2, name2 = args2
-                assert seg1 == seg2, "incompatible outline"
+                if seg1 != seg2:
+                    raise InterpolationError("incompatible outline")
                 pt = op(x1, x2), op(y1, y2)
                 result.addPoint(pt, seg1, smooth1, name1, **kwargs1)
             elif m1 == "beginPath":
@@ -405,7 +454,7 @@ if __name__ == "__main__":
     steps = 3
     for i in range(steps):
         f = i / (steps - 1)
-        outline, deepItems = project.drawCharacterGlyph(glyphName, {"wght": f})
+        outline, deepItems, width = project.instantiateCharacterGlyph(glyphName, {"wght": f})
         if outline is not None:
             drawOutline(outline)
         for dcName, atomicOutlines in deepItems:
