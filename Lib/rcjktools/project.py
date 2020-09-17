@@ -412,10 +412,13 @@ def makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery):
     return t
 
 
+_rcjkTransformParameters = set(makeTransform.__code__.co_varnames[:makeTransform.__code__.co_argcount])
+
+
 def _unpackDeepComponent(dc):
     name = dc.get("name")
     coord = dc["coord"]
-    transform = {k: v for k, v in dc.items() if k not in {"coord", "name", "minValue", "maxValue"}}
+    transform = {k: v for k, v in dc.items() if k in _rcjkTransformParameters}
     return Component(name, MathDict(coord), MathDict(transform))
 
 
