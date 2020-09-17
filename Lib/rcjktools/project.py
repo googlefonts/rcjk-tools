@@ -180,6 +180,7 @@ class Glyph(_MathMixin):
         self.components = []
         self.lib = {}
         self.location = {}  # neutral
+        self.axes = {}
         self.variations = []
         self.model = None
         self.deltas = None
@@ -198,9 +199,8 @@ class Glyph(_MathMixin):
 
         for axisName, varDict in self.lib[varKey].items():
             layerName = varDict["layerName"]
-            # minValue = varDict["minValue"]
-            # maxValue = varDict["maxValue"]
-            # location = {axisName: 1.0}  # XXX later: maxValue
+            minValue = varDict["minValue"]
+            maxValue = varDict["maxValue"]
             if not self.outline.isEmpty():
                 layer = glyphSet.getLayer(layerName)
                 if self.name in layer:
@@ -216,6 +216,7 @@ class Glyph(_MathMixin):
                 varGlyph.width = self.width
 
             varGlyph.location = {axisName: 1.0}
+            self.axes[axisName] = (minValue, maxValue)
 
             for dc in varDict["content"]["deepComponents"]:
                 varGlyph.components.append(_unpackDeepComponent(dc))
@@ -243,7 +244,7 @@ class Glyph(_MathMixin):
             return self  # XXX raise error?
         if self.deltas is None:
             self.deltas = self.model.getDeltas([self] + self.variations)
-        location = _clampLocation(location)
+        location = normalizeLocation(location, self.axes)
         return self.model.interpolateFromDeltas(location, self.deltas)
 
     def _doUnaryOperator(self, scalar, op):
@@ -266,6 +267,17 @@ class Glyph(_MathMixin):
             for compo1, compo2 in zip(self.components, other.components)
         ]
         return result
+
+
+def normalizeValue(value, minValue, maxValue):
+    assert minValue < maxValue
+    return (value - minValue) / (maxValue - minValue)
+
+
+def normalizeLocation(location, axes):
+    location = {axisName: normalizeValue(v, *axes.get(axisName, (0, 1)))
+                for axisName, v in location.items()}
+    return _clampLocation(location)
 
 
 def _clampLocation(d):
