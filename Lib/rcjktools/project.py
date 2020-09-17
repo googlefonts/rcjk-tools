@@ -213,6 +213,7 @@ class Glyph(_MathMixin):
                     varGlyph.outline = self.outline
             else:
                 varGlyph = Glyph()
+                varGlyph.width = self.width
 
             varGlyph.location = {axisName: 1.0}
 
@@ -414,7 +415,7 @@ def makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery):
 def _unpackDeepComponent(dc):
     name = dc.get("name")
     coord = dc["coord"]
-    transform = {k: v for k, v in dc.items() if k not in {"coord", "name"}}
+    transform = {k: v for k, v in dc.items() if k not in {"coord", "name", "minValue", "maxValue"}}
     return Component(name, MathDict(coord), MathDict(transform))
 
 
