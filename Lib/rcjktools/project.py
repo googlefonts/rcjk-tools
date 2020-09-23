@@ -90,15 +90,14 @@ class RoboCJKProject:
         ufo = setupFont(familyName, styleName)
 
         revCmap = self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
+        characterGlyphNames = filterGlyphNames(sorted(revCmap))
 
-        dcNames = getComponentNames(self.characterGlyphGlyphSet, sorted(revCmap))
+        dcNames = getComponentNames(self.characterGlyphGlyphSet, characterGlyphNames)
         # check whether all DC glyphnames start with "DC_"
         ensureDCGlyphNames(dcNames)
         aeNames = getComponentNames(self.deepComponentGlyphSet, sorted(dcNames))
         # rename all AE glyph names so they start with "AE_"
         aeRenameTable = makeAERenameTable(aeNames)
-
-        characterGlyphNames = filterGlyphNames(sorted(revCmap))
 
         for glyphName in characterGlyphNames:
             addRCJKGlyphToVarCoUFO(ufo, self.characterGlyphGlyphSet, glyphName, glyphName, revCmap[glyphName])
