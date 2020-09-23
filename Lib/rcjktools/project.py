@@ -139,24 +139,31 @@ def addRCJKGlyphToVarCoUFO(ufo, rcjkGlyphSet, srcGlyphName, dstGlyphName, unicod
     if renameTable is None:
         renameTable = {}
     rcjkGlyph = rcjkGlyphSet.getGlyph(srcGlyphName)
+
     glyph = UGlyph(dstGlyphName)
     glyph.unicodes = unicodes
     glyph.width = rcjkGlyph.width
-
     rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable)
 
     packedAxes = packAxes(rcjkGlyph.axes)
     if packedAxes:
         glyph.lib["varco.axes"] = packedAxes
-    ufo[dstGlyphName] = glyph
+
+    variationInfo = []
+
     for rcjkVarGlyph in rcjkGlyph.variations:
         layerName = layerNameFromLocation(rcjkVarGlyph.location)
         layer = getUFOLayer(ufo, layerName)
         varGlyph = UGlyph(dstGlyphName)
         varGlyph.width = rcjkVarGlyph.width
         rcjkGlyphToVarCoGlyph(rcjkVarGlyph, varGlyph, renameTable)
-        varGlyph.lib["varco.location"] = rcjkVarGlyph.location
+        variationInfo.append(dict(layerName=layerName, location=rcjkVarGlyph.location))
         layer[dstGlyphName] = varGlyph
+
+    if variationInfo:
+        glyph.lib["varco.variations"] = variationInfo
+
+    ufo[dstGlyphName] = glyph
 
 
 def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable):
