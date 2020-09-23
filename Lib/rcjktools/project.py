@@ -66,26 +66,15 @@ class RoboCJKProject:
         return glyph.outline.transform(transform)
 
     def saveFlattenedUFO(self, ufoPath, location, familyName, styleName):
-        from ufoLib2.objects import Font
-        ufo = Font()
-        ufo.info.familyName = familyName
-        ufo.info.styleName = styleName
-        ufo.info.unitsPerEm = 1000
-        ufo.info.descender = -120
-        ufo.info.ascender = ufo.info.unitsPerEm + ufo.info.descender
+        ufo = setupFont(familyName, styleName)
         self.addFlattenedGlyphsToUFO(ufo, location)
         ufo.save(ufoPath, overwrite=True)
 
     def addFlattenedGlyphsToUFO(self, ufo, location):
         from ufoLib2.objects import Glyph
         revCmap = self.getGlyphNamesAndUnicodes()
-        glyphNames = sorted(revCmap)
+        glyphNames = filterGlyphNames(sorted(revCmap))
         for glyphName in glyphNames:
-            try:
-                glyphName.encode("ascii")
-            except UnicodeEncodeError:
-                print(f"WARNING glyph name {glyphName} is not ASCII, and will not be exported")
-                continue
             glyph = Glyph(glyphName)
             glyph.unicodes = revCmap[glyphName]
             pen = glyph.getPen()
@@ -96,6 +85,69 @@ class RoboCJKProject:
             else:
                 glyph.width = max(0, width)  # can't be negative
                 ufo[glyphName] = glyph
+
+    def saveVarCoUFO(self, ufoPath, familyName, styleName):
+        from ufoLib2.objects import Glyph
+        ufo = setupFont(familyName, styleName)
+
+        revCmap = self.getGlyphNamesAndUnicodes()
+        glyphNames = filterGlyphNames(sorted(revCmap))
+        glyphNames = glyphNames[:200]  # tmp subset
+        for glyphName in glyphNames:
+            rcjkGlyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
+
+            glyph = Glyph(glyphName)
+            glyph.unicodes = revCmap[glyphName]
+            glyph.width = rcjkGlyph.width
+
+            rcjkGlyph.drawPoints(glyph.getPointPen())
+            ufo[glyphName] = glyph
+            print("axes:", rcjkGlyph.axes)
+            for varRCJKGlyph in rcjkGlyph.variations:
+                print(varRCJKGlyph.location)
+
+        ufo.save(ufoPath, overwrite=True)
+
+
+def setupFont(familyName, styleName):
+    from ufoLib2.objects import Font
+    ufo = Font()
+    ufo.info.familyName = familyName
+    ufo.info.styleName = styleName
+    ufo.info.unitsPerEm = 1000
+    ufo.info.descender = -120
+    ufo.info.ascender = ufo.info.unitsPerEm + ufo.info.descender
+    return ufo
+
+
+def filterGlyphNames(glyphNames):
+    okGlyphNames = []
+    for glyphName in glyphNames:
+        try:
+            glyphName.encode("ascii")
+        except UnicodeEncodeError:
+            print(f"WARNING glyph name {glyphName} is not ASCII, and will not be exported")
+        else:
+            okGlyphNames.append(glyphName)
+    return okGlyphNames
+
+
+def getUFOLayer(ufo, layerName):
+    if layerName not in ufo.layers:
+        layer = ufo.newLayer(layerName)
+    else:
+        layer = ufo.layers[layerName]
+    return layer
+
+
+def layerNameFromLocation(location):
+    location = sorted(location.items())
+    nameParts = []
+    for name, value in location:
+        if isinstance(value, float) and value.isint():
+            value = int(value)
+        nameParts.append(f"{name}={value}")
+    return "+".join(nameParts)
 
 
 _glyphNamePat = re.compile(rb'<glyph\s+name\s*=\s*"([^"]+)"')
