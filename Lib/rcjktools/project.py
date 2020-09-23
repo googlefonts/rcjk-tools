@@ -11,6 +11,7 @@ from fontTools.pens.pointPen import SegmentToPointPen, PointToSegmentPen
 from fontTools.ufoLib.glifLib import readGlyphFromString
 from fontTools.ufoLib.filenames import userNameToFileName
 from fontTools.varLib.models import VariationModel
+from ufoLib2.objects import Font as UFont, Glyph as UGlyph
 
 
 class InterpolationError(Exception):
@@ -71,11 +72,10 @@ class RoboCJKProject:
         ufo.save(ufoPath, overwrite=True)
 
     def addFlattenedGlyphsToUFO(self, ufo, location):
-        from ufoLib2.objects import Glyph
         revCmap = self.getGlyphNamesAndUnicodes()
         glyphNames = filterGlyphNames(sorted(revCmap))
         for glyphName in glyphNames:
-            glyph = Glyph(glyphName)
+            glyph = UGlyph(glyphName)
             glyph.unicodes = revCmap[glyphName]
             pen = glyph.getPen()
             try:
@@ -87,31 +87,60 @@ class RoboCJKProject:
                 ufo[glyphName] = glyph
 
     def saveVarCoUFO(self, ufoPath, familyName, styleName):
-        from ufoLib2.objects import Glyph
         ufo = setupFont(familyName, styleName)
 
         revCmap = self.getGlyphNamesAndUnicodes()
         glyphNames = filterGlyphNames(sorted(revCmap))
         glyphNames = glyphNames[:200]  # tmp subset
         for glyphName in glyphNames:
-            rcjkGlyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
-
-            glyph = Glyph(glyphName)
-            glyph.unicodes = revCmap[glyphName]
-            glyph.width = rcjkGlyph.width
-
-            rcjkGlyph.drawPoints(glyph.getPointPen())
-            ufo[glyphName] = glyph
-            print("axes:", rcjkGlyph.axes)
-            for varRCJKGlyph in rcjkGlyph.variations:
-                print(varRCJKGlyph.location)
-
+            addRCJKGlyphToVarCoUFO(ufo, self.characterGlyphGlyphSet, glyphName, revCmap[glyphName])
         ufo.save(ufoPath, overwrite=True)
 
 
+def addRCJKGlyphToVarCoUFO(ufo, rcjkGlyphSet, glyphName, unicodes):
+    rcjkGlyph = rcjkGlyphSet.getGlyph(glyphName)
+    glyph = UGlyph(glyphName)
+    glyph.unicodes = unicodes
+    glyph.width = rcjkGlyph.width
+
+    rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph)
+
+    packedAxes = packAxes(rcjkGlyph.axes)
+    if packedAxes:
+        glyph.lib["varco.axes"] = packedAxes
+    ufo[glyphName] = glyph
+    for rcjkVarGlyph in rcjkGlyph.variations:
+        layerName = layerNameFromLocation(rcjkVarGlyph.location)
+        layer = getUFOLayer(ufo, layerName)
+        varGlyph = UGlyph(glyphName)
+        varGlyph.width = rcjkVarGlyph.width
+        rcjkGlyphToVarCoGlyph(rcjkVarGlyph, varGlyph)
+        varGlyph.lib["varco.location"] = rcjkVarGlyph.location
+        layer[glyphName] = varGlyph
+
+
+def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph):
+    pen = glyph.getPointPen()
+    rcjkGlyph.drawPoints(pen)
+    compoVarInfo = []
+    for compo in rcjkGlyph.components:
+        # (x, y, rotation, scalex, scaley, rcenterx, rcentery)
+        transform = compo.transform
+        t = (transform["scalex"], 0, 0, transform["scaley"], transform["x"], transform["y"])
+        pen.addComponent(compo.name, t)
+        varCoTransform = dict(rotation=transform["rotation"], rcenterx=transform["rcenterx"], rcentery=transform["rcentery"])
+        compoVarInfo.append(dict(coord=compo.coord, transform=varCoTransform))
+    if compoVarInfo:
+        glyph.lib["varco.components"] = compoVarInfo
+
+
+def packAxes(axes):
+    return [dict(name=axisName, minValue=minValue, maxValue=maxValue)
+            for axisName, (minValue, maxValue) in axes.items()]
+
+
 def setupFont(familyName, styleName):
-    from ufoLib2.objects import Font
-    ufo = Font()
+    ufo = UFont()
     ufo.info.familyName = familyName
     ufo.info.styleName = styleName
     ufo.info.unitsPerEm = 1000
@@ -144,7 +173,7 @@ def layerNameFromLocation(location):
     location = sorted(location.items())
     nameParts = []
     for name, value in location:
-        if isinstance(value, float) and value.isint():
+        if isinstance(value, float) and value.is_integer():
             value = int(value)
         nameParts.append(f"{name}={value}")
     return "+".join(nameParts)
@@ -245,7 +274,9 @@ class Glyph(_MathMixin):
         and variation info is unpacked here, and put into a subglyph, as part
         of the self.variations list.
         """
+        dcNames = []
         for dc in self.lib.get("robocjk.deepComponents", []):
+            dcNames.append(dc["name"])
             self.components.append(_unpackDeepComponent(dc))
 
         varKey = _getVarKey(self.lib)
@@ -273,8 +304,10 @@ class Glyph(_MathMixin):
             varGlyph.location = {axisName: 1.0}
             self.axes[axisName] = (minValue, maxValue)
 
-            for dc in varDict["content"]["deepComponents"]:
-                varGlyph.components.append(_unpackDeepComponent(dc))
+            deepComponents = varDict["content"]["deepComponents"]
+            assert len(dcNames) == len(deepComponents)
+            for dc, dcName in zip(deepComponents, dcNames):
+                varGlyph.components.append(_unpackDeepComponent(dc, dcName))
             assert len(varGlyph.components) == len(self.components)
 
             self.variations.append(varGlyph)
@@ -482,8 +515,10 @@ def makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery):
 _rcjkTransformParameters = set(makeTransform.__code__.co_varnames[:makeTransform.__code__.co_argcount])
 
 
-def _unpackDeepComponent(dc):
-    name = dc.get("name")
+def _unpackDeepComponent(dc, name=None):
+    if name is None:
+        # "name" is defined in neutral components, but is implied in variations
+        name = dc["name"]
     coord = dc["coord"]
     transform = {k: v for k, v in dc.items() if k in _rcjkTransformParameters}
     return Component(name, MathDict(coord), MathDict(transform))
