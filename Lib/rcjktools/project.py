@@ -99,7 +99,6 @@ class RoboCJKProject:
 
         revCmap = self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
         characterGlyphNames = filterGlyphNames(sorted(revCmap))
-        characterGlyphNames = characterGlyphNames[:500]  # tmp subset
 
         for glyphName in characterGlyphNames:
             addRCJKGlyphToVarCoUFO(ufo, self.characterGlyphGlyphSet, glyphName, glyphName, revCmap[glyphName])
