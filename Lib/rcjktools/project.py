@@ -89,21 +89,21 @@ class RoboCJKProject:
     def saveVarCoUFO(self, ufoPath, familyName, styleName):
         ufo = setupFont(familyName, styleName)
 
-        revCmap = self.getGlyphNamesAndUnicodes()
+        revCmap = self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
         glyphNames = filterGlyphNames(sorted(revCmap))
-        glyphNames = glyphNames[:200]  # tmp subset
+        glyphNames = glyphNames[:500]  # tmp subset
         for glyphName in glyphNames:
-            addRCJKGlyphToVarCoUFO(ufo, self.characterGlyphGlyphSet, glyphName, revCmap[glyphName])
+            addRCJKGlyphToVarCoUFO(ufo, self.characterGlyphGlyphSet, glyphName, revCmap[glyphName], {})
         ufo.save(ufoPath, overwrite=True)
 
 
-def addRCJKGlyphToVarCoUFO(ufo, rcjkGlyphSet, glyphName, unicodes):
+def addRCJKGlyphToVarCoUFO(ufo, rcjkGlyphSet, glyphName, unicodes, renameTable):
     rcjkGlyph = rcjkGlyphSet.getGlyph(glyphName)
     glyph = UGlyph(glyphName)
     glyph.unicodes = unicodes
     glyph.width = rcjkGlyph.width
 
-    rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph)
+    rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable)
 
     packedAxes = packAxes(rcjkGlyph.axes)
     if packedAxes:
@@ -114,12 +114,12 @@ def addRCJKGlyphToVarCoUFO(ufo, rcjkGlyphSet, glyphName, unicodes):
         layer = getUFOLayer(ufo, layerName)
         varGlyph = UGlyph(glyphName)
         varGlyph.width = rcjkVarGlyph.width
-        rcjkGlyphToVarCoGlyph(rcjkVarGlyph, varGlyph)
+        rcjkGlyphToVarCoGlyph(rcjkVarGlyph, varGlyph, renameTable)
         varGlyph.lib["varco.location"] = rcjkVarGlyph.location
         layer[glyphName] = varGlyph
 
 
-def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph):
+def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable):
     pen = glyph.getPointPen()
     rcjkGlyph.drawPoints(pen)
     compoVarInfo = []
@@ -135,7 +135,7 @@ def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph):
             transform["x"],
             transform["y"],
         )
-        pen.addComponent(compo.name, t)
+        pen.addComponent(renameTable.get(compo.name, compo.name), t)
         # remaining transform parameters go into varco data
         varCoTransform = dict(
             rotation=transform["rotation"],
