@@ -121,6 +121,7 @@ def getComponentNames(glyphSet, glyphNames):
             componentNames.add(dc.name)
     return componentNames
 
+
 def makeAERenameTable(glyphNames):
     renameTable = {glyphName: glyphName for glyphName in glyphNames}
     for glyphName in glyphNames:
