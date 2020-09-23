@@ -89,17 +89,56 @@ class RoboCJKProject:
     def saveVarCoUFO(self, ufoPath, familyName, styleName):
         ufo = setupFont(familyName, styleName)
 
+        dcNames = getComponentNames(
+            self.characterGlyphGlyphSet,
+            sorted(self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()),
+        )
+        ensureDCGlyphNames(dcNames)
+        aeNames = getComponentNames(self.deepComponentGlyphSet, sorted(dcNames))
+        aeRenameTable = makeAERenameTable(aeNames)
+
         revCmap = self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
-        glyphNames = filterGlyphNames(sorted(revCmap))
-        glyphNames = glyphNames[:500]  # tmp subset
-        for glyphName in glyphNames:
-            addRCJKGlyphToVarCoUFO(ufo, self.characterGlyphGlyphSet, glyphName, revCmap[glyphName], {})
+        characterGlyphNames = filterGlyphNames(sorted(revCmap))
+        characterGlyphNames = characterGlyphNames[:500]  # tmp subset
+
+        for glyphName in characterGlyphNames:
+            addRCJKGlyphToVarCoUFO(ufo, self.characterGlyphGlyphSet, glyphName, glyphName, revCmap[glyphName])
+
+        for glyphName in dcNames:
+            addRCJKGlyphToVarCoUFO(ufo, self.deepComponentGlyphSet, glyphName, glyphName, (), aeRenameTable)
+
+        for glyphName in aeNames:
+            addRCJKGlyphToVarCoUFO(ufo, self.atomicElementGlyphSet, glyphName, aeRenameTable[glyphName], ())
+
         ufo.save(ufoPath, overwrite=True)
 
 
-def addRCJKGlyphToVarCoUFO(ufo, rcjkGlyphSet, glyphName, unicodes, renameTable):
-    rcjkGlyph = rcjkGlyphSet.getGlyph(glyphName)
-    glyph = UGlyph(glyphName)
+def getComponentNames(glyphSet, glyphNames):
+    componentNames = set()
+    for glyphName in glyphNames:
+        glyph = glyphSet.getGlyph(glyphName)
+        for dc in glyph.components:
+            componentNames.add(dc.name)
+    return componentNames
+
+def makeAERenameTable(glyphNames):
+    renameTable = {glyphName: glyphName for glyphName in glyphNames}
+    for glyphName in glyphNames:
+        if not glyphName.startswith("AE_"):
+            renameTable[glyphName] = "AE_" + glyphName
+    return renameTable
+
+
+def ensureDCGlyphNames(glyphNames):
+    for glyphName in glyphNames:
+        assert glyphName.startswith("DC_"), glyphName
+
+
+def addRCJKGlyphToVarCoUFO(ufo, rcjkGlyphSet, srcGlyphName, dstGlyphName, unicodes, renameTable=None):
+    if renameTable is None:
+        renameTable = {}
+    rcjkGlyph = rcjkGlyphSet.getGlyph(srcGlyphName)
+    glyph = UGlyph(dstGlyphName)
     glyph.unicodes = unicodes
     glyph.width = rcjkGlyph.width
 
@@ -108,15 +147,15 @@ def addRCJKGlyphToVarCoUFO(ufo, rcjkGlyphSet, glyphName, unicodes, renameTable):
     packedAxes = packAxes(rcjkGlyph.axes)
     if packedAxes:
         glyph.lib["varco.axes"] = packedAxes
-    ufo[glyphName] = glyph
+    ufo[dstGlyphName] = glyph
     for rcjkVarGlyph in rcjkGlyph.variations:
         layerName = layerNameFromLocation(rcjkVarGlyph.location)
         layer = getUFOLayer(ufo, layerName)
-        varGlyph = UGlyph(glyphName)
+        varGlyph = UGlyph(dstGlyphName)
         varGlyph.width = rcjkVarGlyph.width
         rcjkGlyphToVarCoGlyph(rcjkVarGlyph, varGlyph, renameTable)
         varGlyph.lib["varco.location"] = rcjkVarGlyph.location
-        layer[glyphName] = varGlyph
+        layer[dstGlyphName] = varGlyph
 
 
 def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable):
