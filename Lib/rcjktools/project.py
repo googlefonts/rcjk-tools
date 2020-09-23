@@ -309,10 +309,10 @@ class _MathMixin:
         return self._doBinaryOperator(other, operator.sub)
 
     def __mul__(self, scalar):
-        return self._doUnaryOperator(scalar, operator.mul)
+        return self._doBinaryOperatorScalar(scalar, operator.mul)
 
     def __rmul__(self, scalar):
-        return self._doUnaryOperator(scalar, operator.mul)
+        return self._doBinaryOperatorScalar(scalar, operator.mul)
 
 
 class Glyph(_MathMixin):
@@ -396,7 +396,7 @@ class Glyph(_MathMixin):
         location = normalizeLocation(location, self.axes)
         return self.model.interpolateFromDeltas(location, self.deltas)
 
-    def _doUnaryOperator(self, scalar, op):
+    def _doBinaryOperatorScalar(self, scalar, op):
         result = Glyph()
         result.name = self.name
         result.unicodes = self.unicodes
@@ -466,7 +466,7 @@ class Component(NamedTuple):
 
 class MathDict(dict, _MathMixin):
 
-    def _doUnaryOperator(self, scalar, op):
+    def _doBinaryOperatorScalar(self, scalar, op):
         result = MathDict()
         for k, v in self.items():
             if isinstance(v, (int, float)):
@@ -523,7 +523,7 @@ class MathOutline(RecordingPointPen, _MathMixin):
                 assert False, f"unsupported method: {m}"
         return result
 
-    def _doUnaryOperator(self, scalar, op):
+    def _doBinaryOperatorScalar(self, scalar, op):
         def func(pt):
             x, y = pt
             return op(x, scalar), op(y, scalar)
