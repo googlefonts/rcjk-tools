@@ -160,28 +160,31 @@ class GlyphSet:
         self._path = path
         self._glyphs = {}
         self._layers = {}
+        self._revCmap = None
 
     def getGlyphNamesAndUnicodes(self):
-        glyphNames = {}
-        for path in self._path.glob("*.glif"):
-            with open(path, "rb") as f:
-                # assuming all unicodes are in the first 1024 bytes of the file
-                data = f.read(1024)
-            m = _glyphNamePat.search(data)
-            if m is None:
-                raise ValueError(
-                    f"invalid .glif file, glyph name not found ({path})"
-                )
-            glyphName = m.group(1).decode("utf-8")
-            refFileName = userNameToFileName(glyphName, suffix=".glif")
-            if refFileName != path.name:
-                logging.warning(
-                    f"actual file name does not match predicted file name: "
-                    f"{refFileName} {path.name} {glyphName}"
-                )
-            unicodes = [int(u, 16) for u in _unicodePat.findall(data)]
-            glyphNames[glyphName] = unicodes
-        return glyphNames
+        if self._revCmap is None:
+            glyphNames = {}
+            for path in self._path.glob("*.glif"):
+                with open(path, "rb") as f:
+                    # assuming all unicodes are in the first 1024 bytes of the file
+                    data = f.read(1024)
+                m = _glyphNamePat.search(data)
+                if m is None:
+                    raise ValueError(
+                        f"invalid .glif file, glyph name not found ({path})"
+                    )
+                glyphName = m.group(1).decode("utf-8")
+                refFileName = userNameToFileName(glyphName, suffix=".glif")
+                if refFileName != path.name:
+                    logging.warning(
+                        f"actual file name does not match predicted file name: "
+                        f"{refFileName} {path.name} {glyphName}"
+                    )
+                unicodes = [int(u, 16) for u in _unicodePat.findall(data)]
+                glyphNames[glyphName] = unicodes
+            self._revCmap = glyphNames
+        return self._revCmap
 
     def __contains__(self, glyphName):
         if glyphName in self._glyphs:
