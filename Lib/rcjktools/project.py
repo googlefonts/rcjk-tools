@@ -93,8 +93,10 @@ class RoboCJKProject:
             self.characterGlyphGlyphSet,
             sorted(self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()),
         )
+        # check whether all DC glyphnames start with "DC_"
         ensureDCGlyphNames(dcNames)
         aeNames = getComponentNames(self.deepComponentGlyphSet, sorted(dcNames))
+        # rename all AE glyph names so they start with "AE_"
         aeRenameTable = makeAERenameTable(aeNames)
 
         revCmap = self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
