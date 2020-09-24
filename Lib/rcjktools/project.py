@@ -7,6 +7,7 @@ import pathlib
 
 from fontTools.misc.transform import Transform
 from fontTools.pens.recordingPen import RecordingPointPen
+from fontTools.pens.roundingPen import RoundingPen
 from fontTools.pens.pointPen import SegmentToPointPen, PointToSegmentPen
 from fontTools.ufoLib.glifLib import readGlyphFromString
 from fontTools.ufoLib.filenames import userNameToFileName
@@ -20,11 +21,12 @@ class InterpolationError(Exception):
 
 class RoboCJKProject:
 
-    def __init__(self, path):
+    def __init__(self, path, scaleUsesCenter=False):
         self._path = pathlib.Path(path)
-        self.characterGlyphGlyphSet = GlyphSet(self._path / "characterGlyph")
-        self.deepComponentGlyphSet = GlyphSet(self._path / "deepComponent")
-        self.atomicElementGlyphSet = GlyphSet(self._path / "atomicElement")
+        self.characterGlyphGlyphSet = GlyphSet(self._path / "characterGlyph", scaleUsesCenter=scaleUsesCenter)
+        self.deepComponentGlyphSet = GlyphSet(self._path / "deepComponent", scaleUsesCenter=scaleUsesCenter)
+        self.atomicElementGlyphSet = GlyphSet(self._path / "atomicElement", scaleUsesCenter=scaleUsesCenter)
+        self._scaleUsesCenter = scaleUsesCenter
 
     def getGlyphNamesAndUnicodes(self):
         return self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
@@ -44,7 +46,7 @@ class RoboCJKProject:
         for component in glyph.components:
             deepItem = self.instantiateDeepComponent(
                 component.name, component.coord,
-                makeTransform(**component.transform),
+                makeTransform(**component.transform, scaleUsesCenter=self._scaleUsesCenter),
             )
             deepItems.append((component.name, deepItem))
         return glyph.outline, deepItems, glyph.width
@@ -54,7 +56,7 @@ class RoboCJKProject:
         glyph = glyph.instantiate(location)
         atomicOutlines = []
         for component in glyph.components:
-            t = transform.transform(makeTransform(**component.transform))
+            t = transform.transform(makeTransform(**component.transform, scaleUsesCenter=self._scaleUsesCenter))
             atomicOutline = self.instantiateAtomicElement(
                 component.name, component.coord, t,
             )
@@ -77,7 +79,7 @@ class RoboCJKProject:
         for glyphName in glyphNames:
             glyph = UGlyph(glyphName)
             glyph.unicodes = revCmap[glyphName]
-            pen = glyph.getPen()
+            pen = RoundingPen(glyph.getPen())
             try:
                 width = self.drawCharacterGlyph(glyphName, location, pen)
             except InterpolationError as e:
@@ -243,11 +245,12 @@ _unicodePat = re.compile(rb'<unicode\s+hex\s*=\s*"([^"]+)"')
 
 class GlyphSet:
 
-    def __init__(self, path):
+    def __init__(self, path, scaleUsesCenter=False):
         self._path = path
         self._glyphs = {}
         self._layers = {}
         self._revCmap = None
+        self._scaleUsesCenter = scaleUsesCenter
 
     def getGlyphNamesAndUnicodes(self):
         if self._revCmap is None:
@@ -284,7 +287,7 @@ class GlyphSet:
         glyph = self._glyphs.get(glyphName)
         if glyph is None:
             fileName = userNameToFileName(glyphName, suffix=".glif")
-            glyph = parseGlyph(self._path / fileName)
+            glyph = parseGlyph(self._path / fileName, scaleUsesCenter=self._scaleUsesCenter)
             glyph._postParse(self)
             self._glyphs[glyphName] = glyph
         return glyph
@@ -292,7 +295,7 @@ class GlyphSet:
     def getLayer(self, layerName):
         layer = self._layers.get(layerName)
         if layer is None:
-            layer = GlyphSet(self._path / layerName)
+            layer = GlyphSet(self._path / layerName, scaleUsesCenter=self._scaleUsesCenter)
             self._layers[layerName] = layer
         return layer
 
@@ -314,7 +317,8 @@ class _MathMixin:
 
 class Glyph(_MathMixin):
 
-    def __init__(self):
+    def __init__(self, scaleUsesCenter=False):
+        self._scaleUsesCenter = scaleUsesCenter  # temporary switch
         self.name = None
         self.width = 0
         self.unicodes = []
@@ -335,7 +339,7 @@ class Glyph(_MathMixin):
         dcNames = []
         for dc in self.lib.get("robocjk.deepComponents", []):
             dcNames.append(dc["name"])
-            self.components.append(_unpackDeepComponent(dc))
+            self.components.append(_unpackDeepComponent(dc, scaleUsesCenter=self._scaleUsesCenter))
 
         varKey = _getVarKey(self.lib)
         if varKey is None:
@@ -352,11 +356,11 @@ class Glyph(_MathMixin):
                 else:
                     # Layer glyph does not exist, make one up by copying
                     # self.width and self.outline
-                    varGlyph = Glyph()
+                    varGlyph = Glyph(scaleUsesCenter=self._scaleUsesCenter)
                     varGlyph.width = self.width
                     varGlyph.outline = self.outline
             else:
-                varGlyph = Glyph()
+                varGlyph = Glyph(scaleUsesCenter=self._scaleUsesCenter)
                 varGlyph.width = self.width
 
             varGlyph.location = {axisName: 1.0}
@@ -365,7 +369,7 @@ class Glyph(_MathMixin):
             deepComponents = varDict["content"]["deepComponents"]
             assert len(dcNames) == len(deepComponents)
             for dc, dcName in zip(deepComponents, dcNames):
-                varGlyph.components.append(_unpackDeepComponent(dc, dcName))
+                varGlyph.components.append(_unpackDeepComponent(dc, dcName, scaleUsesCenter=self._scaleUsesCenter))
             assert len(varGlyph.components) == len(self.components)
 
             self.variations.append(varGlyph)
@@ -394,7 +398,7 @@ class Glyph(_MathMixin):
         return self.model.interpolateFromDeltas(location, self.deltas)
 
     def _doBinaryOperatorScalar(self, scalar, op):
-        result = Glyph()
+        result = Glyph(scaleUsesCenter=self._scaleUsesCenter)
         result.name = self.name
         result.unicodes = self.unicodes
         result.width = op(self.width, scalar)
@@ -403,7 +407,7 @@ class Glyph(_MathMixin):
         return result
 
     def _doBinaryOperator(self, other, op):
-        result = Glyph()
+        result = Glyph(scaleUsesCenter=self._scaleUsesCenter)
         result.name = self.name
         result.unicodes = self.unicodes
         result.width = op(self.width, other.width)
@@ -550,35 +554,47 @@ class MathOutline(RecordingPointPen, _MathMixin):
         return result
 
 
-def parseGlyph(p):
+def parseGlyph(p, scaleUsesCenter=False):
     with open(p) as f:
         data = f.read()
-    g = Glyph()
+    g = Glyph(scaleUsesCenter=scaleUsesCenter)
     readGlyphFromString(data, g, g.getPointPen())
     return g
 
 
-def makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery):
+def makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery, scaleUsesCenter=False):
     rotation = math.radians(rotation)
-    rcenterx *= scalex
-    rcentery *= scaley
-    t = Transform()
-    t = t.translate(x + rcenterx, y + rcentery)
-    t = t.rotate(rotation)
-    t = t.translate(-rcenterx, -rcentery)
-    t = t.scale(scalex, scaley)
+    if not scaleUsesCenter:
+        rcenterx *= scalex
+        rcentery *= scaley
+        t = Transform()
+        t = t.translate(x + rcenterx, y + rcentery)
+        t = t.rotate(rotation)
+        t = t.translate(-rcenterx, -rcentery)
+        t = t.scale(scalex, scaley)
+    else:
+        t = Transform()
+        t = t.translate(x + rcenterx, y + rcentery)
+        t = t.rotate(rotation)
+        t = t.scale(scalex, scaley)
+        t = t.translate(-rcenterx, -rcentery)
     return t
 
 
 _rcjkTransformParameters = set(makeTransform.__code__.co_varnames[:makeTransform.__code__.co_argcount])
 
 
-def _unpackDeepComponent(dc, name=None):
+def _unpackDeepComponent(dc, name=None, scaleUsesCenter=False):
     if name is None:
         # "name" is defined in neutral components, but is implied in variations
         name = dc["name"]
     coord = dc["coord"]
     transform = {k: v for k, v in dc.items() if k in _rcjkTransformParameters}
+    if scaleUsesCenter:
+        # abscenterx, abscentery = (x + rcenterx * scalex, y + rcentery * scaley)
+        # newx, newy = abscenterx - rcenterx, abscentery - rcentery
+        transform["x"] = transform["x"] + (transform["scalex"] - 1) * transform["rcenterx"]
+        transform["y"] = transform["y"] + (transform["scaley"] - 1) * transform["rcentery"]
     return Component(name, MathDict(coord), MathDict(transform))
 
 
