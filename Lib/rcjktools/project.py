@@ -95,6 +95,9 @@ class RoboCJKProject:
                 ufo[glyphName] = glyph
 
     def saveVarCoUFO(self, ufoPath, familyName, styleName):
+        """Save a UFO with Variable Components glyph.lib extensions."""
+        # NOTE: this has quite a few GS-CJK assumptions that may or may
+        # not be fair for RoboCJK projects in general.
         ufo = setupFont(familyName, styleName)
 
         revCmap = self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
