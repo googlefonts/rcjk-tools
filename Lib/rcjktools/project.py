@@ -349,7 +349,7 @@ class Glyph(_MathMixin):
             layerName = varDict["layerName"]
             minValue = varDict["minValue"]
             maxValue = varDict["maxValue"]
-            if not self.outline.isEmpty():
+            if not self.outline.isEmpty() and layerName:
                 layer = glyphSet.getLayer(layerName)
                 if self.name in layer:
                     varGlyph = layer.getGlyph(self.name)
