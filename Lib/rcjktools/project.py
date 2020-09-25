@@ -7,7 +7,7 @@ import pathlib
 
 from fontTools.misc.transform import Transform
 from fontTools.pens.recordingPen import RecordingPointPen
-from fontTools.pens.roundingPen import RoundingPen
+from fontTools.pens.roundingPen import RoundingPointPen
 from fontTools.pens.pointPen import SegmentToPointPen, PointToSegmentPen
 from fontTools.ufoLib.glifLib import readGlyphFromString
 from fontTools.ufoLib.filenames import userNameToFileName
@@ -31,12 +31,12 @@ class RoboCJKProject:
     def getGlyphNamesAndUnicodes(self):
         return self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
 
-    def drawCharacterGlyph(self, glyphName, location, pen):
+    def drawPointsCharacterGlyph(self, glyphName, location, pen):
         outline, dcItems, width = self.instantiateCharacterGlyph(glyphName, location)
-        outline.draw(pen)
+        outline.drawPoints(pen)
         for dcName, atomicElements in dcItems:
             for aeName, atomicOutline in atomicElements:
-                atomicOutline.draw(pen)
+                atomicOutline.drawPoints(pen)
         return width
 
     def instantiateCharacterGlyph(self, glyphName, location):
@@ -79,9 +79,9 @@ class RoboCJKProject:
         for glyphName in glyphNames:
             glyph = UGlyph(glyphName)
             glyph.unicodes = revCmap[glyphName]
-            pen = RoundingPen(glyph.getPen())
+            pen = RoundingPointPen(glyph.getPointPen())
             try:
-                width = self.drawCharacterGlyph(glyphName, location, pen)
+                width = self.drawPointsCharacterGlyph(glyphName, location, pen)
             except InterpolationError as e:
                 print(f"glyph {glyphName} can't be interpolated ({e})")
             else:
