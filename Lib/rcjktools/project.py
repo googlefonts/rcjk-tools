@@ -68,18 +68,24 @@ class RoboCJKProject:
         glyph = glyph.instantiate(location)
         return glyph.outline.transform(transform)
 
-    def saveFlattenedUFO(self, ufoPath, location, familyName, styleName):
+    def saveFlattenedUFO(self, ufoPath, location, familyName, styleName, numDecimalsRounding=0):
         ufo = setupFont(familyName, styleName)
-        self.addFlattenedGlyphsToUFO(ufo, location)
+        self.addFlattenedGlyphsToUFO(ufo, location, numDecimalsRounding)
         ufo.save(ufoPath, overwrite=True)
 
-    def addFlattenedGlyphsToUFO(self, ufo, location):
+    def addFlattenedGlyphsToUFO(self, ufo, location, numDecimalsRounding=0):
         revCmap = self.getGlyphNamesAndUnicodes()
         glyphNames = filterGlyphNames(sorted(revCmap))
         for glyphName in glyphNames:
             glyph = UGlyph(glyphName)
             glyph.unicodes = revCmap[glyphName]
-            pen = RoundingPointPen(glyph.getPointPen())
+            if numDecimalsRounding == 1:
+                roundFunc = roundFuncOneDecimal
+            elif numDecimalsRounding != 0:
+                assert 0, numDecimalsRounding
+            else:
+                roundFunc = None
+            pen = RoundingPointPen(glyph.getPointPen(), roundFunc)
             try:
                 width = self.drawPointsCharacterGlyph(glyphName, location, pen)
             except InterpolationError as e:
@@ -111,6 +117,16 @@ class RoboCJKProject:
             addRCJKGlyphToVarCoUFO(ufo, self.atomicElementGlyphSet, glyphName, aeRenameTable[glyphName], ())
 
         ufo.save(ufoPath, overwrite=True)
+
+
+def roundFuncOneDecimal(value):
+    """When exporting flat UFOs, keep a limited amount of fractional digits."""
+    value = round(value, 1)
+    i = int(value)
+    if i == value:
+        return i
+    else:
+        return value
 
 
 def getComponentNames(glyphSet, glyphNames):
