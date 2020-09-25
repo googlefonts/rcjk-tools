@@ -584,6 +584,22 @@ def makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery, scaleUsesC
 _rcjkTransformParameters = set(makeTransform.__code__.co_varnames[:makeTransform.__code__.co_argcount])
 
 
+def recenterTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery, newrcenterx, newrcentery):
+    """Take a set of transformation parameters, new values for rcenterx and rcentery, and it will
+    return new values for x and y, so that
+
+        t1 = makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery)
+        t2 = makeTransform(newx, newy, rotation, scalex, scaley, newrcenterx, newrcentery)
+
+    return the same transformation (bar floating point rounding errors).
+    """
+    t = makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery)
+    tmp = makeTransform(x, y, rotation, scalex, scaley, newrcenterx, newrcentery)
+    newx = x + t[4] - tmp[4]
+    newy = y + t[5] - tmp[5]
+    return newx, newy
+
+
 def _unpackDeepComponent(dc, name=None, scaleUsesCenter=False):
     if name is None:
         # "name" is defined in neutral components, but is implied in variations
