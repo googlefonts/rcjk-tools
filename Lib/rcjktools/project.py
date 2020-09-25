@@ -597,7 +597,7 @@ def makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery, scaleUsesC
     return t
 
 
-_rcjkTransformParameters = set(makeTransform.__code__.co_varnames[:makeTransform.__code__.co_argcount])
+_rcjkTransformParameters = {"x", "y", "rotation", "scalex", "scaley", "rcenterx", "rcentery"}
 
 
 def recenterTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery, newrcenterx, newrcentery):
