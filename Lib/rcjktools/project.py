@@ -431,15 +431,15 @@ class Glyph(_MathMixin):
         return result
 
 
-def normalizeValue(value, minValue, maxValue):
-    assert minValue < maxValue
-    return (value - minValue) / (maxValue - minValue)
-
-
 def normalizeLocation(location, axes):
     location = {axisName: normalizeValue(v, *axes.get(axisName, (0, 1)))
                 for axisName, v in location.items()}
     return _clampLocation(location)
+
+
+def normalizeValue(value, minValue, maxValue):
+    assert minValue < maxValue
+    return (value - minValue) / (maxValue - minValue)
 
 
 def _clampLocation(d):
