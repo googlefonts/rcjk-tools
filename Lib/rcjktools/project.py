@@ -641,6 +641,23 @@ def recenterTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery, newrce
     return newx, newy
 
 
+def convertOffsetFromRCenterToTCenter(x, y, rotation, scalex, scaley, rcenterx, rcentery):
+    """Take a set of transformation parameters that use a center only for rotation,
+    and return the new x, y offset for the equivalent transform that uses a center
+    for rotation and scaling, so that
+
+        t1 = makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery)
+        t2 = makeTransform(newx, newy, rotation, scalex, scaley, rcenterx, rcentery, scaleUsesCenter=True)
+
+    return the same transformation (bar floating point rounding errors).
+    """
+    t = makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery)
+    tmp = makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery, scaleUsesCenter=True)
+    newx = x + t[4] - tmp[4]
+    newy = y + t[5] - tmp[5]
+    return newx, newy
+
+
 if __name__ == "__main__":
     # DrawBot test snippet
     from drawBot import BezierPath, translate, scale, fill, stroke, drawPath
