@@ -642,9 +642,9 @@ def recenterTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery, newrce
 
 
 def convertOffsetFromRCenterToTCenter(x, y, rotation, scalex, scaley, rcenterx, rcentery):
-    """Take a set of transformation parameters that use a center only for rotation,
-    and return the new x, y offset for the equivalent transform that uses a center
-    for rotation and scaling, so that
+    """Take a set of transformation parameters that use a center only for rotation
+    ("rcenter"), and return the new x, y offset for the equivalent transform that
+    uses a center for rotation and scaling ("tcenter"), so that
 
         t1 = makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery)
         t2 = makeTransform(newx, newy, rotation, scalex, scaley, rcenterx, rcentery, scaleUsesCenter=True)
