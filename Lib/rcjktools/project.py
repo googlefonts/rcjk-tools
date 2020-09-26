@@ -5,6 +5,7 @@ from typing import NamedTuple
 import operator
 import pathlib
 
+from fontTools.misc.fixedTools import otRound
 from fontTools.misc.transform import Transform
 from fontTools.pens.recordingPen import RecordingPointPen
 from fontTools.pens.roundingPen import RoundingPointPen
@@ -84,7 +85,7 @@ class RoboCJKProject:
             elif numDecimalsRounding != 0:
                 assert 0, numDecimalsRounding
             else:
-                roundFunc = None
+                roundFunc = otRound
             pen = RoundingPointPen(glyph.getPointPen(), roundFunc)
             try:
                 width = self.drawPointsCharacterGlyph(glyphName, location, pen)
