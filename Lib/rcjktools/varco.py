@@ -1,9 +1,10 @@
 import math
+from fontTools.misc.transform import Transform
 from fontTools.pens.filterPen import FilterPointPen
 from fontTools.varLib.models import VariationModel
 from ufoLib2 import Font as UFont
 from .objects import Component, Glyph, MathDict, MathOutline
-from .utils import decomposeTwoByTwo
+from .utils import decomposeTwoByTwo, makeTransformVarCo
 
 
 class VarCoGlyph(Glyph):
@@ -66,6 +67,19 @@ class VarCoFont:
     def __init__(self, ufoPath):
         self.ufont = UFont(ufoPath)
         self.varcoGlyphs = {}
+
+    def drawPointsGlyph(self, pen, glyphName, location, transform=None):
+        g = self[glyphName]
+        ig = g.instantiate(location)
+        outline = ig.outline
+        if transform is not None:
+            outline = outline.transform(transform)
+        else:
+            transform = Transform()
+        outline.drawPoints(pen)
+        for component in ig.components:
+            t = transform.transform(makeTransformVarCo(**component.transform))
+            self.drawPointsGlyph(pen, component.name, component.coord, t)
 
     def keys(self):
         return self.ufont.keys()
