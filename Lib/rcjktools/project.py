@@ -334,11 +334,11 @@ class RCJKGlyph(Glyph):
                 else:
                     # Layer glyph does not exist, make one up by copying
                     # self.width and self.outline
-                    varGlyph = Glyph(scaleUsesCenter=self._scaleUsesCenter)
+                    varGlyph = self.__class__(scaleUsesCenter=self._scaleUsesCenter)
                     varGlyph.width = self.width
                     varGlyph.outline = self.outline
             else:
-                varGlyph = Glyph(scaleUsesCenter=self._scaleUsesCenter)
+                varGlyph = self.__class__(scaleUsesCenter=self._scaleUsesCenter)
                 varGlyph.width = self.width
 
             varGlyph.location = {axisName: 1.0}
