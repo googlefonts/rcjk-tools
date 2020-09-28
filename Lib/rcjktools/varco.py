@@ -74,11 +74,11 @@ class VarCoFont:
         outline = ig.outline
         if transform is not None:
             outline = outline.transform(transform)
-        else:
-            transform = Transform()
         outline.drawPoints(pen)
         for component in ig.components:
-            t = transform.transform(makeTransformVarCo(**component.transform))
+            t = makeTransformVarCo(**component.transform)
+            if transform is not None:
+                t = transform.transform(t)
             self.drawPointsGlyph(pen, component.name, component.coord, t)
 
     def keys(self):
