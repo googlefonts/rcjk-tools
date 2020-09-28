@@ -21,6 +21,16 @@ def makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery, scaleUsesC
     return t
 
 
+def makeTransformVarCo(x, y, rotation, scalex, scaley, skewx, skewy, tcenterx, tcentery):
+    t = Transform()
+    t = t.translate(x + tcenterx, y + tcentery)
+    t = t.rotate(math.radians(rotation))
+    t = t.scale(scalex, scaley)
+    t = t.skew(math.radians(skewx), math.radians(skewy))
+    t = t.translate(-tcenterx, -tcentery)
+    return t
+
+
 def recenterTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery, newrcenterx, newrcentery):
     """Take a set of transformation parameters, new values for rcenterx and rcentery, and it will
     return new values for x and y, so that
