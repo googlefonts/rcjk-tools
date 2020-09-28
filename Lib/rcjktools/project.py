@@ -6,13 +6,11 @@ import pathlib
 from fontTools.misc.fixedTools import otRound
 from fontTools.misc.transform import Transform
 from fontTools.pens.roundingPen import RoundingPointPen
-from fontTools.pens.pointPen import SegmentToPointPen
-from fontTools.ufoLib.glifLib import readGlyphFromString
 from fontTools.ufoLib.filenames import userNameToFileName
 from fontTools.varLib.models import VariationModel
 from ufoLib2.objects import Font as UFont, Glyph as UGlyph
 
-from .objects import _MathMixin, Component, InterpolationError, MathDict, MathOutline
+from .objects import Component, Glyph, InterpolationError, MathDict
 
 
 class RoboCJKProject:
@@ -296,7 +294,7 @@ class GlyphSet:
         glyph = self._glyphs.get(glyphName)
         if glyph is None:
             fileName = userNameToFileName(glyphName, suffix=".glif")
-            glyph = parseGlyph(self._path / fileName, scaleUsesCenter=self._scaleUsesCenter)
+            glyph = RCJKGlyph.loadFromGLIF(self._path / fileName, scaleUsesCenter=self._scaleUsesCenter)
             glyph._postParse(self)
             self._glyphs[glyphName] = glyph
         return glyph
@@ -309,21 +307,7 @@ class GlyphSet:
         return layer
 
 
-class Glyph(_MathMixin):
-
-    def __init__(self, scaleUsesCenter=False):
-        self._scaleUsesCenter = scaleUsesCenter  # temporary switch
-        self.name = None
-        self.width = 0
-        self.unicodes = []
-        self.outline = MathOutline()
-        self.components = []
-        self.lib = {}
-        self.location = {}  # neutral
-        self.axes = {}
-        self.variations = []
-        self.model = None
-        self.deltas = None
+class RCJKGlyph(Glyph):
 
     def _postParse(self, glyphSet):
         """This gets called soon after parsing the .glif file. Any layer glyphs
@@ -370,70 +354,6 @@ class Glyph(_MathMixin):
 
         locations = [{}] + [variation.location for variation in self.variations]
         self.model = VariationModel(locations)
-
-    def getPointPen(self):
-        return self.outline
-
-    def getPen(self):
-        return SegmentToPointPen(self.outline)
-
-    def drawPoints(self, pen):
-        self.outline.drawPoints(pen)
-
-    def draw(self, pen):
-        self.outline.draw(pen)
-
-    def instantiate(self, location):
-        if self.model is None:
-            return self  # XXX raise error?
-        if self.deltas is None:
-            self.deltas = self.model.getDeltas([self] + self.variations)
-        location = normalizeLocation(location, self.axes)
-        return self.model.interpolateFromDeltas(location, self.deltas)
-
-    def _doBinaryOperatorScalar(self, scalar, op):
-        result = Glyph(scaleUsesCenter=self._scaleUsesCenter)
-        result.name = self.name
-        result.unicodes = self.unicodes
-        result.width = op(self.width, scalar)
-        result.outline = op(self.outline, scalar)
-        result.components = [op(compo, scalar) for compo in self.components]
-        return result
-
-    def _doBinaryOperator(self, other, op):
-        result = Glyph(scaleUsesCenter=self._scaleUsesCenter)
-        result.name = self.name
-        result.unicodes = self.unicodes
-        result.width = op(self.width, other.width)
-        result.outline = op(self.outline, other.outline)
-        result.components = [
-            op(compo1, compo2)
-            for compo1, compo2 in zip(self.components, other.components)
-        ]
-        return result
-
-
-def normalizeLocation(location, axes):
-    location = {axisName: normalizeValue(v, *axes.get(axisName, (0, 1)))
-                for axisName, v in location.items()}
-    return _clampLocation(location)
-
-
-def normalizeValue(value, minValue, maxValue):
-    assert minValue < maxValue
-    return (value - minValue) / (maxValue - minValue)
-
-
-def _clampLocation(d):
-    return {k: min(1, max(0, v)) for k, v in d.items()}
-
-
-def parseGlyph(p, scaleUsesCenter=False):
-    with open(p) as f:
-        data = f.read()
-    g = Glyph(scaleUsesCenter=scaleUsesCenter)
-    readGlyphFromString(data, g, g.getPointPen())
-    return g
 
 
 def makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery, scaleUsesCenter=False):
