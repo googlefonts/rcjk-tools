@@ -101,8 +101,8 @@ class ComponentCollector(FilterPointPen):
     """
 
     def __init__(self, outPen):
-        self.components = []
         super().__init__(outPen)
+        self.components = []
 
     def addComponent(self, glyphName, transformation, **kwargs):
         self.components.append((glyphName, transformation))
