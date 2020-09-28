@@ -294,8 +294,8 @@ class GlyphSet:
         glyph = self._glyphs.get(glyphName)
         if glyph is None:
             fileName = userNameToFileName(glyphName, suffix=".glif")
-            glyph = RCJKGlyph.loadFromGLIF(self._path / fileName, scaleUsesCenter=self._scaleUsesCenter)
-            glyph._postParse(self)
+            glyph = RCJKGlyph.loadFromGLIF(self._path / fileName)
+            glyph._postParse(self, scaleUsesCenter=self._scaleUsesCenter)
             self._glyphs[glyphName] = glyph
         return glyph
 
@@ -309,7 +309,7 @@ class GlyphSet:
 
 class RCJKGlyph(Glyph):
 
-    def _postParse(self, glyphSet):
+    def _postParse(self, glyphSet, scaleUsesCenter=False):
         """This gets called soon after parsing the .glif file. Any layer glyphs
         and variation info is unpacked here, and put into a subglyph, as part
         of the self.variations list.
@@ -317,7 +317,7 @@ class RCJKGlyph(Glyph):
         dcNames = []
         for dc in self.lib.get("robocjk.deepComponents", []):
             dcNames.append(dc["name"])
-            self.components.append(_unpackDeepComponent(dc, scaleUsesCenter=self._scaleUsesCenter))
+            self.components.append(_unpackDeepComponent(dc, scaleUsesCenter=scaleUsesCenter))
 
         varKey = _getVarKey(self.lib)
         if varKey is None:
@@ -334,11 +334,11 @@ class RCJKGlyph(Glyph):
                 else:
                     # Layer glyph does not exist, make one up by copying
                     # self.width and self.outline
-                    varGlyph = self.__class__(scaleUsesCenter=self._scaleUsesCenter)
+                    varGlyph = self.__class__()
                     varGlyph.width = self.width
                     varGlyph.outline = self.outline
             else:
-                varGlyph = self.__class__(scaleUsesCenter=self._scaleUsesCenter)
+                varGlyph = self.__class__()
                 varGlyph.width = self.width
 
             varGlyph.location = {axisName: 1.0}
@@ -347,7 +347,7 @@ class RCJKGlyph(Glyph):
             deepComponents = varDict["content"]["deepComponents"]
             assert len(dcNames) == len(deepComponents)
             for dc, dcName in zip(deepComponents, dcNames):
-                varGlyph.components.append(_unpackDeepComponent(dc, dcName, scaleUsesCenter=self._scaleUsesCenter))
+                varGlyph.components.append(_unpackDeepComponent(dc, dcName, scaleUsesCenter=scaleUsesCenter))
             assert len(varGlyph.components) == len(self.components)
 
             self.variations.append(varGlyph)
