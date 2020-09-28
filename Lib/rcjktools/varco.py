@@ -70,6 +70,10 @@ class VarCoFont:
 
 class ComponentCollector(FilterPointPen):
 
+    """This pen passes all outline data on to the outPen, and
+    stores component data in a list.
+    """
+
     def __init__(self, outPen):
         self.components = []
         super().__init__(outPen)
@@ -83,3 +87,9 @@ if __name__ == "__main__":
     ufoPath = sys.argv[1]
     vcFont = VarCoFont(ufoPath)
     g = vcFont.getGlyph("DC_5927_03")
+    print(g.components)
+    print(g.axes)
+    x = g + 0.5 * (g.variations[0] - g)
+    print(g.components[-1].transform)
+    print(x.components[-1].transform)
+    print(g.variations[0].components[-1].transform)
