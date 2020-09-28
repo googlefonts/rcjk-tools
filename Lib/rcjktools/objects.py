@@ -28,8 +28,8 @@ class _MathMixin:
 class Glyph(_MathMixin):
 
     @classmethod
-    def loadFromGLIF(cls, p, scaleUsesCenter=False):
-        with open(p) as f:
+    def loadFromGLIF(cls, glifPath, scaleUsesCenter=False):
+        with open(glifPath) as f:
             data = f.read()
         self = cls(scaleUsesCenter=scaleUsesCenter)
         readGlyphFromString(data, self, self.getPointPen())
@@ -70,7 +70,7 @@ class Glyph(_MathMixin):
         return self.model.interpolateFromDeltas(location, self.deltas)
 
     def _doBinaryOperatorScalar(self, scalar, op):
-        result = Glyph(scaleUsesCenter=self._scaleUsesCenter)
+        result = self.__class__(scaleUsesCenter=self._scaleUsesCenter)
         result.name = self.name
         result.unicodes = self.unicodes
         result.width = op(self.width, scalar)
@@ -79,7 +79,7 @@ class Glyph(_MathMixin):
         return result
 
     def _doBinaryOperator(self, other, op):
-        result = Glyph(scaleUsesCenter=self._scaleUsesCenter)
+        result = self.__class__(scaleUsesCenter=self._scaleUsesCenter)
         result.name = self.name
         result.unicodes = self.unicodes
         result.width = op(self.width, other.width)
