@@ -67,12 +67,31 @@ class VarCoFont:
         self.ufont = UFont(ufoPath)
         self.varcoGlyphs = {}
 
-    def getGlyph(self, glyphName):
+    def keys(self):
+        return self.ufont.keys()
+
+    def __contains__(self, glyphName):
+        return glyphName in self.ufont
+
+    def __len__(self):
+        return len(self.ufont)
+
+    def __iter__(self):
+        return iter(self.ufont.keys())
+
+    def __getitem__(self, glyphName):
         varcoGlyph = self.varcoGlyphs.get(glyphName)
         if varcoGlyph is None:
             varcoGlyph = VarCoGlyph.loadFromUFont(self.ufont, glyphName)
             self.varcoGlyphs[glyphName] = varcoGlyph
         return varcoGlyph
+
+    def get(self, glyphName, default=None):
+        try:
+            glyph = self[glyphName]
+        except KeyError:
+            glyph = default
+        return glyph
 
 
 class ComponentCollector(FilterPointPen):
@@ -93,10 +112,14 @@ if __name__ == "__main__":
     import sys
     ufoPath = sys.argv[1]
     vcFont = VarCoFont(ufoPath)
-    g = vcFont.getGlyph("DC_5927_03")
+    g = vcFont["DC_5927_03"]
     print(g.components)
     print(g.axes)
     x = g + 0.5 * (g.variations[0] - g)
     print(g.components[-1].transform)
     print(x.components[-1].transform)
     print(g.variations[0].components[-1].transform)
+    print(list(vcFont.keys())[:100])
+    print("AE_PieZhe" in vcFont)
+    # for x in vcFont:
+    #     print(x)
