@@ -39,6 +39,7 @@ class Glyph(_MathMixin):
     def loadFromGlyphObject(cls, glyphObject):
         # glyphObject is a ufoLib2 Glyph object (or defcon)
         self = cls()
+        self.name = glyphObject.name
         glyphObject.drawPoints(self.getPointPen())
         self.width = glyphObject.width
         self.unicodes = glyphObject.unicodes
