@@ -228,7 +228,7 @@ def filterGlyphNames(glyphNames):
         try:
             glyphName.encode("ascii")
         except UnicodeEncodeError:
-            print(f"WARNING glyph name {glyphName} is not ASCII, and will not be exported")
+            print(f"WARNING glyph name {glyphName} is not ASCII, and can not be exported")
         else:
             okGlyphNames.append(glyphName)
     return okGlyphNames
