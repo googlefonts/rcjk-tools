@@ -171,8 +171,8 @@ def addRCJKGlyphToVarCoUFO(ufo, rcjkGlyphSet, srcGlyphName, dstGlyphName, unicod
 
     variationInfo = []
 
-    for rcjkVarGlyph in rcjkGlyph.variations:
-        layerName = layerNameFromLocation(rcjkVarGlyph.location)
+    for varIndex, rcjkVarGlyph in enumerate(rcjkGlyph.variations):
+        layerName = f"varco_{varIndex:03}"
         layer = getUFOLayer(ufo, layerName)
         varGlyph = UGlyph(dstGlyphName)
         varGlyph.width = rcjkVarGlyph.width
@@ -243,6 +243,7 @@ def getUFOLayer(ufo, layerName):
 
 
 def layerNameFromLocation(location):
+    # TODO: unused, remove
     location = sorted(location.items())
     nameParts = []
     for name, value in location:
