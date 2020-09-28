@@ -7,6 +7,13 @@ from .utils import decomposeTwoByTwo
 
 class VarCoGlyph(Glyph):
 
+    @classmethod
+    def loadFromUFont(cls, ufont, glyphName):
+        uglyph = ufont[glyphName]
+        self = cls.loadFromGlyphObject(uglyph)
+        self._postParse(ufont)
+        return self
+
     def _postParse(self, ufont):
         # Filter out and collect component info from the outline
         outline = MathOutline()
@@ -61,9 +68,7 @@ class VarCoFont:
     def getGlyph(self, glyphName):
         varcoGlyph = self.varcoGlyphs.get(glyphName)
         if varcoGlyph is None:
-            uglyph = self.ufont[glyphName]
-            varcoGlyph = VarCoGlyph.loadFromGlyphObject(uglyph)
-            varcoGlyph._postParse(self.ufont)
+            varcoGlyph = VarCoGlyph.loadFromUFont(self.ufont, glyphName)
             self.varcoGlyphs[glyphName] = varcoGlyph
         return varcoGlyph
 
