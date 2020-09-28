@@ -1,3 +1,4 @@
+import math
 from fontTools.pens.filterPen import FilterPointPen
 from fontTools.varLib.models import VariationModel
 from ufoLib2 import Font as UFont
@@ -33,11 +34,11 @@ class VarCoGlyph(Glyph):
             transform = MathDict(
                 x=x,
                 y=y,
-                rotation=rotation,
+                rotation=math.degrees(rotation),
                 scalex=scalex,
                 scaley=scaley,
-                skewx=skewx,
-                skewy=skewy,
+                skewx=math.degrees(skewx),
+                skewy=math.degrees(skewy),
                 tcenterx=tcenterx,
                 tcentery=tcentery,
             )
