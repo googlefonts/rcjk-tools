@@ -69,13 +69,13 @@ class VarCoFont:
         self.varcoGlyphs = {}
 
     def drawPointsGlyph(self, pen, glyphName, location, transform=None):
-        g = self[glyphName]
-        ig = g.instantiate(location)
-        outline = ig.outline
+        varGlyph = self[glyphName]
+        instanceGlyph = varGlyph.instantiate(location)
+        outline = instanceGlyph.outline
         if transform is not None:
             outline = outline.transform(transform)
         outline.drawPoints(pen)
-        for component in ig.components:
+        for component in instanceGlyph.components:
             t = makeTransformVarCo(**component.transform)
             if transform is not None:
                 t = transform.transform(t)
