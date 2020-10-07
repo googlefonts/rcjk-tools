@@ -91,10 +91,23 @@ class RoboCJKProject:
         """Save a UFO with Variable Components glyph.lib extensions."""
         # NOTE: this has quite a few GS-CJK assumptions that may or may
         # not be fair for RoboCJK projects in general.
+        globalAxes = [
+            dict(name="Weight", tag="wght", minimum=300, default=300, maximum=600),
+        ]
+        globalAxisNames = set(axis["tag"] for axis in globalAxes)
+
         ufo = setupFont(familyName, styleName)
 
         revCmap = self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
-        characterGlyphNames = filterGlyphNames(sorted(revCmap))
+        characterGlyphNames = []
+        for glyphName in filterGlyphNames(sorted(revCmap)):
+            glyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
+            try:
+                glyph.instantiate({"wght": 0.5})
+            except InterpolationError as e:
+                print(f"glyph {glyphName} can't be interpolated ({e})")
+            else:
+                characterGlyphNames.append(glyphName)
 
         dcNames = getComponentNames(self.characterGlyphGlyphSet, characterGlyphNames)
         # check whether all DC glyphnames start with "DC_"
@@ -112,7 +125,7 @@ class RoboCJKProject:
                 revCmap[glyphName],
                 {},
                 self.deepComponentGlyphSet,
-                {"wght"},
+                globalAxisNames,
             )
 
         for glyphName in dcNames:
@@ -139,7 +152,59 @@ class RoboCJKProject:
                 None,
             )
 
+        doc = self.buildDesignSpaceDocument(ufo, ufoPath, globalAxes, globalAxisNames)
+
+        ufoPath = pathlib.Path(ufoPath)
+        designspacePath = ufoPath.parent / (ufoPath.stem + ".designspace")
+        doc.write(designspacePath)
         ufo.save(ufoPath, overwrite=True)
+
+    def buildDesignSpaceDocument(self, ufo, ufoPath, globalAxes, globalAxisNames):
+        from fontTools.designspaceLib import DesignSpaceDocument
+
+        globalAxisMapping = {
+            axis["tag"]: (axis["name"], axis["minimum"], axis["maximum"])
+            for axis in globalAxes
+        }
+
+        doc = DesignSpaceDocument()
+
+        localAxes = set()
+        sources = []
+        for layerName in ufo.layers.keys():
+            if layerName == "public.default":
+                location = {}
+                layerName = None
+            else:
+                location = parseLayerName(layerName)
+            for axisName, axisValue in location.items():
+                assert axisValue == 1  # for now, we don't support intermediates
+                if axisName not in globalAxisNames:
+                    localAxes.add(axisName)
+
+            unnormalizedLocation = {}
+            for axisName, axisValue in location.items():
+                if axisName in globalAxisMapping:
+                    axisName, minimum, maximum = globalAxisMapping[axisName]
+                    axisValue = minimum + (maximum - minimum) * axisValue
+                unnormalizedLocation[axisName] = axisValue
+
+            doc.addSourceDescriptor(path=ufoPath, layerName=layerName, location=unnormalizedLocation)
+
+        for axisDict in globalAxes:
+            doc.addAxisDescriptor(**axisDict)
+
+        axes = list(globalAxes)
+        for axisName in sorted(localAxes):
+            assert axisName.startswith("vcaxis")
+            assert len(axisName) == 9
+            doc.addAxisDescriptor(
+                name=axisName,
+                tag="V" + axisName[-3:],
+                minimum=0, default=0, maximum=1,
+                hidden=True,
+            )
+        return doc
 
 
 def roundFuncOneDecimal(value):
@@ -190,7 +255,7 @@ def addRCJKGlyphToVarCoUFO(
 
     glyph = UGlyph(dstGlyphName)
     glyph.unicodes = unicodes
-    glyph.width = rcjkGlyph.width
+    glyph.width = max(0, rcjkGlyph.width)  # width can't be negative
     rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet)
 
     axisNames = list(rcjkGlyph.axes.keys())
@@ -206,7 +271,7 @@ def addRCJKGlyphToVarCoUFO(
             layerName = layerNameFromLocalLocation(rcjkVarGlyph.location, axisIndices)
         layer = getUFOLayer(ufo, layerName)
         varGlyph = UGlyph(dstGlyphName)
-        varGlyph.width = rcjkVarGlyph.width
+        varGlyph.width = max(0, rcjkVarGlyph.width)  # width can't be negative
         rcjkGlyphToVarCoGlyph(rcjkVarGlyph, varGlyph, renameTable, componentSourceGlyphSet)
         variationInfo.append(dict(layerName=layerName, location=rcjkVarGlyph.location))
         layer[dstGlyphName] = varGlyph
@@ -291,6 +356,15 @@ def layerNameFromLocalLocation(location, axisIndices):
             axisValue = int(axisValue)
         nameParts.append(f"vcaxis{axisIndex:03}={axisValue}")
     return "+".join(nameParts)
+
+
+def parseLayerName(layerName):
+    location = {}
+    for part in layerName.split("+"):
+        axisName, axisValue = part.split("=")
+        axisValue = float(axisValue)
+        location[axisName] = axisValue
+    return location
 
 
 _glyphNamePat = re.compile(rb'<glyph\s+name\s*=\s*"([^"]+)"')
