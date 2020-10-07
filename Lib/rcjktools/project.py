@@ -112,6 +112,7 @@ class RoboCJKProject:
                 revCmap[glyphName],
                 {},
                 self.deepComponentGlyphSet,
+                {"wght"},
             )
 
         for glyphName in dcNames:
@@ -123,6 +124,7 @@ class RoboCJKProject:
                 (),
                 aeRenameTable,
                 self.atomicElementGlyphSet,
+                None,
             )
 
         for glyphName in aeNames:
@@ -133,6 +135,7 @@ class RoboCJKProject:
                 aeRenameTable[glyphName],
                 (),
                 {},
+                None,
                 None,
             )
 
@@ -178,7 +181,8 @@ def addRCJKGlyphToVarCoUFO(
         dstGlyphName,
         unicodes,
         renameTable,
-        componentSourceGlyphSet):
+        componentSourceGlyphSet,
+        globalAxisNames):
 
     if renameTable is None:
         renameTable = {}
@@ -189,10 +193,17 @@ def addRCJKGlyphToVarCoUFO(
     glyph.width = rcjkGlyph.width
     rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet)
 
+    axisNames = list(rcjkGlyph.axes.keys())
+    glyph.lib["varco.axisnames"] = axisNames
+    axisIndices = {axisName: axisIndex for axisIndex, axisName in enumerate(axisNames)}
+
     variationInfo = []
 
     for varIndex, rcjkVarGlyph in enumerate(rcjkGlyph.variations):
-        layerName = f"varco_{varIndex:03}"
+        if globalAxisNames is not None:
+            layerName = layerNameFromGlobalLocation(rcjkVarGlyph.location, globalAxisNames)
+        else:
+            layerName = layerNameFromLocalLocation(rcjkVarGlyph.location, axisIndices)
         layer = getUFOLayer(ufo, layerName)
         varGlyph = UGlyph(dstGlyphName)
         varGlyph.width = rcjkVarGlyph.width
@@ -262,14 +273,23 @@ def getUFOLayer(ufo, layerName):
     return layer
 
 
-def layerNameFromLocation(location):
-    # TODO: unused, remove
-    location = sorted(location.items())
+def layerNameFromGlobalLocation(location, axisNames):
     nameParts = []
-    for name, value in location:
-        if isinstance(value, float) and value.is_integer():
-            value = int(value)
-        nameParts.append(f"{name}={value}")
+    for axisName, axisValue in sorted(location.items()):
+        assert axisName in axisNames
+        if isinstance(axisValue, float) and axisValue.is_integer():
+            axisValue = int(axisValue)
+        nameParts.append(f"{axisName}={axisValue}")
+    return "+".join(nameParts)
+
+
+def layerNameFromLocalLocation(location, axisIndices):
+    loc = {axisIndices[axisName]: axisValue for axisName, axisValue in location.items()}
+    nameParts = []
+    for axisIndex, axisValue in sorted(loc.items()):
+        if isinstance(axisValue, float) and axisValue.is_integer():
+            axisValue = int(axisValue)
+        nameParts.append(f"vcaxis{axisIndex:03}={axisValue}")
     return "+".join(nameParts)
 
 
