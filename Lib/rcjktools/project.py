@@ -211,7 +211,6 @@ def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet
     rcjkGlyph.drawPoints(pen)
     compoVarInfo = []
     for compo in rcjkGlyph.components:
-        baseGlyph = componentSourceGlyphSet.getGlyph(compo.name)
         # (x, y, rotation, scalex, scaley, rcenterx, rcentery)
         transform = compo.transform
         xx, xy, yx, yy, _, _ = makeTransform(**transform)
@@ -223,6 +222,7 @@ def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet
             tcenterx=transform["rcenterx"],
             tcentery=transform["rcentery"],
         )
+        baseGlyph = componentSourceGlyphSet.getGlyph(compo.name)
         info = dict(
             coord=normalizeLocation(compo.coord, baseGlyph.axes),
             transform=varCoTransform,
