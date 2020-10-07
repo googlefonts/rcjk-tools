@@ -8,7 +8,7 @@ from fontTools.ufoLib.filenames import userNameToFileName
 from fontTools.varLib.models import VariationModel
 from ufoLib2.objects import Font as UFont, Glyph as UGlyph
 
-from .objects import Component, Glyph, InterpolationError, MathDict, TransformMathDict
+from .objects import Component, Glyph, InterpolationError, MathDict, TransformMathDict, normalizeLocation
 from .utils import convertOffsetFromRCenterToTCenter, makeTransform
 
 
@@ -104,13 +104,37 @@ class RoboCJKProject:
         aeRenameTable = makeAERenameTable(aeNames)
 
         for glyphName in characterGlyphNames:
-            addRCJKGlyphToVarCoUFO(ufo, self.characterGlyphGlyphSet, glyphName, glyphName, revCmap[glyphName])
+            addRCJKGlyphToVarCoUFO(
+                ufo,
+                self.characterGlyphGlyphSet,
+                glyphName,
+                glyphName,
+                revCmap[glyphName],
+                {},
+                self.deepComponentGlyphSet,
+            )
 
         for glyphName in dcNames:
-            addRCJKGlyphToVarCoUFO(ufo, self.deepComponentGlyphSet, glyphName, glyphName, (), aeRenameTable)
+            addRCJKGlyphToVarCoUFO(
+                ufo,
+                self.deepComponentGlyphSet,
+                glyphName,
+                glyphName,
+                (),
+                aeRenameTable,
+                self.atomicElementGlyphSet,
+            )
 
         for glyphName in aeNames:
-            addRCJKGlyphToVarCoUFO(ufo, self.atomicElementGlyphSet, glyphName, aeRenameTable[glyphName], ())
+            addRCJKGlyphToVarCoUFO(
+                ufo,
+                self.atomicElementGlyphSet,
+                glyphName,
+                aeRenameTable[glyphName],
+                (),
+                {},
+                None,
+            )
 
         ufo.save(ufoPath, overwrite=True)
 
@@ -147,7 +171,15 @@ def ensureDCGlyphNames(glyphNames):
         assert glyphName.startswith("DC_"), glyphName
 
 
-def addRCJKGlyphToVarCoUFO(ufo, rcjkGlyphSet, srcGlyphName, dstGlyphName, unicodes, renameTable=None):
+def addRCJKGlyphToVarCoUFO(
+        ufo,
+        rcjkGlyphSet,
+        srcGlyphName,
+        dstGlyphName,
+        unicodes,
+        renameTable,
+        componentSourceGlyphSet):
+
     if renameTable is None:
         renameTable = {}
     rcjkGlyph = rcjkGlyphSet.getGlyph(srcGlyphName)
@@ -155,11 +187,11 @@ def addRCJKGlyphToVarCoUFO(ufo, rcjkGlyphSet, srcGlyphName, dstGlyphName, unicod
     glyph = UGlyph(dstGlyphName)
     glyph.unicodes = unicodes
     glyph.width = rcjkGlyph.width
-    rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable)
+    rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet)
 
-    packedAxes = packAxes(rcjkGlyph.axes)
-    if packedAxes:
-        glyph.lib["varco.axes"] = packedAxes
+    # packedAxes = packAxes(rcjkGlyph.axes)
+    # if packedAxes:
+    #     glyph.lib["varco.axes"] = packedAxes
 
     variationInfo = []
 
@@ -168,7 +200,7 @@ def addRCJKGlyphToVarCoUFO(ufo, rcjkGlyphSet, srcGlyphName, dstGlyphName, unicod
         layer = getUFOLayer(ufo, layerName)
         varGlyph = UGlyph(dstGlyphName)
         varGlyph.width = rcjkVarGlyph.width
-        rcjkGlyphToVarCoGlyph(rcjkVarGlyph, varGlyph, renameTable)
+        rcjkGlyphToVarCoGlyph(rcjkVarGlyph, varGlyph, renameTable, componentSourceGlyphSet)
         variationInfo.append(dict(layerName=layerName, location=rcjkVarGlyph.location))
         layer[dstGlyphName] = varGlyph
 
@@ -178,11 +210,12 @@ def addRCJKGlyphToVarCoUFO(ufo, rcjkGlyphSet, srcGlyphName, dstGlyphName, unicod
     ufo[dstGlyphName] = glyph
 
 
-def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable):
+def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet):
     pen = glyph.getPointPen()
     rcjkGlyph.drawPoints(pen)
     compoVarInfo = []
     for compo in rcjkGlyph.components:
+        baseGlyph = componentSourceGlyphSet.getGlyph(compo.name)
         # (x, y, rotation, scalex, scaley, rcenterx, rcentery)
         transform = compo.transform
         xx, xy, yx, yy, _, _ = makeTransform(**transform)
@@ -194,7 +227,11 @@ def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable):
             tcenterx=transform["rcenterx"],
             tcentery=transform["rcentery"],
         )
-        compoVarInfo.append(dict(coord=compo.coord, transform=varCoTransform))
+        info = dict(
+            coord=normalizeLocation(compo.coord, baseGlyph.axes),
+            transform=varCoTransform,
+        )
+        compoVarInfo.append(info)
     if compoVarInfo:
         glyph.lib["varco.components"] = compoVarInfo
 

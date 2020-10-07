@@ -45,13 +45,13 @@ class VarCoGlyph(Glyph):
             self.components.append(Component(baseGlyph, MathDict(vcCompo["coord"]), transform))
 
         # Unpack axes
-        self.axes = {a["name"]: (a["minValue"], a["maxValue"]) for a in self.lib.get("varco.axes", [])}
+        # self.axes = {a["name"]: (a["minValue"], a["maxValue"]) for a in self.lib.get("varco.axes", [])}
         assert len(self.variations) == 0
         for varDict in self.lib.get("varco.variations", []):
             layerName = varDict["layerName"]
             location = varDict["location"]
-            for axisName in location.keys():
-                assert axisName in self.axes, axisName
+            for axisName, axisValue in location.items():
+                assert 0 <= axisValue <= 1, (axisName, axisValue)
             varGlyph = self.__class__.loadFromGlyphObject(ufont.layers[layerName][self.name])
             varGlyph._postParse(ufont)
             varGlyph.location = location
