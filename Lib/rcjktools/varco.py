@@ -1,5 +1,4 @@
 import math
-from fontTools.misc.transform import Transform
 from fontTools.pens.filterPen import FilterPointPen
 from fontTools.varLib.models import VariationModel
 from ufoLib2 import Font as UFont
