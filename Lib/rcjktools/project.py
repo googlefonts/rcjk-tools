@@ -189,10 +189,6 @@ def addRCJKGlyphToVarCoUFO(
     glyph.width = rcjkGlyph.width
     rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet)
 
-    # packedAxes = packAxes(rcjkGlyph.axes)
-    # if packedAxes:
-    #     glyph.lib["varco.axes"] = packedAxes
-
     variationInfo = []
 
     for varIndex, rcjkVarGlyph in enumerate(rcjkGlyph.variations):

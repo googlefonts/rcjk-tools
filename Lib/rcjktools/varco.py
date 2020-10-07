@@ -44,8 +44,6 @@ class VarCoGlyph(Glyph):
             )
             self.components.append(Component(baseGlyph, MathDict(vcCompo["coord"]), transform))
 
-        # Unpack axes
-        # self.axes = {a["name"]: (a["minValue"], a["maxValue"]) for a in self.lib.get("varco.axes", [])}
         assert len(self.variations) == 0
         for varDict in self.lib.get("varco.variations", []):
             layerName = varDict["layerName"]
