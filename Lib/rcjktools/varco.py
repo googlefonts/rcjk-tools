@@ -3,7 +3,7 @@ from fontTools.misc.transform import Transform
 from fontTools.pens.filterPen import FilterPointPen
 from fontTools.varLib.models import VariationModel
 from ufoLib2 import Font as UFont
-from .objects import Component, Glyph, MathDict, MathOutline
+from .objects import Component, Glyph, MathDict, MathOutline, TransformMathDict
 from .utils import decomposeTwoByTwo, makeTransformVarCo
 
 
@@ -32,7 +32,7 @@ class VarCoGlyph(Glyph):
             tcenterx, tcentery = transformExtra["tcenterx"], transformExtra["tcentery"]
             x, y = affine[4:]
             rotation, scalex, scaley, skewx, skewy = decomposeTwoByTwo(affine[:4])
-            transform = MathDict(
+            transform = TransformMathDict(
                 x=x,
                 y=y,
                 rotation=math.degrees(rotation),

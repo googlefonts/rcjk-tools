@@ -150,7 +150,7 @@ class Component(NamedTuple):
 class MathDict(dict, _MathMixin):
 
     def _doBinaryOperatorScalar(self, scalar, op):
-        result = MathDict()
+        result = self.__class__()
         for k, v in self.items():
             if isinstance(v, (int, float)):
                 result[k] = op(v, scalar)
@@ -160,20 +160,37 @@ class MathDict(dict, _MathMixin):
 
     def _doBinaryOperator(self, other, op):
         # any missing keys will be taken from the other dict
+        specialCases = getattr(self, "_specialCases", {})
         self_other = dict(other)
         self_other.update(self)
         other_self = dict(self)
         other_self.update(other)
-        result = MathDict()
+        result = self.__class__()
         for k, v1 in self_other.items():
             v2 = other_self[k]
             if isinstance(v1, (int, float)):
                 result[k] = op(v1, v2)
+                fixupFunc = specialCases.get((k, op))
+                if fixupFunc is not None:
+                    result[k] = fixupFunc(result[k])
             else:
                 if v1 != v2:
                     raise InterpolationError("incompatible dicts")
                 result[k] = v1
         return result
+
+
+def _fixupRotationDelta(rotationDelta):
+    # Special case for rotation: a rotation delta should
+    # not be more than 180 or less than -180
+    rotationDelta %= 360
+    if rotationDelta > 180:
+        rotationDelta -= 360
+    return rotationDelta
+
+
+class TransformMathDict(MathDict):
+    _specialCases = {("rotation", operator.sub): _fixupRotationDelta}
 
 
 class MathOutline(RecordingPointPen, _MathMixin):
