@@ -232,11 +232,6 @@ def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet
         glyph.lib["varco.components"] = compoVarInfo
 
 
-def packAxes(axes):
-    return [dict(name=axisName, minValue=minValue, maxValue=maxValue)
-            for axisName, (minValue, maxValue) in axes.items()]
-
-
 def setupFont(familyName, styleName):
     ufo = UFont()
     ufo.info.familyName = familyName
