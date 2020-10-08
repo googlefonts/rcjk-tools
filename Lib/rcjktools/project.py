@@ -6,6 +6,7 @@ from fontTools.misc.fixedTools import otRound
 from fontTools.pens.roundingPen import RoundingPointPen
 from fontTools.ufoLib.filenames import userNameToFileName
 from fontTools.varLib.models import VariationModel
+from ufo2ft.filters import UFO2FT_FILTERS_KEY
 from ufoLib2.objects import Font as UFont, Glyph as UGlyph
 
 from .objects import Component, Glyph, InterpolationError, MathDict, TransformMathDict, normalizeLocation
@@ -97,6 +98,13 @@ class RoboCJKProject:
         globalAxisNames = set(axis["tag"] for axis in globalAxes)
 
         ufo = setupFont(familyName, styleName)
+        ufo.lib[UFO2FT_FILTERS_KEY] = [
+            dict(
+                namespace="rcjktools",
+                name="AddBaseGlyphs",
+                pre=False,
+            ),
+        ]
 
         revCmap = self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
         characterGlyphNames = []
