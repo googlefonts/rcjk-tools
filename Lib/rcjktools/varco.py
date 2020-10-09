@@ -28,7 +28,7 @@ class VarCoGlyph(Glyph):
         assert len(self.components) == 0
         for (baseGlyph, affine), vcCompo in zip(cc.components, vcComponentData):
             transformExtra = vcCompo["transform"]
-            tcenterx, tcentery = transformExtra["tcenterx"], transformExtra["tcentery"]
+            tcenterx, tcentery = transformExtra.get("tcenterx", 0), transformExtra.get("tcentery", 0)
             x, y = affine[4:]
             rotation, scalex, scaley, skewx, skewy = decomposeTwoByTwo(affine[:4])
             transform = TransformMathDict(
