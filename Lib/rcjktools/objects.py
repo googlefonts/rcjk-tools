@@ -190,6 +190,7 @@ def _fixupRotationDelta(rotationDelta):
 
 
 class TransformMathDict(MathDict):
+    # TODO skew! Or: AngleDegrees float subclass that keeps angles within -180..180
     _specialCases = {("rotation", operator.sub): _fixupRotationDelta}
 
 
