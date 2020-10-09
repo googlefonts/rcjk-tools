@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<glyph name="B" format="2">
+  <advance width="500"/>
+  <unicode hex="0042"/>
+  <outline>
+    <component base="DC_test" xScale="-0.5033992533169133" xyScale="0.8640539287336032" yxScale="-0.8640539287336032" yScale="-0.5033992533169133"/>
+  </outline>
+  <lib>
+    <dict>
+      <key>varco.axisnames</key>
+      <array>
+        <string>wght</string>
+      </array>
+      <key>varco.components</key>
+      <array>
+        <dict>
+          <key>coord</key>
+          <dict>
+            <key>DCTestAxis0</key>
+            <integer>1</integer>
+            <key>DCTestAxis1</key>
+            <integer>0</integer>
+          </dict>
+          <key>transform</key>
+          <dict>
+            <key>tcenterx</key>
+            <integer>250</integer>
+            <key>tcentery</key>
+            <integer>250</integer>
+          </dict>
+        </dict>
+      </array>
+      <key>varco.variations</key>
+      <array>
+        <dict>
+          <key>layerName</key>
+          <string>wght=1</string>
+          <key>location</key>
+          <dict>
+            <key>wght</key>
+            <integer>1</integer>
+          </dict>
+        </dict>
+      </array>
+    </dict>
+  </lib>
+</glyph>

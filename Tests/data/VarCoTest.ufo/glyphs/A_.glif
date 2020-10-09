@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<glyph name="A" format="2">
+  <advance width="500"/>
+  <unicode hex="0041"/>
+  <outline>
+    <component base="DC_test"/>
+  </outline>
+  <lib>
+    <dict>
+      <key>varco.axisnames</key>
+      <array>
+        <string>wght</string>
+      </array>
+      <key>varco.components</key>
+      <array>
+        <dict>
+          <key>coord</key>
+          <dict>
+            <key>DCTestAxis0</key>
+            <integer>0</integer>
+            <key>DCTestAxis1</key>
+            <integer>1</integer>
+          </dict>
+          <key>transform</key>
+          <dict/>
+        </dict>
+      </array>
+      <key>varco.variations</key>
+      <array>
+        <dict>
+          <key>layerName</key>
+          <string>wght=1</string>
+          <key>location</key>
+          <dict>
+            <key>wght</key>
+            <integer>1</integer>
+          </dict>
+        </dict>
+      </array>
+    </dict>
+  </lib>
+</glyph>

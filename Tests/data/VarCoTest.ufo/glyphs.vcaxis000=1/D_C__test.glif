@@ -1,0 +1,37 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<glyph name="DC_test" format="2">
+  <advance width="500"/>
+  <outline>
+    <component base="AE_test" xScale="0.9629068055587825" xyScale="0.2698341783551161" yxScale="-0.2698341783551161" yScale="0.9629068055587825" xOffset="74" yOffset="-31"/>
+    <component base="AE_test" xScale="0.9583365055133948" xyScale="-0.28564163247043867" yxScale="0.28564163247043867" yScale="0.9583365055133948" xOffset="236" yOffset="53"/>
+  </outline>
+  <lib>
+    <dict>
+      <key>varco.components</key>
+      <array>
+        <dict>
+          <key>coord</key>
+          <dict>
+            <key>AETestAxis0</key>
+            <integer>1</integer>
+            <key>AETestAxis1</key>
+            <integer>0</integer>
+          </dict>
+          <key>transform</key>
+          <dict/>
+        </dict>
+        <dict>
+          <key>coord</key>
+          <dict>
+            <key>AETestAxis0</key>
+            <integer>0</integer>
+            <key>AETestAxis1</key>
+            <integer>1</integer>
+          </dict>
+          <key>transform</key>
+          <dict/>
+        </dict>
+      </array>
+    </dict>
+  </lib>
+</glyph>
