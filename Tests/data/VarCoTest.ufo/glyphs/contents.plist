@@ -10,5 +10,7 @@
     <string>B_.glif</string>
     <key>DC_test</key>
     <string>D_C__test.glif</string>
+    <key>space</key>
+    <string>space.glif</string>
   </dict>
 </plist>

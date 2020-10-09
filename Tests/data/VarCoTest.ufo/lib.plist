@@ -11,6 +11,17 @@
         <string>characterSet</string>
       </dict>
     </array>
+    <key>com.github.googlei18n.ufo2ft.filters</key>
+    <array>
+      <dict>
+        <key>name</key>
+        <string>AddBaseGlyphs</string>
+        <key>namespace</key>
+        <string>rcjktools</string>
+        <key>pre</key>
+        <false/>
+      </dict>
+    </array>
     <key>com.typemytype.robofont.segmentType</key>
     <string>curve</string>
     <key>com.typemytype.robofont.smartSets.uniqueKey</key>
