@@ -297,12 +297,14 @@ def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet
     for compo in rcjkGlyph.components:
         # (x, y, rotation, scalex, scaley, rcenterx, rcentery)
         transform = compo.transform
-        xx, xy, yx, yy, _, _ = makeTransform(**transform)
         x, y = convertOffsetFromRCenterToTCenter(**transform)
-        t = (xx, xy, yx, yy, x, y)
-        pen.addComponent(renameTable.get(compo.name, compo.name), t)
+        pen.addComponent(renameTable.get(compo.name, compo.name), (1, 0, 0, 1, x, y))
         # the transformation center goes into varco data
         varCoTransform = dict(
+            # TODO: We could skip values that are default (0, or 1 for scale values)
+            rotation=transform["rotation"],
+            scalex=transform["scalex"],
+            scaley=transform["scaley"],
             tcenterx=transform["rcenterx"],
             tcentery=transform["rcentery"],
         )
