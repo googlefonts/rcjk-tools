@@ -19,6 +19,8 @@
           </dict>
           <key>transform</key>
           <dict>
+            <key>rotation</key>
+            <integer>90</integer>
             <key>tcenterx</key>
             <integer>250</integer>
             <key>tcentery</key>
