@@ -9,7 +9,7 @@ from fontTools.varLib.models import VariationModel
 from ufo2ft.filters import UFO2FT_FILTERS_KEY
 from ufoLib2.objects import Font as UFont, Glyph as UGlyph
 
-from .objects import Component, Glyph, InterpolationError, MathDict, TransformMathDict, normalizeLocation
+from .objects import Component, Glyph, InterpolationError, MathDict, normalizeLocation
 from .utils import convertOffsetFromRCenterToTCenter, makeTransform
 
 
@@ -499,7 +499,7 @@ def _unpackDeepComponent(dc, name=None, scaleUsesCenter=False):
         # newx, newy = abscenterx - rcenterx, abscentery - rcentery
         transform["x"] = transform["x"] + (transform["scalex"] - 1) * transform["rcenterx"]
         transform["y"] = transform["y"] + (transform["scaley"] - 1) * transform["rcentery"]
-    return Component(name, MathDict(coord), TransformMathDict(transform))
+    return Component(name, MathDict(coord), MathDict(transform))
 
 
 def _getVarKey(lib):

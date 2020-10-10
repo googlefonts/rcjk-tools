@@ -160,7 +160,6 @@ class MathDict(dict, _MathMixin):
 
     def _doBinaryOperator(self, other, op):
         # any missing keys will be taken from the other dict
-        specialCases = getattr(self, "_specialCases", {})
         self_other = dict(other)
         self_other.update(self)
         other_self = dict(self)
@@ -170,28 +169,11 @@ class MathDict(dict, _MathMixin):
             v2 = other_self[k]
             if isinstance(v1, (int, float)):
                 result[k] = op(v1, v2)
-                fixupFunc = specialCases.get((k, op))
-                if fixupFunc is not None:
-                    result[k] = fixupFunc(result[k])
             else:
                 if v1 != v2:
                     raise InterpolationError("incompatible dicts")
                 result[k] = v1
         return result
-
-
-def _fixupRotationDelta(rotationDelta):
-    # Special case for rotation: a rotation delta should
-    # not be more than 180 or less than -180
-    rotationDelta %= 360
-    if rotationDelta > 180:
-        rotationDelta -= 360
-    return rotationDelta
-
-
-class TransformMathDict(MathDict):
-    # TODO skew! Or: AngleDegrees float subclass that keeps angles within -180..180
-    _specialCases = {("rotation", operator.sub): _fixupRotationDelta}
 
 
 class MathOutline(RecordingPointPen, _MathMixin):

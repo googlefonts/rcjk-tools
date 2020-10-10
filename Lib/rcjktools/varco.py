@@ -2,7 +2,7 @@ import math
 from fontTools.pens.filterPen import FilterPointPen
 from fontTools.varLib.models import VariationModel
 from ufoLib2 import Font as UFont
-from .objects import Component, Glyph, MathDict, MathOutline, TransformMathDict
+from .objects import Component, Glyph, MathDict, MathOutline
 from .utils import decomposeTwoByTwo, makeTransformVarCo
 
 
@@ -27,20 +27,19 @@ class VarCoGlyph(Glyph):
         assert len(cc.components) == len(vcComponentData)
         assert len(self.components) == 0
         for (baseGlyph, affine), vcCompo in zip(cc.components, vcComponentData):
-            transformExtra = vcCompo["transform"]
-            tcenterx, tcentery = transformExtra.get("tcenterx", 0), transformExtra.get("tcentery", 0)
+            assert affine[:4] == (1, 0, 0, 1)
             x, y = affine[4:]
-            rotation, scalex, scaley, skewx, skewy = decomposeTwoByTwo(affine[:4])
-            transform = TransformMathDict(
-                x=x,
-                y=y,
-                rotation=math.degrees(rotation),
-                scalex=scalex,
-                scaley=scaley,
-                skewx=math.degrees(skewx),
-                skewy=math.degrees(skewy),
-                tcenterx=tcenterx,
-                tcentery=tcentery,
+            transformDict = vcCompo["transform"]
+            transform = MathDict(
+                x=affine[4],
+                y=affine[5],
+                rotation=transformDict.get("rotation", 0),
+                scalex=transformDict.get("scalex", 1),
+                scaley=transformDict.get("scaley", 1),
+                skewx=transformDict.get("skewx", 0),
+                skewy=transformDict.get("skewy", 0),
+                tcenterx=transformDict.get("tcenterx", 0),
+                tcentery=transformDict.get("tcentery", 0),
             )
             self.components.append(Component(baseGlyph, MathDict(vcCompo["coord"]), transform))
 
