@@ -22,7 +22,10 @@
             <integer>1</integer>
           </dict>
           <key>transform</key>
-          <dict/>
+          <dict>
+            <key>scalex</key>
+            <integer>1</integer>
+          </dict>
         </dict>
       </array>
       <key>varco.variations</key>
