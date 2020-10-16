@@ -1,3 +1,4 @@
+from collections import defaultdict
 import functools
 import struct
 from typing import NamedTuple
@@ -163,7 +164,7 @@ def compileComponents(glyphName, precompiledComponents, axisTags, axisTagToIndex
         componentData = struct.pack(headerFormat, flags, varIdxFormat, numAxes) + coordData + transformData + varIdxData
         data.append(componentData)
 
-    return b"".join(data)
+    return data
 
 
 def packArrayUInt8(idxs):
@@ -318,6 +319,34 @@ def remapVarIdxs(precompiled, mapping):
                 if VARIDX_KEY in v:
                     v[VARIDX_KEY] = mapping[v[VARIDX_KEY]]
 
+def optimizeSharedComponentData(allComponentData):
+    sharedComponentDataCounter = defaultdict(int)
+    for glyphData in allComponentData.values():
+        for compData in glyphData:
+            sharedComponentDataCounter[compData] += 1
+
+    sharedComponentData = [
+        compData
+        for compData, count in sharedComponentDataCounter.items()
+        if count > 1
+    ]
+    sharedComponentDataIndices = {compData: index for index, compData in enumerate(sharedComponentData)}
+
+    for glyphName, glyphData in allComponentData.items():
+        newGlyphData = []
+        for compData in glyphData:
+            sharedIndex = sharedComponentDataIndices.get(compData)
+            if sharedIndex is not None:
+                if sharedIndex <= 0x3FFF:
+                    compData = struct.pack(">H", sharedIndex | 0x8000)
+                else:
+                    assert sharedIndex <= 0x3FFFFFFF, "index overflow"
+                    compData = struct.pack(">L", sharedIndex | 0xC0000000)
+            newGlyphData.append(compData)
+        allComponentData[glyphName] = newGlyphData
+
+    return sharedComponentData
+
 
 def buildVarCTable(ttf, vcData, allLocations, axisTags):
     precompiled, store = precompileAllComponents(vcData, allLocations, axisTags)
@@ -326,10 +355,23 @@ def buildVarCTable(ttf, vcData, allLocations, axisTags):
 
     axisTagToIndex = {tag: i for i, tag in enumerate(axisTags)}
 
-    lengths = []
+    allComponentData = {}
     for gn, components in precompiled.items():
-        data = compileComponents(gn, components, axisTags, axisTagToIndex)
-        lengths.append(len(data))
+        allComponentData[gn] = compileComponents(gn, components, axisTags, axisTagToIndex)
+
+    beforeCount = sum(len(d) for g in allComponentData.values() for d in g)
+
+    sharedComponentData = optimizeSharedComponentData(allComponentData)
+
+    afterCount = sum(len(d) for g in allComponentData.values() for d in g)
+    sharedCount = sum(len(d) for d in sharedComponentData)
+    print("before:", beforeCount)
+    print("after:", afterCount)
+    print("shared:", sharedCount)
+    print("after + shared:", afterCount + sharedCount)
+    print("saved:", beforeCount - (afterCount + sharedCount))
+    print("percentage saved:", round(100 * (1 - (afterCount + sharedCount) / beforeCount), 1))
+    print("number of shared compo blocks:", len(sharedComponentData))
 
 
 if __name__ == "__main__":
