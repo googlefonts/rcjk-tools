@@ -448,14 +448,17 @@ class RCJKGlyph(Glyph):
             dcNames.append(dc["name"])
             self.components.append(_unpackDeepComponent(dc, scaleUsesCenter=scaleUsesCenter))
 
-        varKey = _getVarKey(self.lib)
-        if varKey is None:
+        self.axes = {
+            axisDict["name"]: (axisDict["minValue"], axisDict["maxValue"])
+            for axisDict in self.lib.get("robocjk.axes", [])
+        }
+
+        variationGlyphs = self.lib.get("robocjk.variationGlyphs")
+        if variationGlyphs is None:
             return
 
-        for axisName, varDict in self.lib[varKey].items():
+        for varDict in variationGlyphs:
             layerName = varDict["layerName"]
-            minValue = varDict["minValue"]
-            maxValue = varDict["maxValue"]
             if not self.outline.isEmpty() and layerName:
                 layer = glyphSet.getLayer(layerName)
                 if self.name in layer:
@@ -470,10 +473,9 @@ class RCJKGlyph(Glyph):
                 varGlyph = self.__class__()
                 varGlyph.width = self.width
 
-            varGlyph.location = {axisName: 1.0}
-            self.axes[axisName] = (minValue, maxValue)
+            varGlyph.location = varDict["location"]
 
-            deepComponents = varDict["content"]["deepComponents"]
+            deepComponents = varDict["deepComponents"]
             assert len(dcNames) == len(deepComponents)
             for dc, dcName in zip(deepComponents, dcNames):
                 varGlyph.components.append(_unpackDeepComponent(dc, dcName, scaleUsesCenter=scaleUsesCenter))
@@ -493,7 +495,7 @@ def _unpackDeepComponent(dc, name=None, scaleUsesCenter=False):
         # "name" is defined in neutral components, but is implied in variations
         name = dc["name"]
     coord = dc["coord"]
-    transform = {k: v for k, v in dc.items() if k in _rcjkTransformParameters}
+    transform = dc["transform"]
     if scaleUsesCenter:
         # abscenterx, abscentery = (x + rcenterx * scalex, y + rcentery * scaley)
         # newx, newy = abscenterx - rcenterx, abscentery - rcentery
