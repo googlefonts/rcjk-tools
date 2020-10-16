@@ -1,5 +1,6 @@
 from collections import defaultdict
 import functools
+import itertools
 import struct
 from typing import NamedTuple
 from fontTools.misc.fixedTools import floatToFixed, otRound
@@ -365,7 +366,7 @@ def compileOffsets(offsets):
     else:
         entrySize = 4
         packArray = packArrayUInt32
-    headerData = struct.pack(">L", (entrySize - 1) << 14 + numOffsets)
+    headerData = struct.pack(">L", ((entrySize - 1) << 30) + numOffsets)
     return headerData + packArray(offsets)
 
 
@@ -383,6 +384,9 @@ def buildVarCTable(ttf, vcData, allLocations, axisTags):
     beforeCount = sum(len(d) for g in allComponentData.values() for d in g)
 
     sharedComponentData = optimizeSharedComponentData(allComponentData)
+    sharedComponentOffsets = list(itertools.accumulate(len(data) for data in sharedComponentData))
+    sharedComponentOffsetsData = compileOffsets(sharedComponentOffsets)
+    print("index data size:", len(sharedComponentOffsetsData))
 
     afterCount = sum(len(d) for g in allComponentData.values() for d in g)
     sharedCount = sum(len(d) for d in sharedComponentData)
