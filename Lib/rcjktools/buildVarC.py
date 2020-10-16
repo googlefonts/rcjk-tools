@@ -319,6 +319,7 @@ def remapVarIdxs(precompiled, mapping):
                 if VARIDX_KEY in v:
                     v[VARIDX_KEY] = mapping[v[VARIDX_KEY]]
 
+
 def optimizeSharedComponentData(allComponentData):
     sharedComponentDataCounter = defaultdict(int)
     for glyphData in allComponentData.values():
