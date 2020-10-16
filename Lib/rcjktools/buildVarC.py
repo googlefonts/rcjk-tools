@@ -213,7 +213,7 @@ def _packVarIdxs(varIdxs):
         packArray = packArrayUInt24
     else:
         entrySize = 4
-        packArray = packArrayUInt24
+        packArray = packArrayUInt32
 
     entryFormat = ((entrySize - 1) << 4) | (innerBits - 1)
     outerShift = 16 - innerBits
@@ -347,6 +347,26 @@ def optimizeSharedComponentData(allComponentData):
         allComponentData[glyphName] = newGlyphData
 
     return sharedComponentData
+
+
+def compileOffsets(offsets):
+    numOffsets = len(offsets)
+    assert numOffsets <= 0x3FFFFFFF
+    maxOffset = max(offsets)
+    if maxOffset <= 0xFF:
+        entrySize = 1
+        packArray = packArrayUInt8
+    elif maxOffset <= 0xFFFF:
+        entrySize = 2
+        packArray = packArrayUInt16
+    elif maxOffset <= 0xFFFFFF:
+        entrySize = 3
+        packArray = packArrayUInt24
+    else:
+        entrySize = 4
+        packArray = packArrayUInt32
+    headerData = struct.pack(">L", (entrySize - 1) << 14 + numOffsets)
+    return headerData + packArray(offsets)
 
 
 def buildVarCTable(ttf, vcData, allLocations, axisTags):
