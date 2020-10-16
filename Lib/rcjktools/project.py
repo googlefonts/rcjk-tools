@@ -178,7 +178,6 @@ class RoboCJKProject:
         doc = DesignSpaceDocument()
 
         localAxes = set()
-        sources = []
         for layerName in ufo.layers.keys():
             if layerName == "public.default":
                 location = {}
@@ -202,7 +201,6 @@ class RoboCJKProject:
         for axisDict in globalAxes:
             doc.addAxisDescriptor(**axisDict)
 
-        axes = list(globalAxes)
         for axisName in sorted(localAxes):
             assert axisName.startswith("vcaxis")
             assert len(axisName) == 9
