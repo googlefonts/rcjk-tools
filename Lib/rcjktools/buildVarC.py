@@ -412,6 +412,26 @@ def buildVarCTable(ttf, vcData, allLocations, axisTags):
     # GlyphData
     # VarStoreData
 
+    varcOTData = [
+
+        ('VarC', [
+            ('Version', 'Version', None, None, 'Version of the VarC table-initially 0x00010000'),
+            ('LOffset', 'SharedComponents', None, None, '...'),
+            ('LOffset', 'GlyphData', None, None, '...'),
+            ('LOffset', 'VarStore', None, None, 'Offset to variation store (may be NULL)'),
+        ]),
+
+        # ('SharedComponents', [
+        #     ('uint32', 'SharedComponentsCount', None, None, '...'),
+        #     ('LOffset', 'SharedComponents', 'SharedComponentsCount', None, '...'),
+        # ]),
+
+        # ('GlyphData', [
+        #     ('Index', 'GlyphDataIndex', None, None, '...'),
+        #     ('xxx', 'xxx', None, None, '...'),
+        # ]),
+
+    ]
 
     print("index data size:", len(sharedComponentOffsetsData))
 
