@@ -1,9 +1,8 @@
-import math
 from fontTools.pens.filterPen import FilterPointPen
-from fontTools.varLib.models import VariationModel
+from fontTools.varLib.models import VariationModel, allEqual
 from ufoLib2 import Font as UFont
 from .objects import Component, Glyph, MathDict, MathOutline
-from .utils import decomposeTwoByTwo, makeTransformVarCo
+from .utils import makeTransformVarCo
 
 
 class VarCoGlyph(Glyph):
@@ -105,6 +104,51 @@ class VarCoFont:
         except KeyError:
             glyph = default
         return glyph
+
+    def extractVarCoData(self, globalAxisNames):
+        allLocations = set()
+        vcData = {}
+        for glyphName in sorted(self.keys()):
+            glyph = self[glyphName]
+            masters = [glyph] + glyph.variations
+            componentAxisMappings = [
+                {axisName: f"V{axisIndex:03}" for axisName, axisIndex in self[c.name].axisNames.items()}
+                for c in glyph.components
+            ]
+            localAxisMapping = {
+                axisName: axisName if axisName in globalAxisNames else f"V{axisIndex:03}"
+                for axisName, axisIndex in glyph.axisNames.items()
+            }
+            locations = [
+                {localAxisMapping[k]: v for k, v in m.location.items()}
+                for m in masters
+            ]
+            allLocations.update(tuplifyLocation(loc) for loc in locations)
+            components = []
+            for i in range(len(glyph.components)):
+                assert allEqual([m.components[i].name for m in masters])
+                compMap = componentAxisMappings[i]
+                coords = [
+                    {
+                        compMap[k]: m.components[i].coord.get(k, 0)
+                        for k in compMap
+                    }
+                    for m in masters
+                ]
+                transforms = [
+                    # Filter out x and y, as they'll be in glyf and gvar
+                    {k: v for k, v in m.components[i].transform.items() if k not in {"x", "y"}}
+                    for m in masters
+                ]
+                components.append(list(zip(coords, transforms)))
+            if components:
+                vcData[glyphName] = components, locations
+        allLocations = [dict(items) for items in sorted(allLocations)]
+        return vcData, allLocations
+
+
+def tuplifyLocation(loc):
+    return tuple(sorted(loc.items()))
 
 
 class ComponentCollector(FilterPointPen):
