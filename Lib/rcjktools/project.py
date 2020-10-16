@@ -483,7 +483,10 @@ class RCJKGlyph(Glyph):
 
             self.variations.append(varGlyph)
 
-        locations = [{}] + [variation.location for variation in self.variations]
+        locations = [{}] + [
+            normalizeLocation(variation.location, self.axes)
+            for variation in self.variations
+        ]
         self.model = VariationModel(locations)
 
 
