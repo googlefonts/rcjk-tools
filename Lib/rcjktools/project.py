@@ -490,9 +490,6 @@ class RCJKGlyph(Glyph):
         self.model = VariationModel(locations)
 
 
-_rcjkTransformParameters = {"x", "y", "rotation", "scalex", "scaley", "rcenterx", "rcentery"}
-
-
 def _unpackDeepComponent(dc, name=None, scaleUsesCenter=False):
     if name is None:
         # "name" is defined in neutral components, but is implied in variations
