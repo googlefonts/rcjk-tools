@@ -504,17 +504,6 @@ def _unpackDeepComponent(dc, name=None, scaleUsesCenter=False):
     return Component(name, MathDict(coord), MathDict(transform))
 
 
-def _getVarKey(lib):
-    roboVarKeys = (
-        "robocjk.fontVariationGlyphs",
-        "robocjk.glyphVariationGlyphs",
-    )
-    for varKey in roboVarKeys:
-        if varKey in lib:
-            return varKey
-    return None
-
-
 if __name__ == "__main__":
     # DrawBot test snippet
     from drawBot import BezierPath, translate, scale, fill, stroke, drawPath
