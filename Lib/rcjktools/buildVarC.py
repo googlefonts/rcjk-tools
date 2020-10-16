@@ -386,6 +386,33 @@ def buildVarCTable(ttf, vcData, allLocations, axisTags):
     sharedComponentData = optimizeSharedComponentData(allComponentData)
     sharedComponentOffsets = list(itertools.accumulate(len(data) for data in sharedComponentData))
     sharedComponentOffsetsData = compileOffsets(sharedComponentOffsets)
+
+    glyphData = {
+        glyphName: b"".join(componentData)
+        for glyphName, componentData in allComponentData.items()
+    }
+    glyphData = [glyphData.get(glyphName, b"") for glyphName in ttf.getGlyphOrder()]
+    trailingEmptyCount = 0
+    for data in reversed(glyphData):
+        if data:
+            break
+        trailingEmptyCount += 1
+    if trailingEmptyCount:
+        glyphData = glyphData[:-trailingEmptyCount]
+    glyphOffsets = list(itertools.accumulate(len(data) for data in glyphData))
+    glyphOffsetsData = compileOffsets(glyphOffsets)
+
+
+    # VarC table overview:
+    # Version
+    # SharedComponentDataOffsets
+    # GlyphDataOffsets
+    # VarStoreOffset
+    # SharedComponentData
+    # GlyphData
+    # VarStoreData
+
+
     print("index data size:", len(sharedComponentOffsetsData))
 
     afterCount = sum(len(d) for g in allComponentData.values() for d in g)
