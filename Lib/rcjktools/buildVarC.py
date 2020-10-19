@@ -5,6 +5,7 @@ import struct
 from typing import NamedTuple
 from fontTools.misc.fixedTools import floatToFixed, otRound
 from fontTools.ttLib import TTFont
+from fontTools.ttLib.tables.otBase import OTTableWriter
 from fontTools.varLib.models import VariationModel, allEqual
 from fontTools.varLib.varStore import OnlineVarStoreBuilder
 from rcjktools.varco import VarCoFont
@@ -88,9 +89,17 @@ def precompileAllComponents(vcData, allLocations, axisTags):
     return precompiled, storeBuilder.finish()
 
 
-class PrecompiledComponents(NamedTuple):
-    coord: dict
-    transform: dict
+class CoordinateRecord(dict):
+    pass
+
+
+class TransformRecord(dict):
+    pass
+
+
+class ComponentRecord(NamedTuple):
+    coord: CoordinateRecord
+    transform: TransformRecord
     numIntBitsForScale: int
 
 
@@ -112,7 +121,13 @@ def precompileVarComponents(glyphName, components, storeBuilder, axisTags):
         transformDict = compileDicts(dicts, transformDefaults, transformConvertersLocal, storeBuilder)
         if coordDict or transformDict:
             haveVarCData = True
-        precompiled.append(PrecompiledComponents(coordDict, transformDict, numIntBitsForScale))
+        precompiled.append(
+            ComponentRecord(
+                CoordinateRecord(coordDict),
+                TransformRecord(transformDict),
+                numIntBitsForScale,
+            ),
+        )
 
     if haveVarCData:
         return precompiled
@@ -402,6 +417,21 @@ def buildVarCTable(ttf, vcData, allLocations, axisTags):
     glyphOffsets = list(itertools.accumulate(len(data) for data in glyphData))
     glyphOffsetsData = compileOffsets(glyphOffsets)
 
+    # writer = OTTableWriter()
+    # writer.writeULong(0x00010000)
+
+    # sharedComponentsWriter = writer.getSubWriter()
+    # sharedComponentsWriter.longOffset = True
+    # writer.writeSubTable(sharedComponentsWriter)
+
+    # glyphDataWriter = writer.getSubWriter()
+    # glyphDataWriter.longOffset = True
+    # writer.writeSubTable(glyphDataWriter)
+
+    # varStoreWriter = writer.getSubWriter()
+    # varStoreWriter.longOffset = True
+    # writer.writeSubTable(varStoreWriter)
+    # store.compile(varStoreWriter, ttf)
 
     # VarC table overview:
     # Version
@@ -412,26 +442,26 @@ def buildVarCTable(ttf, vcData, allLocations, axisTags):
     # GlyphData
     # VarStoreData
 
-    varcOTData = [
+    # varcOTData = [
 
-        ('VarC', [
-            ('Version', 'Version', None, None, 'Version of the VarC table-initially 0x00010000'),
-            ('LOffset', 'SharedComponents', None, None, '...'),
-            ('LOffset', 'GlyphData', None, None, '...'),
-            ('LOffset', 'VarStore', None, None, 'Offset to variation store (may be NULL)'),
-        ]),
+    #     ('VarC', [
+    #         ('Version', 'Version', None, None, 'Version of the VarC table-initially 0x00010000'),
+    #         ('LOffset', 'SharedComponents', None, None, ''),
+    #         ('LOffset', 'GlyphData', None, None, ''),
+    #         ('LOffset', 'VarStore', None, None, 'Offset to variation store (may be NULL)'),
+    #     ]),
 
-        # ('SharedComponents', [
-        #     ('uint32', 'SharedComponentsCount', None, None, '...'),
-        #     ('LOffset', 'SharedComponents', 'SharedComponentsCount', None, '...'),
-        # ]),
+    #     ('SharedComponents', [
+    #         ('LOffset', 'SharedComponentsIndex', None, None, ''),
+    #         ('LOffset', 'SharedComponentsX', None, None, ''),
+    #     ]),
 
-        # ('GlyphData', [
-        #     ('Index', 'GlyphDataIndex', None, None, '...'),
-        #     ('xxx', 'xxx', None, None, '...'),
-        # ]),
+    #     ('GlyphData', [
+    #         ('LOffset', 'GlyphDataIndex', None, None, ''),
+    #         ('LOffset', 'GlyphDataX', None, None, ''),
+    #     ]),
 
-    ]
+    # ]
 
     print("index data size:", len(sharedComponentOffsetsData))
 
