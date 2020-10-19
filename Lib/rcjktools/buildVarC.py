@@ -89,9 +89,17 @@ def precompileAllComponents(vcData, allLocations, axisTags):
     return precompiled, storeBuilder.finish()
 
 
-class PrecompiledComponents(NamedTuple):
-    coord: dict
-    transform: dict
+class CoordinateRecord(dict):
+    pass
+
+
+class TransformRecord(dict):
+    pass
+
+
+class ComponentRecord(NamedTuple):
+    coord: CoordinateRecord
+    transform: TransformRecord
     numIntBitsForScale: int
 
 
@@ -113,7 +121,13 @@ def precompileVarComponents(glyphName, components, storeBuilder, axisTags):
         transformDict = compileDicts(dicts, transformDefaults, transformConvertersLocal, storeBuilder)
         if coordDict or transformDict:
             haveVarCData = True
-        precompiled.append(PrecompiledComponents(coordDict, transformDict, numIntBitsForScale))
+        precompiled.append(
+            ComponentRecord(
+                CoordinateRecord(coordDict),
+                TransformRecord(transformDict),
+                numIntBitsForScale,
+            ),
+        )
 
     if haveVarCData:
         return precompiled
