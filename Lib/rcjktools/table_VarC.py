@@ -4,6 +4,7 @@ import itertools
 import struct
 from fontTools.misc.fixedTools import floatToFixed, otRound
 from fontTools.ttLib.tables.DefaultTable import DefaultTable
+from fontTools.ttLib.tables.otConverters import OTTableWriter
 
 
 VARIDX_KEY = "varIdx"
@@ -61,6 +62,13 @@ transformConverters = {
 }
 
 
+def _getSubWriter(writer):
+    subWriter = writer.getSubWriter()
+    subWriter.longOffset = True
+    writer.writeSubTable(subWriter)
+    return subWriter
+
+
 class table_VarC(DefaultTable):
 
     def decompile(self, data, ttFont):
@@ -76,7 +84,6 @@ class table_VarC(DefaultTable):
 
         sharedComponentData = optimizeSharedComponentData(allComponentData)
         sharedComponentOffsets = list(itertools.accumulate(len(data) for data in sharedComponentData))
-        sharedComponentOffsetsData = compileOffsets(sharedComponentOffsets)
 
         glyphData = {
             glyphName: b"".join(componentData)
@@ -91,23 +98,27 @@ class table_VarC(DefaultTable):
         if trailingEmptyCount:
             glyphData = glyphData[:-trailingEmptyCount]
         glyphOffsets = list(itertools.accumulate(len(data) for data in glyphData))
-        glyphOffsetsData = compileOffsets(glyphOffsets)
 
-        # writer = OTTableWriter()
-        # writer.writeULong(0x00010000)
+        writer = OTTableWriter()
+        assert self.Version == 0x00010000
+        writer.writeULong(self.Version)
 
-        # sharedComponentsWriter = writer.getSubWriter()
-        # sharedComponentsWriter.longOffset = True
-        # writer.writeSubTable(sharedComponentsWriter)
+        sub = _getSubWriter(writer)
+        sub.writeData(compileOffsets(sharedComponentOffsets))
 
-        # glyphDataWriter = writer.getSubWriter()
-        # glyphDataWriter.longOffset = True
-        # writer.writeSubTable(glyphDataWriter)
+        sub = _getSubWriter(writer)
+        sub.writeData(b"".join(sharedComponentData))
 
-        # varStoreWriter = writer.getSubWriter()
-        # varStoreWriter.longOffset = True
-        # writer.writeSubTable(varStoreWriter)
-        # store.compile(varStoreWriter, ttf)
+        sub = _getSubWriter(writer)
+        sub.writeData(compileOffsets(glyphOffsets))
+
+        sub = _getSubWriter(writer)
+        sub.writeData(b"".join(glyphData))
+
+        sub = _getSubWriter(writer)
+        self.VarStore.compile(sub, ttFont)
+
+        return writer.getAllData()
 
         # VarC table overview:
         # Version
@@ -138,18 +149,6 @@ class table_VarC(DefaultTable):
         #     ]),
 
         # ]
-
-        # print("index data size:", len(sharedComponentOffsetsData))
-
-        # afterCount = sum(len(d) for g in allComponentData.values() for d in g)
-        # sharedCount = sum(len(d) for d in sharedComponentData)
-        # print("before:", beforeCount)
-        # print("after:", afterCount)
-        # print("shared:", sharedCount)
-        # print("after + shared:", afterCount + sharedCount)
-        # print("saved:", beforeCount - (afterCount + sharedCount))
-        # print("percentage saved:", round(100 * (1 - (afterCount + sharedCount) / beforeCount), 1))
-        # print("number of shared compo blocks:", len(sharedComponentData))
 
     def toXML(self, writer, ttFont, **kwargs):
         glyphTable = ttFont["glyf"]
