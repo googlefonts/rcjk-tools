@@ -34,7 +34,7 @@ AXIS_INDICES_ARE_WORDS = (1 << 3)
 HAS_TRANSFORM_VARIATIONS = (1 << 4)
 _FIRST_TRANSFORM_FIELD_BIT = 5
 
-transformFieldNames = ["rotation", "scalex", "scaley", "skewx", "skewy", "tcenterx", "tcentery"]
+transformFieldNames = ["Rotation", "ScaleX", "ScaleY", "SkewX", "SkewY", "TCenterX", "TCenterY"]
 transformFieldFlags = {
     fieldName: (1 << bitNum)
     for bitNum, fieldName in enumerate(transformFieldNames, _FIRST_TRANSFORM_FIELD_BIT)
@@ -43,25 +43,25 @@ transformFieldFlags = {
 transformDefaults = {
     # "x": 0,  # handled by gvar
     # "y": 0,  # handled by gvar
-    "rotation": 0,
-    "scalex": 1,
-    "scaley": 1,
-    "skewx": 0,
-    "skewy": 0,
-    "tcenterx": 0,
-    "tcentery": 0,
+    "Rotation": 0,
+    "ScaleX": 1,
+    "ScaleY": 1,
+    "SkewX": 0,
+    "SkewY": 0,
+    "TCenterX": 0,
+    "TCenterY": 0,
 }
 
 transformConverters = {
     # "x": int,  # handled by gvar
     # "y": int,  # handled by gvar
-    "rotation": degreesToInt,
-    "scalex": None,  # Filled in locally
-    "scaley": None,  # Filled in locally
-    "skewx": degreesToInt,
-    "skewy": degreesToInt,
-    "tcenterx": int,
-    "tcentery": int,
+    "Rotation": degreesToInt,
+    "ScaleX": None,  # Filled in locally
+    "ScaleY": None,  # Filled in locally
+    "SkewX": degreesToInt,
+    "SkewY": degreesToInt,
+    "TCenterX": int,
+    "TCenterY": int,
 }
 
 
@@ -111,8 +111,8 @@ def precompileVarComponents(glyphName, components, storeBuilder, axisTags):
         dicts = [transform for coord, transform in component]
         transformConvertersLocal = dict(transformConverters)
         numIntBitsForScale, scaleConvert = _calcNumIntBitsForScale(dicts)
-        transformConvertersLocal["scalex"] = scaleConvert
-        transformConvertersLocal["scaley"] = scaleConvert
+        transformConvertersLocal["ScaleX"] = scaleConvert
+        transformConvertersLocal["ScaleY"] = scaleConvert
         transformDict = compileDicts(dicts, transformDefaults, transformConvertersLocal, storeBuilder)
         if coordDict or transformDict:
             haveVarCData = True
@@ -278,7 +278,7 @@ def _compileTransform(transformDict, numIntBitsForScale):
             continue
         convert = transformConverters[fieldName]
         if convert is None:
-            assert fieldName in {"scalex", "scaley"}
+            assert fieldName in {"ScaleX", "ScaleY"}
             convert = scaleConverter
         transformFlags |= transformFieldFlags[fieldName]
         transformValues.append(convert(valueDict["value"]))
@@ -316,10 +316,10 @@ def _calcMinMaxScale(transformDicts):
     minScale = 0
     maxScale = 0
     for d in transformDicts:
-        minScale = min(minScale, d.get("scalex", 0))
-        minScale = min(minScale, d.get("scaley", 0))
-        maxScale = max(maxScale, d.get("scalex", 0))
-        maxScale = max(maxScale, d.get("scaley", 0))
+        minScale = min(minScale, d.get("ScaleX", 0))
+        minScale = min(minScale, d.get("ScaleY", 0))
+        maxScale = max(maxScale, d.get("ScaleX", 0))
+        maxScale = max(maxScale, d.get("ScaleY", 0))
     return minScale, maxScale
 
 

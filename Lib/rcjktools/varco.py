@@ -137,7 +137,11 @@ class VarCoFont:
                 ]
                 transforms = [
                     # Filter out x and y, as they'll be in glyf and gvar
-                    {k: v for k, v in m.components[i].transform.items() if k not in {"x", "y"}}
+                    {
+                        _transformFieldMapping[k]: v
+                        for k, v in m.components[i].transform.items()
+                        if k not in {"x", "y"}
+                    }
                     for m in masters
                 ]
                 components.append(list(zip(coords, transforms)))
@@ -145,6 +149,17 @@ class VarCoFont:
                 vcData[glyphName] = components, locations
         allLocations = [dict(items) for items in sorted(allLocations)]
         return vcData, allLocations
+
+
+_transformFieldMapping = {
+    "rotation": "Rotation",
+    "scalex": "ScaleX",
+    "scaley": "ScaleY",
+    "skewx": "SkewX",
+    "skewy": "SkewY",
+    "tcenterx": "TCenterY",
+    "tcentery": "TCenterY",
+}
 
 
 def tuplifyLocation(loc):
