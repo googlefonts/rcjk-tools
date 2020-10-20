@@ -1,12 +1,11 @@
-from typing import NamedTuple
 from fontTools.misc.fixedTools import floatToFixed
 from fontTools.ttLib import TTFont, newTable, registerCustomTableClass
 from fontTools.varLib.models import VariationModel, allEqual
 from fontTools.varLib.varStore import OnlineVarStoreBuilder
 from rcjktools.varco import VarCoFont
 from rcjktools.table_VarC import (
-    fixed2dot14, getConverterForNumIntBitsForScale, transformConverters,
-    transformDefaults, VARIDX_KEY)
+    fixed2dot14, getToFixedConverterForNumIntBitsForScale, transformToIntConverters,
+    transformDefaults, VARIDX_KEY, ComponentRecord, CoordinateRecord, TransformRecord)
 
 
 def precompileAllComponents(vcData, allLocations, axisTags):
@@ -28,20 +27,6 @@ def precompileAllComponents(vcData, allLocations, axisTags):
     return precompiled, storeBuilder.finish()
 
 
-class CoordinateRecord(dict):
-    pass
-
-
-class TransformRecord(dict):
-    pass
-
-
-class ComponentRecord(NamedTuple):
-    coord: CoordinateRecord
-    transform: TransformRecord
-    numIntBitsForScale: int
-
-
 def precompileVarComponents(glyphName, components, storeBuilder, axisTags):
     precompiled = []
     haveVarCData = False
@@ -53,11 +38,11 @@ def precompileVarComponents(glyphName, components, storeBuilder, axisTags):
         coordDict = compileDicts(dicts, coordDefaults, coordConverters, storeBuilder, allowIndividualVarIdx=True)
 
         dicts = [transform for coord, transform in component]
-        transformConvertersLocal = dict(transformConverters)
+        transformToIntConvertersLocal = dict(transformToIntConverters)
         numIntBitsForScale, scaleConvert = _calcNumIntBitsForScale(dicts)
-        transformConvertersLocal["ScaleX"] = scaleConvert
-        transformConvertersLocal["ScaleY"] = scaleConvert
-        transformDict = compileDicts(dicts, transformDefaults, transformConvertersLocal, storeBuilder)
+        transformToIntConvertersLocal["ScaleX"] = scaleConvert
+        transformToIntConvertersLocal["ScaleY"] = scaleConvert
+        transformDict = compileDicts(dicts, transformDefaults, transformToIntConvertersLocal, storeBuilder)
         if coordDict or transformDict:
             haveVarCData = True
         precompiled.append(
@@ -101,7 +86,7 @@ def compileDicts(dicts, dictDefaults, dictConverters, storeBuilder, allowIndivid
 def _calcNumIntBitsForScale(dicts):
     minScale, maxScale = _calcMinMaxScale(dicts)
     numIntBits = _calcNumIntBits(minScale, maxScale)
-    scaleConvert = getConverterForNumIntBitsForScale(numIntBits)
+    scaleConvert = getToFixedConverterForNumIntBitsForScale(numIntBits)
     return numIntBits, scaleConvert
 
 
@@ -166,6 +151,12 @@ if __name__ == "__main__":
     buildVarCTable(ttf, vcData, allLocations)
 
     outTTXPath = ttfPath.parent / (ttfPath.stem + "-varc.ttx")
+    refTTXPath = ttfPath.parent / (ttfPath.stem + "-varc-ref.ttx")
     outTTFPath = ttfPath.parent / (ttfPath.stem + "-varc.ttf")
     ttf.saveXML(outTTXPath, tables=["VarC"])
     ttf.save(outTTFPath)
+
+    ttf = TTFont(outTTFPath)
+    # varcTable = ttf["VarC"]
+    # print(varcTable.GlyphData)
+    ttf.saveXML(refTTXPath, tables=["VarC"])

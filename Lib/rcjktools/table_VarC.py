@@ -2,9 +2,11 @@ from collections import defaultdict
 import functools
 import itertools
 import struct
-from fontTools.misc.fixedTools import floatToFixed, otRound
+from typing import NamedTuple
+from fontTools.misc.fixedTools import fixedToFloat, floatToFixed, otRound
 from fontTools.ttLib.tables.DefaultTable import DefaultTable
-from fontTools.ttLib.tables.otConverters import OTTableWriter
+from fontTools.ttLib.tables.otConverters import OTTableReader, OTTableWriter
+from fontTools.ttLib.tables.otTables import VarStore
 
 
 VARIDX_KEY = "varIdx"
@@ -49,7 +51,11 @@ def degreesToInt(value):
     return otRound(0x8000 * value / 360)
 
 
-transformConverters = {
+def intToDegrees(value):
+    return value * 360 / 0x8000
+
+
+transformToIntConverters = {
     # "x": int,  # handled by gvar
     # "y": int,  # handled by gvar
     "Rotation": degreesToInt,
@@ -62,6 +68,33 @@ transformConverters = {
 }
 
 
+transformFromIntConverters = {
+    # "x": int,  # handled by gvar
+    # "y": int,  # handled by gvar
+    "Rotation": intToDegrees,
+    "ScaleX": None,  # Filled in locally
+    "ScaleY": None,  # Filled in locally
+    "SkewX": intToDegrees,
+    "SkewY": intToDegrees,
+    "TCenterX": int,
+    "TCenterY": int,
+}
+
+
+class CoordinateRecord(dict):
+    pass
+
+
+class TransformRecord(dict):
+    pass
+
+
+class ComponentRecord(NamedTuple):
+    coord: CoordinateRecord
+    transform: TransformRecord
+    numIntBitsForScale: int
+
+
 def _getSubWriter(writer):
     subWriter = writer.getSubWriter()
     subWriter.longOffset = True
@@ -72,7 +105,38 @@ def _getSubWriter(writer):
 class table_VarC(DefaultTable):
 
     def decompile(self, data, ttFont):
-        ...
+        axisTags = [axis.axisTag for axis in ttFont["fvar"].axes]
+
+        reader = OTTableReader(data)
+        self.Version = reader.readULong()
+        if self.Version != 0x00010000:
+            raise ValueError(f"unknown VarC.Version: {self.Version:08X}")
+
+        sharedComponentOffsetsOffset = reader.readULong()
+        if sharedComponentOffsetsOffset:
+            sub = reader.getSubReader(sharedComponentOffsetsOffset)
+            sharedComponentOffsets = decompileOffsets(sub)
+
+            sub = reader.getSubReader(reader.readULong())
+            sharedComponents = decompileSharedComponents(sub, sharedComponentOffsets, axisTags)
+        else:
+            nullOffset = reader.readULong()
+            assert nullOffset == 0x00000000
+            sharedComponents = []
+
+        sub = reader.getSubReader(reader.readULong())
+        glyphOffsets = decompileOffsets(sub)
+
+        sub = reader.getSubReader(reader.readULong())
+        self.GlyphData = decompileGlyphData(ttFont, sub, glyphOffsets, sharedComponents, axisTags)
+
+        varStoreOffset = reader.readULong()
+        if varStoreOffset:
+            self.VarStore = VarStore()
+            self.VarStore.decompile(reader.getSubReader(varStoreOffset), ttFont)
+        else:
+            self.VarStore = None
+
 
     def compile(self, ttFont):
         axisTags = [axis.axisTag for axis in ttFont["fvar"].axes]
@@ -103,11 +167,15 @@ class table_VarC(DefaultTable):
         assert self.Version == 0x00010000
         writer.writeULong(self.Version)
 
-        sub = _getSubWriter(writer)
-        sub.writeData(compileOffsets(sharedComponentOffsets))
+        if sharedComponentOffsets:
+            sub = _getSubWriter(writer)
+            sub.writeData(compileOffsets(sharedComponentOffsets))
 
-        sub = _getSubWriter(writer)
-        sub.writeData(b"".join(sharedComponentData))
+            sub = _getSubWriter(writer)
+            sub.writeData(b"".join(sharedComponentData))
+        else:
+            writer.writeULong(0x00000000)
+            writer.writeULong(0x00000000)
 
         sub = _getSubWriter(writer)
         sub.writeData(compileOffsets(glyphOffsets))
@@ -120,38 +188,8 @@ class table_VarC(DefaultTable):
 
         return writer.getAllData()
 
-        # VarC table overview:
-        # Version
-        # SharedComponentDataOffsets
-        # GlyphDataOffsets
-        # VarStoreOffset
-        # SharedComponentData
-        # GlyphData
-        # VarStoreData
-
-        # varcOTData = [
-
-        #     ('VarC', [
-        #         ('Version', 'Version', None, None, 'Version of the VarC table-initially 0x00010000'),
-        #         ('LOffset', 'SharedComponents', None, None, ''),
-        #         ('LOffset', 'GlyphData', None, None, ''),
-        #         ('LOffset', 'VarStore', None, None, 'Offset to variation store (may be NULL)'),
-        #     ]),
-
-        #     ('SharedComponents', [
-        #         ('LOffset', 'SharedComponentsIndex', None, None, ''),
-        #         ('LOffset', 'SharedComponentsX', None, None, ''),
-        #     ]),
-
-        #     ('GlyphData', [
-        #         ('LOffset', 'GlyphDataIndex', None, None, ''),
-        #         ('LOffset', 'GlyphDataX', None, None, ''),
-        #     ]),
-
-        # ]
-
     def toXML(self, writer, ttFont, **kwargs):
-        glyphTable = ttFont["glyf"]
+        glyfTable = ttFont["glyf"]
         writer.simpletag("Version", [("value", f"0x{self.Version:08X}")])
         writer.newline()
 
@@ -159,7 +197,7 @@ class table_VarC(DefaultTable):
         writer.newline()
         for glyphName, glyphData in sorted(self.GlyphData.items()):
             try:
-                glyfGlyph = glyphTable[glyphName]
+                glyfGlyph = glyfTable[glyphName]
             except KeyError:
                 print(f"WARNING: glyph {glyphName} does not exist in the VF, skipping")
                 continue
@@ -223,6 +261,7 @@ def compileComponents(glyphName, precompiledComponents, axisTags, axisTagToIndex
         flags |= coordFlags
 
         transformFlags, transformData, transformVarIdxs = _compileTransform(component.transform, component.numIntBitsForScale)
+        flags |= transformFlags
         varIdxs = coordVarIdxs + transformVarIdxs
         varIdxFormat, varIdxData = _packVarIdxs(varIdxs)
 
@@ -231,13 +270,18 @@ def compileComponents(glyphName, precompiledComponents, axisTags, axisTagToIndex
         else:
             headerFormat = ">HBB"
         componentData = struct.pack(headerFormat, flags, varIdxFormat, numAxes) + coordData + transformData + varIdxData
+
+        testCompo = decompileComponent(OTTableReader(componentData), None, axisTags)
+        if component != testCompo:
+            print("??? 1", component)
+            print("??? 2", testCompo)
         data.append(componentData)
 
     return data
 
 
 def packArrayUInt8(idxs):
-    return packArray("H", idxs)
+    return packArray("B", idxs)
 
 
 def packArrayUInt16(idxs):
@@ -326,7 +370,7 @@ def _compileTransform(transformDict, numIntBitsForScale):
     if hasTransformVariations:
         transformFlags |= HAS_TRANSFORM_VARIATIONS
 
-    scaleConverter = getConverterForNumIntBitsForScale(numIntBitsForScale)
+    scaleConverter = getToFixedConverterForNumIntBitsForScale(numIntBitsForScale)
 
     transformValues = []
     transformVarIdxs = []
@@ -334,7 +378,7 @@ def _compileTransform(transformDict, numIntBitsForScale):
         valueDict = transformDict.get(fieldName)
         if valueDict is None:
             continue
-        convert = transformConverters[fieldName]
+        convert = transformToIntConverters[fieldName]
         if convert is None:
             assert fieldName in {"ScaleX", "ScaleY"}
             convert = scaleConverter
@@ -345,6 +389,120 @@ def _compileTransform(transformDict, numIntBitsForScale):
 
     transformData = struct.pack(">" + "h" * len(transformValues), *transformValues)
     return transformFlags, transformData, transformVarIdxs
+
+
+def decompileComponent(reader, sharedComponents, axisTags):
+    flags = reader.readUShort()
+    if flags & 0x8000:
+        # component is shared
+        if flags & 0x4000:
+            index = ((flags & 0x3FFF) << 16) + reader.readUShort()
+        else:
+            index = flags & 0x3FFF
+        return sharedComponents[index]
+
+    numIntBitsForScale = flags & NUM_INT_BITS_FOR_SCALE_MASK
+    scaleConverter = getToFloatConverterForNumIntBitsForScale(numIntBitsForScale)
+    varIdxFormat = reader.readUInt8()
+
+    if flags & AXIS_INDICES_ARE_WORDS:
+        numAxes = reader.readUShort()
+        axisIndices = reader.readArray("H", 2, numAxes)
+        hasVarIdxFlag = 0x8000
+        axisIndexMask = 0xFFFF - hasVarIdxFlag
+    else:
+        numAxes = reader.readUInt8()
+        axisIndices = reader.readArray("B", 1, numAxes)
+        hasVarIdxFlag = 0x80
+        axisIndexMask = 0xFF - hasVarIdxFlag
+
+    axisHasVarIdx = [bool(axisIndex & hasVarIdxFlag) for axisIndex in axisIndices]
+    axisIndices = [axisIndex & axisIndexMask for axisIndex in axisIndices]
+
+    coord = [
+        (axisTags[i], dict(value=fixedToFloat(reader.readShort(), 14)))
+        for i in axisIndices
+    ]
+    numVarIdxs = sum(axisHasVarIdx)
+
+    transform = []
+    for fieldName, mask in transformFieldFlags.items():
+        if not (flags & mask):
+            continue
+        value = reader.readShort()
+
+        convert = transformFromIntConverters[fieldName]
+        if convert is None:
+            assert fieldName in {"ScaleX", "ScaleY"}
+            convert = scaleConverter
+        transform.append((fieldName, dict(value=convert(value))))
+
+    if flags & HAS_TRANSFORM_VARIATIONS:
+        numVarIdxs += len(transform)
+
+    varIdxs = decompileVarIdxs(reader, varIdxFormat, numVarIdxs)
+    assert len(axisHasVarIdx) == len(coord)
+    for hasVarIdx, (axisTag, valueDict) in zip(axisHasVarIdx, coord):
+        if hasVarIdx:
+            valueDict[VARIDX_KEY] = varIdxs.pop(0)
+
+    if flags & HAS_TRANSFORM_VARIATIONS:
+        for fieldName, valueDict in transform:
+            valueDict[VARIDX_KEY] = varIdxs.pop(0)
+
+    assert not varIdxs
+
+    return ComponentRecord(dict(coord), dict(transform), numIntBitsForScale)
+
+
+def decompileVarIdxs(reader, entryFormat, count):
+    innerBits = (entryFormat & 0x0F) + 1
+    entrySize = (entryFormat >> 4) + 1
+    innerMask = (1 << innerBits) - 1
+    outerMask = 0xFF - innerMask
+    outerShift = 16 - innerBits
+    if entrySize == 1:
+        varIdxs = reader.readArray("B", 1, count)
+    elif entrySize == 2:
+        varIdxs = reader.readArray("H", 2, count)
+    elif entrySize == 3:
+        varIdxs = [reader.readUInt24() for i in range(count)]
+    elif entrySize == 4:
+        varIdxs = reader.readArray("L", 3, count)
+    else:
+        assert False, "oops"
+    varIdxs = [(varIdx & innerMask) + ((varIdx & outerMask) << outerShift) for varIdx in varIdxs]
+    return varIdxs
+
+
+def decompileSharedComponents(reader, sharedComponentOffsets, axisTags):
+    absPos = reader.pos
+    components = []
+    prevOffset = 0
+    for nextOffset in sharedComponentOffsets:
+        components.append(decompileComponent(reader, None, axisTags))
+        assert (nextOffset + absPos) == reader.pos, (nextOffset + absPos, reader.pos, nextOffset - prevOffset)
+        prevOffset = nextOffset
+    return components
+
+
+def decompileGlyphData(ttFont, reader, glyphOffsets, sharedComponents, axisTags):
+    glyfTable = ttFont["glyf"]
+    glyphOrder = ttFont.getGlyphOrder()
+    glyphData = {}
+    prevOffset = 0
+    for glyphID, nextOffset in enumerate(glyphOffsets):
+        if nextOffset - prevOffset:
+            glyphName = glyphOrder[glyphID]
+            glyfGlyph = glyfTable[glyphName]
+            assert glyfGlyph.isComposite()
+            numComponents = len(glyfGlyph.components)
+            components = []
+            for i in range(numComponents):
+                components.append(decompileComponent(reader, sharedComponents, axisTags))
+            glyphData[glyphName] = components
+        prevOffset = nextOffset
+    return glyphData
 
 
 def compileOffsets(offsets):
@@ -364,7 +522,26 @@ def compileOffsets(offsets):
         entrySize = 4
         packArray = packArrayUInt32
     headerData = struct.pack(">L", ((entrySize - 1) << 30) + numOffsets)
-    return headerData + packArray(offsets)
+    x = packArray(offsets)
+    return headerData + x
+
+
+def decompileOffsets(reader):
+    headerData = reader.readULong()
+    numOffsets = headerData & 0x3FFFFFFF
+    entrySize = (headerData >> 30) + 1
+
+    if entrySize == 1:
+        offsets = reader.readArray("B", 1, numOffsets)
+    elif entrySize == 2:
+        offsets = reader.readArray("H", 2, numOffsets)
+    elif entrySize == 3:
+        offsets = [reader.readUInt24() for i in range(numOffsets)]
+    elif entrySize == 4:
+        offsets = reader.readArray("L", 3, numOffsets)
+    else:
+        assert False, "oops"
+    return offsets
 
 
 def optimizeSharedComponentData(allComponentData):
@@ -396,5 +573,9 @@ def optimizeSharedComponentData(allComponentData):
     return sharedComponentData
 
 
-def getConverterForNumIntBitsForScale(numIntBits):
+def getToFixedConverterForNumIntBitsForScale(numIntBits):
     return functools.partial(floatToFixed, precisionBits=16-numIntBits)
+
+
+def getToFloatConverterForNumIntBitsForScale(numIntBits):
+    return functools.partial(fixedToFloat, precisionBits=16-numIntBits)
