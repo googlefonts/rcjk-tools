@@ -265,6 +265,9 @@ def compileComponents(glyphName, precompiledComponents, axisTags, axisTagToIndex
         varIdxs = coordVarIdxs + transformVarIdxs
         varIdxFormat, varIdxData = _packVarIdxs(varIdxs)
 
+        # refVarIdxs = decompileVarIdxs(OTTableReader(varIdxData), varIdxFormat, len(varIdxs))
+        # assert varIdxs == refVarIdxs, (varIdxs, refVarIdxs)
+
         if flags & AXIS_INDICES_ARE_WORDS:
             headerFormat = ">HBH"
         else:
@@ -313,6 +316,8 @@ def _packVarIdxs(varIdxs):
         inner >>= 1
     innerBits = max(innerBits, 1)
     assert innerBits <= 16
+    innerMask = (1 << innerBits) - 1
+    outerMask = 0xFFFFFFFF - innerMask
 
     ored = (ored >> (16-innerBits)) | (ored & ((1 << innerBits)-1))
     if ored <= 0x000000FF:
@@ -330,7 +335,8 @@ def _packVarIdxs(varIdxs):
 
     entryFormat = ((entrySize - 1) << 4) | (innerBits - 1)
     outerShift = 16 - innerBits
-    varIdxData = packArray([(idx >> outerShift) | (idx & 0xFFFF) for idx in varIdxs])
+    varIdxData = packArray([((idx & outerMask) >> outerShift) | (idx & innerMask) for idx in varIdxs])
+    assert len(varIdxData) == entrySize * len(varIdxs)
     return entryFormat, varIdxData
 
 
@@ -459,7 +465,7 @@ def decompileVarIdxs(reader, entryFormat, count):
     innerBits = (entryFormat & 0x0F) + 1
     entrySize = (entryFormat >> 4) + 1
     innerMask = (1 << innerBits) - 1
-    outerMask = 0xFF - innerMask
+    outerMask = 0xFFFFFFFF - innerMask
     outerShift = 16 - innerBits
     if entrySize == 1:
         varIdxs = reader.readArray("B", 1, count)
