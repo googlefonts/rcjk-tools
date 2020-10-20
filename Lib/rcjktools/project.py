@@ -9,7 +9,7 @@ from fontTools.varLib.models import VariationModel
 from ufo2ft.filters import UFO2FT_FILTERS_KEY
 from ufoLib2.objects import Font as UFont, Glyph as UGlyph
 
-from .objects import Component, Glyph, InterpolationError, MathDict, normalizeLocation
+from .objects import Component, Glyph, InterpolationError, MathDict, MathOutline, normalizeLocation
 from .utils import convertOffsetFromRCenterToTCenter, makeTransform
 
 
@@ -119,6 +119,18 @@ class RoboCJKProject:
                 logger.warning(f"glyph {glyphName} can't be interpolated ({e})")
             else:
                 characterGlyphNames.append(glyphName)
+                if glyph.components and not glyph.outline.isEmpty():
+                    # Decompose character glyphs that have both outlines and components
+                    logger.warning(f"decomposing {glyphName}: it has both an outline and components")
+                    newOutlines = []
+                    for varGlyph in [glyph] + glyph.variations:
+                        outline = MathOutline()
+                        self.drawPointsCharacterGlyph(glyphName, varGlyph.location, outline)
+                        newOutlines.append(outline)
+
+                    for varGlyph, outline in zip([glyph] + glyph.variations, newOutlines):
+                        varGlyph.outline = outline
+                        varGlyph.components = []
 
         dcNames = getComponentNames(self.characterGlyphGlyphSet, characterGlyphNames)
         # check whether all DC glyphnames start with "DC_"
