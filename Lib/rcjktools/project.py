@@ -91,6 +91,18 @@ class RoboCJKProject:
                 glyph.width = max(0, width)  # can't be negative
                 ufo[glyphName] = glyph
 
+    def decomposeCharacterGlyph(self, glyphName):
+        glyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
+        newOutlines = []  # Collect first, replace later
+        for varGlyph in [glyph] + glyph.variations:
+            outline = MathOutline()
+            self.drawPointsCharacterGlyph(glyphName, varGlyph.location, outline)
+            newOutlines.append(outline)
+
+        for varGlyph, outline in zip([glyph] + glyph.variations, newOutlines):
+            varGlyph.outline = outline
+            varGlyph.components = []
+
     def saveVarCoUFO(self, ufoPath, familyName, styleName):
         """Save a UFO with Variable Components glyph.lib extensions."""
         # NOTE: this has quite a few GS-CJK assumptions that may or may
@@ -120,17 +132,8 @@ class RoboCJKProject:
             else:
                 characterGlyphNames.append(glyphName)
                 if glyph.components and not glyph.outline.isEmpty():
-                    # Decompose character glyphs that have both outlines and components
                     logger.warning(f"decomposing {glyphName}: it has both an outline and components")
-                    newOutlines = []
-                    for varGlyph in [glyph] + glyph.variations:
-                        outline = MathOutline()
-                        self.drawPointsCharacterGlyph(glyphName, varGlyph.location, outline)
-                        newOutlines.append(outline)
-
-                    for varGlyph, outline in zip([glyph] + glyph.variations, newOutlines):
-                        varGlyph.outline = outline
-                        varGlyph.components = []
+                    self.decomposeCharacterGlyph(glyphName)
 
         dcNames = getComponentNames(self.characterGlyphGlyphSet, characterGlyphNames)
         # check whether all DC glyphnames start with "DC_"
