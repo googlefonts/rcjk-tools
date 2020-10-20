@@ -137,7 +137,6 @@ class table_VarC(DefaultTable):
         else:
             self.VarStore = None
 
-
     def compile(self, ttFont):
         axisTags = [axis.axisTag for axis in ttFont["fvar"].axes]
         axisTagToIndex = {tag: i for i, tag in enumerate(axisTags)}
