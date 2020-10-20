@@ -31,7 +31,7 @@ transformDefaults = {
     # "y": 0,  # handled by gvar
     "Rotation": 0,
     "ScaleX": 1,
-    "ScaleY": 1,
+    "ScaleY": 1,  # TODO: figure out how to make ScaleY default to ScaleX
     "SkewX": 0,
     "SkewY": 0,
     "TCenterX": 0,
