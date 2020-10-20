@@ -274,10 +274,11 @@ def compileComponents(glyphName, precompiledComponents, axisTags, axisTagToIndex
             headerFormat = ">HBB"
         componentData = struct.pack(headerFormat, flags, varIdxFormat, numAxes) + coordData + transformData + varIdxData
 
-        testCompo = decompileComponent(OTTableReader(componentData), None, axisTags)
-        if component != testCompo:
-            print("??? 1", component)
-            print("??? 2", testCompo)
+        # testCompo = decompileComponent(OTTableReader(componentData), None, axisTags)
+        # if component != testCompo:
+        #     print("??? 1", component)
+        #     print("??? 2", testCompo)
+
         data.append(componentData)
 
     return data
