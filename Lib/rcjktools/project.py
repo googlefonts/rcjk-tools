@@ -13,6 +13,9 @@ from .objects import Component, Glyph, InterpolationError, MathDict, normalizeLo
 from .utils import convertOffsetFromRCenterToTCenter, makeTransform
 
 
+logger = logging.getLogger(__name__)
+
+
 class RoboCJKProject:
 
     def __init__(self, path, scaleUsesCenter=False):
@@ -83,7 +86,7 @@ class RoboCJKProject:
             try:
                 width = self.drawPointsCharacterGlyph(glyphName, location, pen)
             except InterpolationError as e:
-                print(f"glyph {glyphName} can't be interpolated ({e})")
+                logger.warning(f"glyph {glyphName} can't be interpolated ({e})")
             else:
                 glyph.width = max(0, width)  # can't be negative
                 ufo[glyphName] = glyph
@@ -113,7 +116,7 @@ class RoboCJKProject:
             try:
                 glyph.instantiate({"wght": 0.5})
             except InterpolationError as e:
-                print(f"glyph {glyphName} can't be interpolated ({e})")
+                logger.warning(f"glyph {glyphName} can't be interpolated ({e})")
             else:
                 characterGlyphNames.append(glyphName)
 
@@ -258,6 +261,8 @@ def addRCJKGlyphToVarCoUFO(
     if renameTable is None:
         renameTable = {}
     rcjkGlyph = rcjkGlyphSet.getGlyph(srcGlyphName)
+    if rcjkGlyph.components and not rcjkGlyph.outline.isEmpty():
+        logger.warning(f"glyph {srcGlyphName} has both outlines and components")
 
     glyph = UGlyph(dstGlyphName)
     glyph.unicodes = unicodes
@@ -332,7 +337,7 @@ def filterGlyphNames(glyphNames):
         try:
             glyphName.encode("ascii")
         except UnicodeEncodeError:
-            print(f"WARNING glyph name {glyphName} is not ASCII, and can not be exported")
+            logger.warning(f"glyph name {glyphName} is not ASCII, and can not be exported")
         else:
             okGlyphNames.append(glyphName)
     return okGlyphNames
@@ -403,7 +408,7 @@ class GlyphSet:
                 glyphName = m.group(1).decode("utf-8")
                 refFileName = userNameToFileName(glyphName, suffix=".glif")
                 if refFileName != path.name:
-                    logging.warning(
+                    logger.warning(
                         f"actual file name does not match predicted file name: "
                         f"{refFileName} {path.name} {glyphName}"
                     )
