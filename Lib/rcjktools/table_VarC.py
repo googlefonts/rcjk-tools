@@ -263,7 +263,7 @@ def compileComponents(glyphName, precompiledComponents, axisTags, axisTagToIndex
         transformFlags, transformData, transformVarIdxs = _compileTransform(component.transform, component.numIntBitsForScale)
         flags |= transformFlags
         varIdxs = coordVarIdxs + transformVarIdxs
-        varIdxFormat, varIdxData = _packVarIdxs(varIdxs)
+        varIdxFormat, varIdxData = compileVarIdxs(varIdxs)
 
         # refVarIdxs = decompileVarIdxs(OTTableReader(varIdxData), varIdxFormat, len(varIdxs))
         # assert varIdxs == refVarIdxs, (varIdxs, refVarIdxs)
@@ -304,7 +304,7 @@ def packArray(fmt, values):
     return struct.pack(">" + fmt * len(values), *values)
 
 
-def _packVarIdxs(varIdxs):
+def compileVarIdxs(varIdxs):
     # Mostly taken from fontTools.ttLib.tables.otTable.VarIdxMap.preWrite()
     ored = 0
     for idx in varIdxs:
