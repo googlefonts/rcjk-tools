@@ -4,7 +4,7 @@ import itertools
 import struct
 from typing import NamedTuple
 from fontTools.misc.fixedTools import floatToFixed, otRound
-from fontTools.ttLib import TTFont
+from fontTools.ttLib import TTFont, newTable, registerCustomTableClass
 from fontTools.ttLib.tables.otBase import OTTableWriter
 from fontTools.varLib.models import VariationModel, allEqual
 from fontTools.varLib.varStore import OnlineVarStoreBuilder
@@ -63,11 +63,6 @@ transformConverters = {
     "tcenterx": int,
     "tcentery": int,
 }
-
-
-def splitVarIdx(value):
-    # outer, inner
-    return value >> 16, value & 0xFFFF
 
 
 def precompileAllComponents(vcData, allLocations, axisTags):
@@ -386,36 +381,42 @@ def compileOffsets(offsets):
 
 
 def buildVarCTable(ttf, vcData, allLocations, axisTags):
+    varc_table = ttf["VarC"] = newTable("VarC")
+    varc_table.Version = 0x00010000
     precompiled, store = precompileAllComponents(vcData, allLocations, axisTags)
     mapping = store.optimize()
+    varc_table.VarStore = store
     remapVarIdxs(precompiled, mapping)
 
-    axisTagToIndex = {tag: i for i, tag in enumerate(axisTags)}
+    varc_table.GlyphData = precompiled
 
-    allComponentData = {}
-    for gn, components in precompiled.items():
-        allComponentData[gn] = compileComponents(gn, components, axisTags, axisTagToIndex)
+    if 0:
+        axisTagToIndex = {tag: i for i, tag in enumerate(axisTags)}
 
-    beforeCount = sum(len(d) for g in allComponentData.values() for d in g)
+        allComponentData = {}
+        for gn, components in precompiled.items():
+            allComponentData[gn] = compileComponents(gn, components, axisTags, axisTagToIndex)
 
-    sharedComponentData = optimizeSharedComponentData(allComponentData)
-    sharedComponentOffsets = list(itertools.accumulate(len(data) for data in sharedComponentData))
-    sharedComponentOffsetsData = compileOffsets(sharedComponentOffsets)
+        beforeCount = sum(len(d) for g in allComponentData.values() for d in g)
 
-    glyphData = {
-        glyphName: b"".join(componentData)
-        for glyphName, componentData in allComponentData.items()
-    }
-    glyphData = [glyphData.get(glyphName, b"") for glyphName in ttf.getGlyphOrder()]
-    trailingEmptyCount = 0
-    for data in reversed(glyphData):
-        if data:
-            break
-        trailingEmptyCount += 1
-    if trailingEmptyCount:
-        glyphData = glyphData[:-trailingEmptyCount]
-    glyphOffsets = list(itertools.accumulate(len(data) for data in glyphData))
-    glyphOffsetsData = compileOffsets(glyphOffsets)
+        sharedComponentData = optimizeSharedComponentData(allComponentData)
+        sharedComponentOffsets = list(itertools.accumulate(len(data) for data in sharedComponentData))
+        sharedComponentOffsetsData = compileOffsets(sharedComponentOffsets)
+
+        glyphData = {
+            glyphName: b"".join(componentData)
+            for glyphName, componentData in allComponentData.items()
+        }
+        glyphData = [glyphData.get(glyphName, b"") for glyphName in ttf.getGlyphOrder()]
+        trailingEmptyCount = 0
+        for data in reversed(glyphData):
+            if data:
+                break
+            trailingEmptyCount += 1
+        if trailingEmptyCount:
+            glyphData = glyphData[:-trailingEmptyCount]
+        glyphOffsets = list(itertools.accumulate(len(data) for data in glyphData))
+        glyphOffsetsData = compileOffsets(glyphOffsets)
 
     # writer = OTTableWriter()
     # writer.writeULong(0x00010000)
@@ -463,23 +464,28 @@ def buildVarCTable(ttf, vcData, allLocations, axisTags):
 
     # ]
 
-    print("index data size:", len(sharedComponentOffsetsData))
+    if 0:
+        print("index data size:", len(sharedComponentOffsetsData))
 
-    afterCount = sum(len(d) for g in allComponentData.values() for d in g)
-    sharedCount = sum(len(d) for d in sharedComponentData)
-    print("before:", beforeCount)
-    print("after:", afterCount)
-    print("shared:", sharedCount)
-    print("after + shared:", afterCount + sharedCount)
-    print("saved:", beforeCount - (afterCount + sharedCount))
-    print("percentage saved:", round(100 * (1 - (afterCount + sharedCount) / beforeCount), 1))
-    print("number of shared compo blocks:", len(sharedComponentData))
+        afterCount = sum(len(d) for g in allComponentData.values() for d in g)
+        sharedCount = sum(len(d) for d in sharedComponentData)
+        print("before:", beforeCount)
+        print("after:", afterCount)
+        print("shared:", sharedCount)
+        print("after + shared:", afterCount + sharedCount)
+        print("saved:", beforeCount - (afterCount + sharedCount))
+        print("percentage saved:", round(100 * (1 - (afterCount + sharedCount) / beforeCount), 1))
+        print("number of shared compo blocks:", len(sharedComponentData))
 
 
 if __name__ == "__main__":
+    import pathlib
     import sys
 
+    registerCustomTableClass("VarC", "rcjktools.table_VarC", "table_VarC")
+
     ufoPath, ttfPath = sys.argv[1:]
+    ttfPath = pathlib.Path(ttfPath)
 
     ttf = TTFont(ttfPath, lazy=True)
     axisTags = [axis.axisTag for axis in ttf["fvar"].axes]
@@ -489,3 +495,8 @@ if __name__ == "__main__":
     vcData, allLocations = vcFont.extractVarCoData(globalAxisNames)
 
     buildVarCTable(ttf, vcData, allLocations, axisTags)
+
+    outTTXPath = ttfPath.parent / (ttfPath.stem + "-varc.ttx")
+    outTTFPath = ttfPath.parent / (ttfPath.stem + "-varc.ttf")
+    ttf.saveXML(outTTXPath, tables=["VarC"])
+    ttf.save(outTTFPath)
