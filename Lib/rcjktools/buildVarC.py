@@ -39,7 +39,8 @@ def precompileVarComponents(glyphName, components, storeBuilder, axisTags):
 
         dicts = [transform for coord, transform in component]
         transformToIntConvertersLocal = dict(transformToIntConverters)
-        numIntBitsForScale, scaleConvert = _calcNumIntBitsForScale(dicts)
+        numIntBitsForScale = calcNumIntBitsForScale(dicts)
+        scaleConvert = getToFixedConverterForNumIntBitsForScale(numIntBitsForScale)
         transformToIntConvertersLocal["ScaleX"] = scaleConvert
         transformToIntConvertersLocal["ScaleY"] = scaleConvert
         transformDict = compileDicts(dicts, transformDefaults, transformToIntConvertersLocal, storeBuilder)
@@ -83,11 +84,10 @@ def compileDicts(dicts, dictDefaults, dictConverters, storeBuilder, allowIndivid
     return resultDict
 
 
-def _calcNumIntBitsForScale(dicts):
+def calcNumIntBitsForScale(dicts):
     minScale, maxScale = _calcMinMaxScale(dicts)
     numIntBits = _calcNumIntBits(minScale, maxScale)
-    scaleConvert = getToFixedConverterForNumIntBitsForScale(numIntBits)
-    return numIntBits, scaleConvert
+    return numIntBits
 
 
 def _calcNumIntBits(minValue, maxValue, maxIntBits=7):
@@ -127,9 +127,9 @@ def buildVarCTable(ttf, vcData, allLocations):
     varc_table.Version = 0x00010000
     precompiled, store = precompileAllComponents(vcData, allLocations, axisTags)
     mapping = store.optimize()
-    varc_table.VarStore = store
     remapVarIdxs(precompiled, mapping)
     varc_table.GlyphData = precompiled
+    varc_table.VarStore = store
 
 
 if __name__ == "__main__":
