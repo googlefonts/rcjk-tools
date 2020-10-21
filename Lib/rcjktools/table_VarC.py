@@ -493,6 +493,7 @@ def decompileSharedComponents(reader, sharedComponentOffsets, axisTags):
 
 
 def decompileGlyphData(ttFont, reader, glyphOffsets, sharedComponents, axisTags):
+    absPos = reader.pos
     glyfTable = ttFont["glyf"]
     glyphOrder = ttFont.getGlyphOrder()
     glyphData = {}
@@ -507,6 +508,7 @@ def decompileGlyphData(ttFont, reader, glyphOffsets, sharedComponents, axisTags)
             for i in range(numComponents):
                 components.append(decompileComponent(reader, sharedComponents, axisTags))
             glyphData[glyphName] = components
+            assert (nextOffset + absPos) == reader.pos, (nextOffset + absPos, reader.pos, nextOffset - prevOffset)
         prevOffset = nextOffset
     return glyphData
 
