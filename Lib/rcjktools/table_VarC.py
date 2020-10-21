@@ -474,7 +474,7 @@ def decompileVarIdxs(reader, entryFormat, count):
     elif entrySize == 3:
         varIdxs = [reader.readUInt24() for i in range(count)]
     elif entrySize == 4:
-        varIdxs = reader.readArray("L", 3, count)
+        varIdxs = reader.readArray("I", 4, count)
     else:
         assert False, "oops"
     varIdxs = [(varIdx & innerMask) + ((varIdx & outerMask) << outerShift) for varIdx in varIdxs]
