@@ -249,9 +249,9 @@ def splitVarIdx(value):
     return value >> 16, value & 0xFFFF
 
 
-def compileComponents(glyphName, precompiledComponents, axisTags, axisTagToIndex):
+def compileComponents(glyphName, components, axisTags, axisTagToIndex):
     data = []
-    for component in precompiledComponents:
+    for component in components:
         flags = component.numIntBitsForScale
         assert flags == flags & NUM_INT_BITS_FOR_SCALE_MASK
 
