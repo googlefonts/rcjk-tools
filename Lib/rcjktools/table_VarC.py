@@ -530,8 +530,7 @@ def compileOffsets(offsets):
         entrySize = 4
         packArray = packArrayUInt32
     headerData = struct.pack(">L", ((entrySize - 1) << 30) + numOffsets)
-    x = packArray(offsets)
-    return headerData + x
+    return headerData + packArray(offsets)
 
 
 def decompileOffsets(reader):
@@ -546,7 +545,7 @@ def decompileOffsets(reader):
     elif entrySize == 3:
         offsets = [reader.readUInt24() for i in range(numOffsets)]
     elif entrySize == 4:
-        offsets = reader.readArray("L", 3, numOffsets)
+        offsets = reader.readArray("I", 4, numOffsets)
     else:
         assert False, "oops"
     return offsets
