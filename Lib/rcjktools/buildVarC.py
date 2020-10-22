@@ -153,10 +153,13 @@ if __name__ == "__main__":
     outTTXPath = ttfPath.parent / (ttfPath.stem + "-varc.ttx")
     refTTXPath = ttfPath.parent / (ttfPath.stem + "-varc-ref.ttx")
     outTTFPath = ttfPath.parent / (ttfPath.stem + "-varc.ttf")
+    outWoff2Path = ttfPath.parent / (ttfPath.stem + "-varc.woff2")
     ttf.saveXML(outTTXPath, tables=["VarC"])
     ttf.save(outTTFPath)
 
     ttf = TTFont(outTTFPath)
+    ttf.flavor = "woff2"
+    ttf.save(outWoff2Path)
     # varcTable = ttf["VarC"]
     # print(varcTable.GlyphData)
-    ttf.saveXML(refTTXPath, tables=["VarC"])
+    # ttf.saveXML(refTTXPath, tables=["VarC"])
