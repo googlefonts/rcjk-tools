@@ -138,6 +138,7 @@ if __name__ == "__main__":
 
     registerCustomTableClass("VarC", "rcjktools.table_VarC", "table_VarC")
 
+    # TODO: make a decent command line prog with argparse
     ufoPath, ttfPath = sys.argv[1:]
     ttfPath = pathlib.Path(ttfPath)
 
