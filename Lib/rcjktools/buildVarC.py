@@ -132,16 +132,12 @@ def buildVarCTable(ttf, vcData, allLocations):
     varc_table.VarStore = store
 
 
-if __name__ == "__main__":
+def buildVarC(ufoPath, ttfPath, outTTFPath, outTTXPath, saveWoff2):
     import pathlib
-    import sys
-
     registerCustomTableClass("VarC", "rcjktools.table_VarC", "table_VarC")
-
-    # TODO: make a decent command line prog with argparse
-    ufoPath, ttfPath = sys.argv[1:]
     ttfPath = pathlib.Path(ttfPath)
-
+    if outTTFPath is None:
+        outTTFPath = ttfPath.parent / (ttfPath.stem + "-varc" + ttfPath.suffix)
     ttf = TTFont(ttfPath, lazy=True)
 
     axisTags = [axis.axisTag for axis in ttf["fvar"].axes]
@@ -151,16 +147,28 @@ if __name__ == "__main__":
 
     buildVarCTable(ttf, vcData, allLocations)
 
-    outTTXPath = ttfPath.parent / (ttfPath.stem + "-varc.ttx")
-    refTTXPath = ttfPath.parent / (ttfPath.stem + "-varc-ref.ttx")
-    outTTFPath = ttfPath.parent / (ttfPath.stem + "-varc.ttf")
-    outWoff2Path = ttfPath.parent / (ttfPath.stem + "-varc.woff2")
-    ttf.saveXML(outTTXPath, tables=["VarC"])
+    if outTTXPath is not None:
+        ttf.saveXML(outTTXPath, tables=["VarC"])
     ttf.save(outTTFPath)
 
-    ttf = TTFont(outTTFPath)
-    ttf.flavor = "woff2"
-    ttf.save(outWoff2Path)
-    # varcTable = ttf["VarC"]
-    # print(varcTable.GlyphData)
-    # ttf.saveXML(refTTXPath, tables=["VarC"])
+    if saveWoff2:
+        outWoff2Path = outTTFPath.parent / (outTTFPath.stem + ".woff2")
+        ttf = TTFont(outTTFPath)
+        ttf.flavor = "woff2"
+        ttf.save(outWoff2Path)
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("ufo", help="The VarCo UFO source")
+    parser.add_argument("ttf", help="The input Variable Font")
+    parser.add_argument("--output", help="The output Variable Font")
+    parser.add_argument("--ttx", help="A TTX dump for the VarC table will be written here, if given.")
+    parser.add_argument("--no-woff2", action="store_true")
+    args = parser.parse_args()
+    buildVarC(args.ufo, args.ttf, args.output, args.ttx, not args.no_woff2)
+
+
+if __name__ == "__main__":
+    main()
