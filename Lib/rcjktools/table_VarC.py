@@ -249,44 +249,6 @@ def compileGlyph(writer, glyphName, components, axisTags, axisTagToIndex):
         compileVarIdxs(writer, varIdxs)
 
 
-def compileVarIdxs(writer, varIdxs):
-    # Mostly taken from fontTools.ttLib.tables.otTables.VarIdxMap.preWrite()
-    ored = 0
-    for idx in varIdxs:
-        ored |= idx
-
-    inner = ored & 0xFFFF
-    innerBits = 0
-    while inner:
-        innerBits += 1
-        inner >>= 1
-    innerBits = max(innerBits, 1)
-    assert innerBits <= 16
-    innerMask = (1 << innerBits) - 1
-    outerMask = 0xFFFFFFFF - innerMask
-
-    ored = (ored >> (16-innerBits)) | (ored & ((1 << innerBits)-1))
-    if ored <= 0x000000FF:
-        entrySize = 1
-        write = writer.writeUInt8
-    elif ored <= 0x0000FFFF:
-        entrySize = 2
-        write = writer.writeUShort
-    elif ored <= 0x00FFFFFF:
-        entrySize = 3
-        write = writer.writeUInt24
-    else:
-        entrySize = 4
-        write = writer.writeULong
-
-    entryFormat = ((entrySize - 1) << 4) | (innerBits - 1)
-    writer.writeUInt8(entryFormat)
-    outerShift = 16 - innerBits
-    varIdxInts = [((idx & outerMask) >> outerShift) | (idx & innerMask) for idx in varIdxs]
-    for value in varIdxInts:
-        write(value)
-
-
 def _compileCoords(coordDict, axisTags, axisTagToIndex):
     coordFlags = 0
     axisIndices = sorted(axisTagToIndex[k] for k in coordDict)
@@ -342,6 +304,44 @@ def _compileTransform(transformDict, numIntBitsForScale):
 
     transformData = struct.pack(">" + "h" * len(transformValues), *transformValues)
     return transformFlags, transformData, transformVarIdxs
+
+
+def compileVarIdxs(writer, varIdxs):
+    # Mostly taken from fontTools.ttLib.tables.otTables.VarIdxMap.preWrite()
+    ored = 0
+    for idx in varIdxs:
+        ored |= idx
+
+    inner = ored & 0xFFFF
+    innerBits = 0
+    while inner:
+        innerBits += 1
+        inner >>= 1
+    innerBits = max(innerBits, 1)
+    assert innerBits <= 16
+    innerMask = (1 << innerBits) - 1
+    outerMask = 0xFFFFFFFF - innerMask
+
+    ored = (ored >> (16-innerBits)) | (ored & ((1 << innerBits)-1))
+    if ored <= 0x000000FF:
+        entrySize = 1
+        write = writer.writeUInt8
+    elif ored <= 0x0000FFFF:
+        entrySize = 2
+        write = writer.writeUShort
+    elif ored <= 0x00FFFFFF:
+        entrySize = 3
+        write = writer.writeUInt24
+    else:
+        entrySize = 4
+        write = writer.writeULong
+
+    entryFormat = ((entrySize - 1) << 4) | (innerBits - 1)
+    writer.writeUInt8(entryFormat)
+    outerShift = 16 - innerBits
+    varIdxInts = [((idx & outerMask) >> outerShift) | (idx & innerMask) for idx in varIdxs]
+    for value in varIdxInts:
+        write(value)
 
 
 # Decompile
