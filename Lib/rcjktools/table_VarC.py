@@ -135,7 +135,7 @@ class table_VarC(DefaultTable):
 
         allComponentData = {}
         for gn, components in self.GlyphData.items():
-            allComponentData[gn] = compileComponents(gn, components, axisTags, axisTagToIndex)
+            allComponentData[gn] = compileGlyph(gn, components, axisTags, axisTagToIndex)
 
         glyphData = {
             glyphName: b"".join(componentData)
@@ -229,7 +229,10 @@ def splitVarIdx(value):
     return value >> 16, value & 0xFFFF
 
 
-def compileComponents(glyphName, components, axisTags, axisTagToIndex):
+# Compile
+
+
+def compileGlyph(glyphName, components, axisTags, axisTagToIndex):
     data = []
     for component in components:
         flags = component.numIntBitsForScale
@@ -369,6 +372,18 @@ def _compileTransform(transformDict, numIntBitsForScale):
     return transformFlags, transformData, transformVarIdxs
 
 
+# Decompile
+
+
+def decompileGlyph(reader, glyfGlyph, axisTags):
+    assert glyfGlyph.isComposite()
+    numComponents = len(glyfGlyph.components)
+    components = []
+    for i in range(numComponents):
+        components.append(decompileComponent(reader, axisTags))
+    return components
+
+
 def decompileComponent(reader, axisTags):
     flags = reader.readUShort()
 
@@ -446,13 +461,7 @@ def decompileVarIdxs(reader, entryFormat, count):
     return varIdxs
 
 
-def decompileGlyph(reader, glyfGlyph, axisTags):
-    assert glyfGlyph.isComposite()
-    numComponents = len(glyfGlyph.components)
-    components = []
-    for i in range(numComponents):
-        components.append(decompileComponent(reader, axisTags))
-    return components
+# Helpers
 
 
 def getToFixedConverterForNumIntBitsForScale(numIntBits):
