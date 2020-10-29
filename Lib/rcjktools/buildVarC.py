@@ -132,7 +132,7 @@ def buildVarCTable(ttf, vcData, allLocations):
     varc_table.VarStore = store
 
 
-def buildVarC(ufoPath, ttfPath, outTTFPath, outTTXPath, saveWoff2):
+def buildVarC(ufoPath, ttfPath, outTTFPath, doTTX, saveWoff2):
     import pathlib
     registerCustomTableClass("VarC", "rcjktools.table_VarC", "table_VarC")
     ttfPath = pathlib.Path(ttfPath)
@@ -147,13 +147,20 @@ def buildVarC(ufoPath, ttfPath, outTTFPath, outTTXPath, saveWoff2):
 
     buildVarCTable(ttf, vcData, allLocations)
 
-    if outTTXPath is not None:
+    if doTTX:
+        outTTXPath = outTTFPath.parent / (outTTFPath.stem + "-before.ttx")
         ttf.saveXML(outTTXPath, tables=["VarC"])
+
     ttf.save(outTTFPath)
+
+    ttf = TTFont(outTTFPath, lazy=True)  # Load from scratch
+
+    if doTTX:
+        outTTXPath = outTTFPath.parent / (outTTFPath.stem + "-after.ttx")
+        ttf.saveXML(outTTXPath, tables=["VarC"])
 
     if saveWoff2:
         outWoff2Path = outTTFPath.parent / (outTTFPath.stem + ".woff2")
-        ttf = TTFont(outTTFPath)
         ttf.flavor = "woff2"
         ttf.save(outWoff2Path)
 
@@ -164,7 +171,7 @@ def main():
     parser.add_argument("ufo", help="The VarCo UFO source")
     parser.add_argument("ttf", help="The input Variable Font")
     parser.add_argument("--output", help="The output Variable Font")
-    parser.add_argument("--ttx", help="A TTX dump for the VarC table will be written here, if given.")
+    parser.add_argument("--ttx", action="store_true", help="write TTX dumps vor the VarC table.")
     parser.add_argument("--no-woff2", action="store_true")
     args = parser.parse_args()
     buildVarC(args.ufo, args.ttf, args.output, args.ttx, not args.no_woff2)
