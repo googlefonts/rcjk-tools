@@ -470,41 +470,13 @@ def decompileGlyphData(ttFont, reader, glyphOffsets, axisTags):
 
 
 def compileOffsets(offsets):
-    numOffsets = len(offsets)
-    assert numOffsets <= 0x3FFFFFFF
-    maxOffset = max(offsets)
-    if maxOffset <= 0xFF:
-        entrySize = 1
-        packArray = packArrayUInt8
-    elif maxOffset <= 0xFFFF:
-        entrySize = 2
-        packArray = packArrayUInt16
-    elif maxOffset <= 0xFFFFFF:
-        entrySize = 3
-        packArray = packArrayUInt24
-    else:
-        entrySize = 4
-        packArray = packArrayUInt32
-    headerData = struct.pack(">L", ((entrySize - 1) << 30) + numOffsets)
-    return headerData + packArray(offsets)
+    headerData = struct.pack(">L", len(offsets))
+    return headerData + packArrayUInt32(offsets)
 
 
 def decompileOffsets(reader):
-    headerData = reader.readULong()
-    numOffsets = headerData & 0x3FFFFFFF
-    entrySize = (headerData >> 30) + 1
-
-    if entrySize == 1:
-        offsets = reader.readArray("B", 1, numOffsets)
-    elif entrySize == 2:
-        offsets = reader.readArray("H", 2, numOffsets)
-    elif entrySize == 3:
-        offsets = [reader.readUInt24() for i in range(numOffsets)]
-    elif entrySize == 4:
-        offsets = reader.readArray("I", 4, numOffsets)
-    else:
-        assert False, "oops"
-    return offsets
+    numOffsets = reader.readULong()
+    return reader.readArray("I", 4, numOffsets)
 
 
 def getToFixedConverterForNumIntBitsForScale(numIntBits):
