@@ -133,32 +133,26 @@ class table_VarC(DefaultTable):
         axisTags = [axis.axisTag for axis in ttFont["fvar"].axes]
         axisTagToIndex = {tag: i for i, tag in enumerate(axisTags)}
 
-        allComponentData = {}
-        for gn, components in self.GlyphData.items():
-            allComponentData[gn] = compileGlyph(gn, components, axisTags, axisTagToIndex)
-
-        glyphData = {
-            glyphName: b"".join(componentData)
-            for glyphName, componentData in allComponentData.items()
-        }
-        glyphData = [glyphData.get(glyphName, b"") for glyphName in ttFont.getGlyphOrder()]
-        trailingEmptyCount = 0
-        for data in reversed(glyphData):
-            if data:
-                break
-            trailingEmptyCount += 1
-        if trailingEmptyCount:
-            glyphData = glyphData[:-trailingEmptyCount]
-
         writer = OTTableWriter()
         assert self.Version == 0x00010000
         writer.writeULong(self.Version)
-        numGlyphs = len(glyphData)
+
+        glyphData = self.GlyphData
+        glyphOrder = ttFont.getGlyphOrder()
+        numGlyphs = 0
+        for glyphID, glyphName in enumerate(glyphOrder):
+            if glyphName in glyphData:
+                numGlyphs = max(numGlyphs, glyphID)
+
         writer.writeUShort(numGlyphs)  # numGlyphs <= maxp.numGlyphs
-        for glyph in glyphData:
-            if glyph:
+
+        for glyphID in range(numGlyphs):
+            glyphName = glyphOrder[glyphID]
+            components = glyphData.get(glyphName, [])
+            if components:
+                data = compileGlyph(glyphName, components, axisTags, axisTagToIndex)
                 sub = _getSubWriter(writer)
-                sub.writeData(glyph)
+                sub.writeData(data)
             else:
                 writer.writeULong(0x00000000)
 
@@ -255,7 +249,7 @@ def compileGlyph(glyphName, components, axisTags, axisTagToIndex):
 
         data.append(componentData)
 
-    return data
+    return b"".join(data)
 
 
 def packArrayUInt8(idxs):
