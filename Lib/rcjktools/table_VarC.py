@@ -1,4 +1,3 @@
-from collections import defaultdict
 import functools
 import itertools
 import struct
@@ -112,23 +111,11 @@ class table_VarC(DefaultTable):
         if self.Version != 0x00010000:
             raise ValueError(f"unknown VarC.Version: {self.Version:08X}")
 
-        sharedComponentOffsetsOffset = reader.readULong()
-        if sharedComponentOffsetsOffset:
-            sub = reader.getSubReader(sharedComponentOffsetsOffset)
-            sharedComponentOffsets = decompileOffsets(sub)
-
-            sub = reader.getSubReader(reader.readULong())
-            sharedComponents = decompileSharedComponents(sub, sharedComponentOffsets, axisTags)
-        else:
-            nullOffset = reader.readULong()
-            assert nullOffset == 0x00000000
-            sharedComponents = []
-
         sub = reader.getSubReader(reader.readULong())
         glyphOffsets = decompileOffsets(sub)
 
         sub = reader.getSubReader(reader.readULong())
-        self.GlyphData = decompileGlyphData(ttFont, sub, glyphOffsets, sharedComponents, axisTags)
+        self.GlyphData = decompileGlyphData(ttFont, sub, glyphOffsets, axisTags)
 
         varStoreOffset = reader.readULong()
         if varStoreOffset:
@@ -144,9 +131,6 @@ class table_VarC(DefaultTable):
         allComponentData = {}
         for gn, components in self.GlyphData.items():
             allComponentData[gn] = compileComponents(gn, components, axisTags, axisTagToIndex)
-
-        sharedComponentData = optimizeSharedComponentData(allComponentData)
-        sharedComponentOffsets = list(itertools.accumulate(len(data) for data in sharedComponentData))
 
         glyphData = {
             glyphName: b"".join(componentData)
@@ -165,16 +149,6 @@ class table_VarC(DefaultTable):
         writer = OTTableWriter()
         assert self.Version == 0x00010000
         writer.writeULong(self.Version)
-
-        if sharedComponentOffsets:
-            sub = _getSubWriter(writer)
-            sub.writeData(compileOffsets(sharedComponentOffsets))
-
-            sub = _getSubWriter(writer)
-            sub.writeData(b"".join(sharedComponentData))
-        else:
-            writer.writeULong(0x00000000)
-            writer.writeULong(0x00000000)
 
         sub = _getSubWriter(writer)
         sub.writeData(compileOffsets(glyphOffsets))
@@ -397,15 +371,8 @@ def _compileTransform(transformDict, numIntBitsForScale):
     return transformFlags, transformData, transformVarIdxs
 
 
-def decompileComponent(reader, sharedComponents, axisTags):
+def decompileComponent(reader, axisTags):
     flags = reader.readUShort()
-    if flags & 0x8000:
-        # component is shared
-        if flags & 0x4000:
-            index = ((flags & 0x3FFF) << 16) + reader.readUShort()
-        else:
-            index = flags & 0x3FFF
-        return sharedComponents[index]
 
     numIntBitsForScale = flags & NUM_INT_BITS_FOR_SCALE_MASK
     scaleConverter = getToFloatConverterForNumIntBitsForScale(numIntBitsForScale)
@@ -481,18 +448,7 @@ def decompileVarIdxs(reader, entryFormat, count):
     return varIdxs
 
 
-def decompileSharedComponents(reader, sharedComponentOffsets, axisTags):
-    absPos = reader.pos
-    components = []
-    prevOffset = 0
-    for nextOffset in sharedComponentOffsets:
-        components.append(decompileComponent(reader, None, axisTags))
-        assert (nextOffset + absPos) == reader.pos, (nextOffset + absPos, reader.pos, nextOffset - prevOffset)
-        prevOffset = nextOffset
-    return components
-
-
-def decompileGlyphData(ttFont, reader, glyphOffsets, sharedComponents, axisTags):
+def decompileGlyphData(ttFont, reader, glyphOffsets, axisTags):
     absPos = reader.pos
     glyfTable = ttFont["glyf"]
     glyphOrder = ttFont.getGlyphOrder()
@@ -506,7 +462,7 @@ def decompileGlyphData(ttFont, reader, glyphOffsets, sharedComponents, axisTags)
             numComponents = len(glyfGlyph.components)
             components = []
             for i in range(numComponents):
-                components.append(decompileComponent(reader, sharedComponents, axisTags))
+                components.append(decompileComponent(reader, axisTags))
             glyphData[glyphName] = components
             assert (nextOffset + absPos) == reader.pos, (nextOffset + absPos, reader.pos, nextOffset - prevOffset)
         prevOffset = nextOffset
@@ -549,35 +505,6 @@ def decompileOffsets(reader):
     else:
         assert False, "oops"
     return offsets
-
-
-def optimizeSharedComponentData(allComponentData):
-    sharedComponentDataCounter = defaultdict(int)
-    for glyphData in allComponentData.values():
-        for compData in glyphData:
-            sharedComponentDataCounter[compData] += 1
-
-    sharedComponentData = [
-        compData
-        for compData, count in sharedComponentDataCounter.items()
-        if count > 1
-    ]
-    sharedComponentDataIndices = {compData: index for index, compData in enumerate(sharedComponentData)}
-
-    for glyphName, glyphData in allComponentData.items():
-        newGlyphData = []
-        for compData in glyphData:
-            sharedIndex = sharedComponentDataIndices.get(compData)
-            if sharedIndex is not None:
-                if sharedIndex <= 0x3FFF:
-                    compData = struct.pack(">H", sharedIndex | 0x8000)
-                else:
-                    assert sharedIndex <= 0x3FFFFFFF, "index overflow"
-                    compData = struct.pack(">L", sharedIndex | 0xC0000000)
-            newGlyphData.append(compData)
-        allComponentData[glyphName] = newGlyphData
-
-    return sharedComponentData
 
 
 def getToFixedConverterForNumIntBitsForScale(numIntBits):
