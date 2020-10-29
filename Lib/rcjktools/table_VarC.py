@@ -244,19 +244,11 @@ def compileComponents(glyphName, components, axisTags, axisTagToIndex):
         varIdxs = coordVarIdxs + transformVarIdxs
         varIdxFormat, varIdxData = compileVarIdxs(varIdxs)
 
-        # refVarIdxs = decompileVarIdxs(OTTableReader(varIdxData), varIdxFormat, len(varIdxs))
-        # assert varIdxs == refVarIdxs, (varIdxs, refVarIdxs)
-
         if flags & AXIS_INDICES_ARE_WORDS:
             headerFormat = ">HBH"
         else:
             headerFormat = ">HBB"
         componentData = struct.pack(headerFormat, flags, varIdxFormat, numAxes) + coordData + transformData + varIdxData
-
-        # testCompo = decompileComponent(OTTableReader(componentData), None, axisTags)
-        # if component != testCompo:
-        #     print("??? 1", component)
-        #     print("??? 2", testCompo)
 
         data.append(componentData)
 
