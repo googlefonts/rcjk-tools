@@ -132,6 +132,7 @@ class table_VarC(DefaultTable):
     def compile(self, ttFont):
         axisTags = [axis.axisTag for axis in ttFont["fvar"].axes]
         axisTagToIndex = {tag: i for i, tag in enumerate(axisTags)}
+        glyfTable = ttFont["glyf"]
 
         writer = OTTableWriter()
         assert self.Version == 0x00010000
@@ -150,8 +151,11 @@ class table_VarC(DefaultTable):
             glyphName = glyphOrder[glyphID]
             components = glyphData.get(glyphName)
             if components:
+                glyfGlyph = glyfTable[glyphName]
+                assert glyfGlyph.isComposite()
+                assert len(components) == len(glyfGlyph.components)
                 sub = _getSubWriter(writer)
-                compileGlyph(sub, glyphName, components, axisTags, axisTagToIndex)
+                compileGlyph(sub, components, axisTags, axisTagToIndex)
             else:
                 writer.writeULong(0x00000000)
 
@@ -225,28 +229,32 @@ def splitVarIdx(value):
 # Compile
 
 
-def compileGlyph(writer, glyphName, components, axisTags, axisTagToIndex):
+def compileGlyph(writer, components, axisTags, axisTagToIndex):
     for component in components:
-        flags = component.numIntBitsForScale
-        assert flags == flags & NUM_INT_BITS_FOR_SCALE_MASK
+        compileComponent(writer, component, axisTags, axisTagToIndex)
 
-        numAxes = len(component.coord)
-        coordFlags, coordData, coordVarIdxs = _compileCoords(component.coord, axisTags, axisTagToIndex)
-        flags |= coordFlags
 
-        transformFlags, transformData, transformVarIdxs = _compileTransform(component.transform, component.numIntBitsForScale)
-        flags |= transformFlags
-        varIdxs = coordVarIdxs + transformVarIdxs
+def compileComponent(writer, component, axisTags, axisTagToIndex):
+    flags = component.numIntBitsForScale
+    assert flags == flags & NUM_INT_BITS_FOR_SCALE_MASK
 
-        writer.writeUShort(flags)
-        if flags & AXIS_INDICES_ARE_WORDS:
-            writer.writeUShort(numAxes)
-        else:
-            writer.writeUInt8(numAxes)
+    numAxes = len(component.coord)
+    coordFlags, coordData, coordVarIdxs = _compileCoords(component.coord, axisTags, axisTagToIndex)
+    flags |= coordFlags
 
-        writer.writeData(coordData)
-        writer.writeData(transformData)
-        compileVarIdxs(writer, varIdxs)
+    transformFlags, transformData, transformVarIdxs = _compileTransform(component.transform, component.numIntBitsForScale)
+    flags |= transformFlags
+    varIdxs = coordVarIdxs + transformVarIdxs
+
+    writer.writeUShort(flags)
+    if flags & AXIS_INDICES_ARE_WORDS:
+        writer.writeUShort(numAxes)
+    else:
+        writer.writeUInt8(numAxes)
+
+    writer.writeData(coordData)
+    writer.writeData(transformData)
+    compileVarIdxs(writer, varIdxs)
 
 
 def _compileCoords(coordDict, axisTags, axisTagToIndex):
