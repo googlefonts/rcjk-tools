@@ -113,6 +113,7 @@ class table_VarC(DefaultTable):
 
         self.GlyphData = {}
         glyphOrder = ttFont.getGlyphOrder()
+
         numGlyphs = reader.readUShort()
         for glyphID in range(numGlyphs):
             glyphOffset = reader.readULong()
@@ -140,13 +141,13 @@ class table_VarC(DefaultTable):
 
         glyphData = self.GlyphData
         glyphOrder = ttFont.getGlyphOrder()
+
         numGlyphs = 0
         for glyphID, glyphName in enumerate(glyphOrder):
             if glyphName in glyphData:
                 numGlyphs = max(numGlyphs, glyphID + 1)
 
         writer.writeUShort(numGlyphs)  # numGlyphs <= maxp.numGlyphs
-
         for glyphID in range(numGlyphs):
             glyphName = glyphOrder[glyphID]
             components = glyphData.get(glyphName)
