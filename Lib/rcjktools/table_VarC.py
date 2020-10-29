@@ -160,8 +160,11 @@ class table_VarC(DefaultTable):
             else:
                 writer.writeULong(0x00000000)
 
-        sub = _getSubWriter(writer)
-        self.VarStore.compile(sub, ttFont)
+        if self.VarStore is not None:
+            sub = _getSubWriter(writer)
+            self.VarStore.compile(sub, ttFont)
+        else:
+            writer.writeULong(0x00000000)
 
         return writer.getAllData()
 
@@ -215,7 +218,7 @@ class table_VarC(DefaultTable):
         writer.endtag("GlyphData")
         writer.newline()
 
-        if hasattr(self, "VarStore"):
+        if hasattr(self, "VarStore") and self.VarStore is not None:
             self.VarStore.toXML(writer, ttFont)
 
     def fromXML(self, name, attrs, content, ttFont):
