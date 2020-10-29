@@ -455,16 +455,6 @@ def decompileGlyph(reader, glyfGlyph, axisTags):
     return components
 
 
-def compileOffsets(offsets):
-    headerData = struct.pack(">L", len(offsets))
-    return headerData + packArrayUInt32(offsets)
-
-
-def decompileOffsets(reader):
-    numOffsets = reader.readULong()
-    return reader.readArray("I", 4, numOffsets)
-
-
 def getToFixedConverterForNumIntBitsForScale(numIntBits):
     return functools.partial(floatToFixed, precisionBits=16-numIntBits)
 
