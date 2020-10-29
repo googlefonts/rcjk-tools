@@ -1,5 +1,4 @@
 import functools
-import itertools
 import struct
 from typing import NamedTuple
 from fontTools.misc.fixedTools import fixedToFloat, floatToFixed, otRound
@@ -105,17 +104,23 @@ class table_VarC(DefaultTable):
 
     def decompile(self, data, ttFont):
         axisTags = [axis.axisTag for axis in ttFont["fvar"].axes]
+        glyfTable = ttFont["glyf"]
 
         reader = OTTableReader(data)
         self.Version = reader.readULong()
         if self.Version != 0x00010000:
             raise ValueError(f"unknown VarC.Version: {self.Version:08X}")
 
-        sub = reader.getSubReader(reader.readULong())
-        glyphOffsets = decompileOffsets(sub)
-
-        sub = reader.getSubReader(reader.readULong())
-        self.GlyphData = decompileGlyphData(ttFont, sub, glyphOffsets, axisTags)
+        self.GlyphData = {}
+        glyphOrder = ttFont.getGlyphOrder()
+        numGlyphs = reader.readUShort()
+        for glyphID in range(numGlyphs):
+            glyphOffset = reader.readULong()
+            if glyphOffset:
+                sub = reader.getSubReader(glyphOffset)
+                glyphName = glyphOrder[glyphID]
+                glyfGlyph = glyfTable[glyphName]
+                self.GlyphData[glyphName] = decompileGlyph(sub, glyfGlyph, axisTags)
 
         varStoreOffset = reader.readULong()
         if varStoreOffset:
@@ -144,17 +149,18 @@ class table_VarC(DefaultTable):
             trailingEmptyCount += 1
         if trailingEmptyCount:
             glyphData = glyphData[:-trailingEmptyCount]
-        glyphOffsets = list(itertools.accumulate(len(data) for data in glyphData))
 
         writer = OTTableWriter()
         assert self.Version == 0x00010000
         writer.writeULong(self.Version)
-
-        sub = _getSubWriter(writer)
-        sub.writeData(compileOffsets(glyphOffsets))
-
-        sub = _getSubWriter(writer)
-        sub.writeData(b"".join(glyphData))
+        numGlyphs = len(glyphData)
+        writer.writeUShort(numGlyphs)  # numGlyphs <= maxp.numGlyphs
+        for glyph in glyphData:
+            if glyph:
+                sub = _getSubWriter(writer)
+                sub.writeData(glyph)
+            else:
+                writer.writeULong(0x00000000)
 
         sub = _getSubWriter(writer)
         self.VarStore.compile(sub, ttFont)
@@ -448,25 +454,13 @@ def decompileVarIdxs(reader, entryFormat, count):
     return varIdxs
 
 
-def decompileGlyphData(ttFont, reader, glyphOffsets, axisTags):
-    absPos = reader.pos
-    glyfTable = ttFont["glyf"]
-    glyphOrder = ttFont.getGlyphOrder()
-    glyphData = {}
-    prevOffset = 0
-    for glyphID, nextOffset in enumerate(glyphOffsets):
-        if nextOffset - prevOffset:
-            glyphName = glyphOrder[glyphID]
-            glyfGlyph = glyfTable[glyphName]
-            assert glyfGlyph.isComposite()
-            numComponents = len(glyfGlyph.components)
-            components = []
-            for i in range(numComponents):
-                components.append(decompileComponent(reader, axisTags))
-            glyphData[glyphName] = components
-            assert (nextOffset + absPos) == reader.pos, (nextOffset + absPos, reader.pos, nextOffset - prevOffset)
-        prevOffset = nextOffset
-    return glyphData
+def decompileGlyph(reader, glyfGlyph, axisTags):
+    assert glyfGlyph.isComposite()
+    numComponents = len(glyfGlyph.components)
+    components = []
+    for i in range(numComponents):
+        components.append(decompileComponent(reader, axisTags))
+    return components
 
 
 def compileOffsets(offsets):
