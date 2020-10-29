@@ -148,7 +148,7 @@ class table_VarC(DefaultTable):
 
         for glyphID in range(numGlyphs):
             glyphName = glyphOrder[glyphID]
-            components = glyphData.get(glyphName, [])
+            components = glyphData.get(glyphName)
             if components:
                 data = compileGlyph(glyphName, components, axisTags, axisTagToIndex)
                 sub = _getSubWriter(writer)
