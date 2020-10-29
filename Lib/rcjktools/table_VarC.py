@@ -142,7 +142,7 @@ class table_VarC(DefaultTable):
         numGlyphs = 0
         for glyphID, glyphName in enumerate(glyphOrder):
             if glyphName in glyphData:
-                numGlyphs = max(numGlyphs, glyphID)
+                numGlyphs = max(numGlyphs, glyphID + 1)
 
         writer.writeUShort(numGlyphs)  # numGlyphs <= maxp.numGlyphs
 
@@ -150,9 +150,8 @@ class table_VarC(DefaultTable):
             glyphName = glyphOrder[glyphID]
             components = glyphData.get(glyphName)
             if components:
-                data = compileGlyph(glyphName, components, axisTags, axisTagToIndex)
                 sub = _getSubWriter(writer)
-                sub.writeData(data)
+                compileGlyph(sub, glyphName, components, axisTags, axisTagToIndex)
             else:
                 writer.writeULong(0x00000000)
 
@@ -226,8 +225,7 @@ def splitVarIdx(value):
 # Compile
 
 
-def compileGlyph(glyphName, components, axisTags, axisTagToIndex):
-    data = []
+def compileGlyph(writer, glyphName, components, axisTags, axisTagToIndex):
     for component in components:
         flags = component.numIntBitsForScale
         assert flags == flags & NUM_INT_BITS_FOR_SCALE_MASK
@@ -239,41 +237,20 @@ def compileGlyph(glyphName, components, axisTags, axisTagToIndex):
         transformFlags, transformData, transformVarIdxs = _compileTransform(component.transform, component.numIntBitsForScale)
         flags |= transformFlags
         varIdxs = coordVarIdxs + transformVarIdxs
-        varIdxFormat, varIdxData = compileVarIdxs(varIdxs)
 
+        writer.writeUShort(flags)
         if flags & AXIS_INDICES_ARE_WORDS:
-            headerFormat = ">HBH"
+            writer.writeUShort(numAxes)
         else:
-            headerFormat = ">HBB"
-        componentData = struct.pack(headerFormat, flags, varIdxFormat, numAxes) + coordData + transformData + varIdxData
+            writer.writeUInt8(numAxes)
 
-        data.append(componentData)
-
-    return b"".join(data)
-
-
-def packArrayUInt8(idxs):
-    return packArray("B", idxs)
+        writer.writeData(coordData)
+        writer.writeData(transformData)
+        compileVarIdxs(writer, varIdxs)
 
 
-def packArrayUInt16(idxs):
-    return packArray("H", idxs)
-
-
-def packArrayUInt24(idxs):
-    return b"".join(struct.pack(">L", idx)[1:] for idx in idxs)
-
-
-def packArrayUInt32(idxs):
-    return packArray("L", idxs)
-
-
-def packArray(fmt, values):
-    return struct.pack(">" + fmt * len(values), *values)
-
-
-def compileVarIdxs(varIdxs):
-    # Mostly taken from fontTools.ttLib.tables.otTable.VarIdxMap.preWrite()
+def compileVarIdxs(writer, varIdxs):
+    # Mostly taken from fontTools.ttLib.tables.otTables.VarIdxMap.preWrite()
     ored = 0
     for idx in varIdxs:
         ored |= idx
@@ -291,22 +268,23 @@ def compileVarIdxs(varIdxs):
     ored = (ored >> (16-innerBits)) | (ored & ((1 << innerBits)-1))
     if ored <= 0x000000FF:
         entrySize = 1
-        packArray = packArrayUInt8
+        write = writer.writeUInt8
     elif ored <= 0x0000FFFF:
         entrySize = 2
-        packArray = packArrayUInt16
+        write = writer.writeUShort
     elif ored <= 0x00FFFFFF:
         entrySize = 3
-        packArray = packArrayUInt24
+        write = writer.writeUInt24
     else:
         entrySize = 4
-        packArray = packArrayUInt32
+        write = writer.writeULong
 
     entryFormat = ((entrySize - 1) << 4) | (innerBits - 1)
+    writer.writeUInt8(entryFormat)
     outerShift = 16 - innerBits
-    varIdxData = packArray([((idx & outerMask) >> outerShift) | (idx & innerMask) for idx in varIdxs])
-    assert len(varIdxData) == entrySize * len(varIdxs)
-    return entryFormat, varIdxData
+    varIdxInts = [((idx & outerMask) >> outerShift) | (idx & innerMask) for idx in varIdxs]
+    for value in varIdxInts:
+        write(value)
 
 
 def _compileCoords(coordDict, axisTags, axisTagToIndex):
@@ -383,7 +361,6 @@ def decompileComponent(reader, axisTags):
 
     numIntBitsForScale = flags & NUM_INT_BITS_FOR_SCALE_MASK
     scaleConverter = getToFloatConverterForNumIntBitsForScale(numIntBitsForScale)
-    varIdxFormat = reader.readUInt8()
 
     if flags & AXIS_INDICES_ARE_WORDS:
         numAxes = reader.readUShort()
@@ -420,7 +397,7 @@ def decompileComponent(reader, axisTags):
     if flags & HAS_TRANSFORM_VARIATIONS:
         numVarIdxs += len(transform)
 
-    varIdxs = decompileVarIdxs(reader, varIdxFormat, numVarIdxs)
+    varIdxs = decompileVarIdxs(reader, numVarIdxs)
     assert len(axisHasVarIdx) == len(coord)
     for hasVarIdx, (axisTag, valueDict) in zip(axisHasVarIdx, coord):
         if hasVarIdx:
@@ -435,7 +412,8 @@ def decompileComponent(reader, axisTags):
     return ComponentRecord(dict(coord), dict(transform), numIntBitsForScale)
 
 
-def decompileVarIdxs(reader, entryFormat, count):
+def decompileVarIdxs(reader, count):
+    entryFormat = reader.readUInt8()
     innerBits = (entryFormat & 0x0F) + 1
     entrySize = (entryFormat >> 4) + 1
     innerMask = (1 << innerBits) - 1
