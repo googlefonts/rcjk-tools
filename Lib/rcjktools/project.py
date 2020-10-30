@@ -4,6 +4,7 @@ import pathlib
 
 from fontTools.misc.fixedTools import otRound
 from fontTools.pens.roundingPen import RoundingPointPen
+from fontTools.pens.pointPen import PointToSegmentPen
 from fontTools.ufoLib.filenames import userNameToFileName
 from fontTools.varLib.models import VariationModel
 from ufo2ft.filters import UFO2FT_FILTERS_KEY
@@ -24,6 +25,12 @@ class RoboCJKProject:
         self.deepComponentGlyphSet = GlyphSet(self._path / "deepComponent", scaleUsesCenter=scaleUsesCenter)
         self.atomicElementGlyphSet = GlyphSet(self._path / "atomicElement", scaleUsesCenter=scaleUsesCenter)
         self._scaleUsesCenter = scaleUsesCenter
+
+    def keys(self):
+        return self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes().keys()
+
+    def drawGlyph(self, pen, glyphName, location):
+        self.drawPointsCharacterGlyph(glyphName, location, PointToSegmentPen(pen))
 
     def getGlyphNamesAndUnicodes(self):
         return self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()

@@ -21,11 +21,6 @@ except ImportError:
     libPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Lib")
     assert libPath not in sys.path
     sys.path.append(libPath)
-    from rcjktools.varco import VarCoFont
-    from rcjktools.ttVarCFont import TTVarCFont
-else:
-    from rcjktools.varco import VarCoFont
-    from rcjktools.ttVarCFont import TTVarCFont
 
 
 def ClassNameIncrementer(clsName, bases, dct):
@@ -45,13 +40,19 @@ class VarCoPreviewer:
 
     def __init__(self, fontPath):
         base, ext = os.path.splitext(fontPath)
-        if ext.lower() == ".ufo":
+        ext = ext.lower()
+        if ext == ".ufo":
+            from rcjktools.varco import VarCoFont
             self.varcoFont = VarCoFont(fontPath)
-            self.minWeight = 0.0
-            self.maxWeight = 1.0
-        elif ext.lower() == ".ttf":
+            self.minWeight, self.maxWeight = (0.0, 1.0)
+        elif ext == ".ttf":
+            from rcjktools.ttVarCFont import TTVarCFont
             self.varcoFont = TTVarCFont(fontPath)
             self.minWeight, self.maxWeight = getWeightRange(self.varcoFont.ttFont)
+        elif ext == ".rcjk":
+            from rcjktools.project import RoboCJKProject
+            self.minWeight, self.maxWeight = (0.0, 1.0)
+            self.varcoFont = RoboCJKProject(fontPath)
         else:
             assert 0, "unsupported file type"
 
@@ -142,10 +143,10 @@ def getWeightRange(ttFont):
 
 
 if __name__ == "__main__":
-    from vanilla.dialogs import getFile
+    from vanilla.dialogs import getFileOrFolder
 
     registerCustomTableClass("VarC", "rcjktools.table_VarC", "table_VarC")
 
-    result = getFile("Please select a VarCo .ufo", fileTypes=["ufo", "ttf"])
+    result = getFileOrFolder("Please select a VarCo .ufo", fileTypes=["ufo", "ttf", "rcjk"])
     if result:
         VarCoPreviewer(result[0])
