@@ -5,6 +5,7 @@ import objc
 from AppKit import NSFormatter
 from vanilla import *
 
+from fontTools.ttLib import registerCustomTableClass
 import drawBot as db
 from drawBot.ui.drawView import DrawView
 from drawBot.drawBotDrawingTools import _drawBotDrawingTool
@@ -15,12 +16,16 @@ try:
     # importlib.reload(rcjktools.utils)
     # import rcjktools.varco
     # importlib.reload(rcjktools.varco)
-    from rcjktools.varco import VarCoFont
+    import rcjktools
 except ImportError:
     libPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Lib")
     assert libPath not in sys.path
     sys.path.append(libPath)
     from rcjktools.varco import VarCoFont
+    from rcjktools.ttVarCFont import TTVarCFont
+else:
+    from rcjktools.varco import VarCoFont
+    from rcjktools.ttVarCFont import TTVarCFont
 
 
 def ClassNameIncrementer(clsName, bases, dct):
@@ -38,12 +43,18 @@ def ClassNameIncrementer(clsName, bases, dct):
 
 class VarCoPreviewer:
 
-    def __init__(self, ufoPath):
-        self.varcoFont = VarCoFont(ufoPath)
+    def __init__(self, fontPath):
+        base, ext = os.path.splitext(fontPath)
+        if ext.lower() == ".ufo":
+            self.varcoFont = VarCoFont(fontPath)
+        elif ext.lower() == ".ttf":
+            self.varcoFont = TTVarCFont(fontPath)
+        else:
+            assert 0, "unsupported file type"
 
         self.glyphList = sorted(self.varcoFont.keys())
 
-        self.w = Window((1000, 400), f"VarCo Previewer — {ufoPath}",
+        self.w = Window((1000, 400), f"VarCo Previewer — {fontPath}",
             minSize=(600, 400), autosaveName="VarCoPreviewer")
         self.w.findGlyphField = EditText((10, 10, 180, 20), callback=self.findGlyphFieldCallback)
         self.w.axisSlider = Slider((210, 8, 180, 20), value=0, minValue=0, maxValue=1,
@@ -81,7 +92,7 @@ class VarCoPreviewer:
             location = dict(wght=self.w.axisSlider.get())
             glyphName = self.w.characterGlyphList[sel[0]]
             self._currentGlyphPath = BezierPath()
-            self.varcoFont.drawPointsGlyph(
+            self.varcoFont.drawGlyph(
                 self._currentGlyphPath,
                 glyphName,
                 location,
@@ -117,6 +128,9 @@ class VarCoPreviewer:
 
 if __name__ == "__main__":
     from vanilla.dialogs import getFile
-    result = getFile("Please select a VarCo .ufo", fileTypes=["ufo"])
+
+    registerCustomTableClass("VarC", "rcjktools.table_VarC", "table_VarC")
+
+    result = getFile("Please select a VarCo .ufo", fileTypes=["ufo", "ttf"])
     if result:
         VarCoPreviewer(result[0])

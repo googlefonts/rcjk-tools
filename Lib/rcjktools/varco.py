@@ -1,4 +1,5 @@
 from fontTools.pens.filterPen import FilterPointPen
+from fontTools.pens.pointPen import PointToSegmentPen
 from fontTools.varLib.models import VariationModel, allEqual
 from ufoLib2 import Font as UFont
 from .objects import Component, Glyph, MathDict, MathOutline
@@ -65,6 +66,9 @@ class VarCoFont:
     def __init__(self, ufoPath):
         self.ufont = UFont(ufoPath)
         self.varcoGlyphs = {}
+
+    def drawGlyph(self, pen, glyphName, location):
+        self.drawPointsGlyph(PointToSegmentPen(pen), glyphName, location)
 
     def drawPointsGlyph(self, pen, glyphName, location, transform=None):
         varGlyph = self[glyphName]

@@ -25,6 +25,9 @@ class TTVarCFont:
         self.hbFont.scale = (upem, upem)
         hb.ot_font_set_funcs(self.hbFont)
 
+    def keys(self):
+        return self.ttFont.getGlyphNames()
+
     def drawGlyph(self, pen, glyphName, location):
         normLocation = normalizeLocation(location, self.axes)
         fvarTable = self.ttFont["fvar"]
