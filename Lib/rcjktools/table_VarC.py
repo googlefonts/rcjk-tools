@@ -2,7 +2,7 @@ from ast import literal_eval
 import functools
 import struct
 from typing import NamedTuple
-from fontTools.misc.fixedTools import fixedToFloat, floatToFixed, floatToFixedToStr, otRound
+from fontTools.misc.fixedTools import fixedToFloat, floatToFixed, floatToFixedToStr, otRound, strToFixedToFloat
 from fontTools.ttLib.tables.DefaultTable import DefaultTable
 from fontTools.ttLib.tables.otConverters import OTTableReader, OTTableWriter
 from fontTools.ttLib.tables.otTables import VarStore
@@ -17,6 +17,7 @@ _FIRST_TRANSFORM_FIELD_BIT = 5
 
 
 fixed2dot14 = functools.partial(floatToFixed, precisionBits=14)
+strToFixed2dot14ToFloat = functools.partial(strToFixedToFloat, precisionBits=14)
 
 
 transformFieldNames = ["Rotation", "ScaleX", "ScaleY", "SkewX", "SkewY", "TCenterX", "TCenterY"]
@@ -285,16 +286,19 @@ def _component_fromXML(name, attrs, content, ttFont):
     transform = dict()
     for name, attrs, content in _filterContent(content):
         if name == "Coord":
-            coord[attrs["axis"]] = _makeValueDict(attrs)
+            coord[attrs["axis"]] = _makeValueDict(attrs, strToFixed2dot14ToFloat)
         else:
+            # TODO: convert via the binary format
             transform[name] = _makeValueDict(attrs)
     return ComponentRecord(coord, transform, numIntBitsForScale)
 
 
 def _makeValueDict(attrs, converter=None):
-    value = literal_eval(attrs["value"])
+    value = attrs["value"]
     if converter is not None:
         value = converter(value)
+    else:
+        value = literal_eval(value)
     valueDict = dict(value=value)
     if "outer" in attrs:
         outer = literal_eval(attrs["outer"])
