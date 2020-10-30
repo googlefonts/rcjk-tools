@@ -47,8 +47,11 @@ class VarCoPreviewer:
         base, ext = os.path.splitext(fontPath)
         if ext.lower() == ".ufo":
             self.varcoFont = VarCoFont(fontPath)
+            self.minWeight = 0.0
+            self.maxWeight = 1.0
         elif ext.lower() == ".ttf":
             self.varcoFont = TTVarCFont(fontPath)
+            self.minWeight, self.maxWeight = getWeightRange(self.varcoFont.ttFont)
         else:
             assert 0, "unsupported file type"
 
@@ -57,7 +60,8 @@ class VarCoPreviewer:
         self.w = Window((1000, 400), f"VarCo Previewer — {fontPath}",
             minSize=(600, 400), autosaveName="VarCoPreviewer")
         self.w.findGlyphField = EditText((10, 10, 180, 20), callback=self.findGlyphFieldCallback)
-        self.w.axisSlider = Slider((210, 8, 180, 20), value=0, minValue=0, maxValue=1,
+        self.w.axisSlider = Slider((210, 8, 180, 20),
+            value=self.minWeight, minValue=self.minWeight, maxValue=self.maxWeight,
             callback=self.axisSliderCallback)
 
         top = 40
@@ -124,6 +128,17 @@ class VarCoPreviewer:
         context = DrawBotContext()
         _drawBotDrawingTool._drawInContext(context)
         self.w.dbView.setPDFDocument(context.getNSPDFDocument())
+
+
+def getWeightRange(ttFont):
+    minWeight = None
+    maxWeight = None
+    for axis in ttFont["fvar"].axes:
+        if axis.axisTag == "wght":
+            minWeight = axis.minValue
+            maxWeight = axis.maxValue
+            break
+    return minWeight, maxWeight
 
 
 if __name__ == "__main__":
