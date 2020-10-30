@@ -80,6 +80,10 @@ def intToDegrees(value):
     return value * 360 / 0x8000
 
 
+def strToIntToDegrees(value):
+    return intToDegrees(degreesToInt(float(value)))
+
+
 transformToIntConverters = {
     # "x": int,  # handled by gvar
     # "y": int,  # handled by gvar
@@ -282,14 +286,20 @@ def _glyph_fromXML(name, attrs, content, ttFont):
 def _component_fromXML(name, attrs, content, ttFont):
     assert name == "Component"
     numIntBitsForScale = literal_eval(attrs["numIntBitsForScale"])
+    scaleConverter = functools.partial(strToFixedToFloat, precisionBits=16 - numIntBitsForScale)
     coord = dict()
     transform = dict()
     for name, attrs, content in _filterContent(content):
         if name == "Coord":
             coord[attrs["axis"]] = _makeValueDict(attrs, strToFixed2dot14ToFloat)
         else:
-            # TODO: convert via the binary format
-            transform[name] = _makeValueDict(attrs)
+            if name in {"ScaleX", "ScaleY"}:
+                converter = scaleConverter
+            elif name in {"Rotation", "SkewX", "SkewY"}:
+                converter = strToIntToDegrees
+            else:
+                converter = None
+            transform[name] = _makeValueDict(attrs, converter)
     return ComponentRecord(coord, transform, numIntBitsForScale)
 
 
