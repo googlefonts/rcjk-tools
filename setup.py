@@ -10,4 +10,7 @@ setup(
         "fonttools[ufo,lxml,unicode]",
         "ufoLib2",
     ],
+    entry_points={
+        'console_scripts': ['ttxv=rcjktools.ttxv:main'],
+    },
 )
