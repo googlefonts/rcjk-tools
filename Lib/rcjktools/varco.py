@@ -157,7 +157,7 @@ _transformFieldMapping = {
     "scaley": "ScaleY",
     "skewx": "SkewX",
     "skewy": "SkewY",
-    "tcenterx": "TCenterY",
+    "tcenterx": "TCenterX",
     "tcentery": "TCenterY",
 }
 
