@@ -1,7 +1,7 @@
 import functools
 import struct
 from typing import NamedTuple
-from fontTools.misc.fixedTools import fixedToFloat, floatToFixed, otRound
+from fontTools.misc.fixedTools import fixedToFloat, floatToFixed, floatToFixedToStr, otRound
 from fontTools.ttLib.tables.DefaultTable import DefaultTable
 from fontTools.ttLib.tables.otConverters import OTTableReader, OTTableWriter
 from fontTools.ttLib.tables.otTables import VarStore
@@ -47,6 +47,31 @@ def degreesToInt(value):
         # print("warning, angle out of range:", value)
         value %= -360
     return otRound(0x8000 * value / 360)
+
+
+def degreestToIntToStr(value):
+    # Mostly taken from fixedToStr()
+    if not value:
+        return "0.0"
+    scale = 0x8000 / 360
+    value = degreesToInt(value) / scale
+    eps = .5 / scale
+    lo = value - eps
+    hi = value + eps
+    # If the range of valid choices spans an integer, return the integer.
+    if int(lo) != int(hi):
+        return str(float(round(value)))
+    fmt = "%.8f"
+    lo = fmt % lo
+    hi = fmt % hi
+    assert len(lo) == len(hi) and lo != hi
+    for i in range(len(lo)):
+        if lo[i] != hi[i]:
+            break
+    period = lo.find('.')
+    assert period < i
+    fmt = "%%.%df" % (i - period)
+    return fmt % value
 
 
 def intToDegrees(value):
@@ -196,15 +221,22 @@ class table_VarC(DefaultTable):
                 writer.newline()
 
                 for axisName, valueDict in sorted(varcComponent.coord.items()):
-                    attrs = [("axis", axisName), ("value", valueDict["value"])]
+                    attrs = [("axis", axisName), ("value", floatToFixedToStr(valueDict["value"], 14))]
                     if "varIdx" in valueDict:
                         outer, inner = splitVarIdx(valueDict["varIdx"])
                         attrs.extend([("outer", outer), ("inner", inner)])
                     writer.simpletag("Coord", attrs)
                     writer.newline()
 
+                scalePrecisionBits = 16 - varcComponent.numIntBitsForScale
+
                 for transformFieldName, valueDict in sorted(varcComponent.transform.items()):
-                    attrs = [("value", valueDict["value"])]
+                    value = valueDict["value"]
+                    if transformFieldName in {"ScaleX", "ScaleY"}:
+                        value = floatToFixedToStr(value, scalePrecisionBits)
+                    elif transformFieldName in {"Rotation", "SkewX", "SkewY"}:
+                        value = degreestToIntToStr(value)
+                    attrs = [("value", value)]
                     if "varIdx" in valueDict:
                         outer, inner = splitVarIdx(valueDict["varIdx"])
                         attrs.extend([("outer", outer), ("inner", inner)])
