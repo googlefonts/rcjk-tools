@@ -260,7 +260,8 @@ class table_VarC(DefaultTable):
         elif name == "GlyphData":
             self.GlyphData = {}
             for name, attrs, content in _filterContent(content):
-                self._glyph_fromXML(name, attrs, content, ttFont)
+                glyphName = attrs["name"]
+                self.GlyphData[glyphName] = _glyph_fromXML(name, attrs, content, ttFont)
         elif name == "VarStore":
             self.VarStore = VarStore()
             for name, attrs, content in _filterContent(content):
@@ -268,29 +269,32 @@ class table_VarC(DefaultTable):
         else:
             assert False, f"Unknown VarC sub-element {name}"
 
-    def _glyph_fromXML(self, name, attrs, content, ttFont):
-        assert name == "Glyph"
-        glyphName = attrs["name"]
-        components = []
-        for name, attrs, content in _filterContent(content):
-            components.append(self._component_fromXML(name, attrs, content, ttFont))
-        self.GlyphData[glyphName] = components
 
-    def _component_fromXML(self, name, attrs, content, ttFont):
-        assert name == "Component"
-        numIntBitsForScale = literal_eval(attrs["numIntBitsForScale"])
-        coord = dict()
-        transform = dict()
-        for name, attrs, content in _filterContent(content):
-            if name == "Coord":
-                coord[attrs["axis"]] = _makeValueDict(attrs)
-            else:
-                transform[name] = _makeValueDict(attrs)
-        return ComponentRecord(coord, transform, numIntBitsForScale)
+def _glyph_fromXML(name, attrs, content, ttFont):
+    assert name == "Glyph"
+    components = []
+    for name, attrs, content in _filterContent(content):
+        components.append(_component_fromXML(name, attrs, content, ttFont))
+    return components
 
 
-def _makeValueDict(attrs):
+def _component_fromXML(name, attrs, content, ttFont):
+    assert name == "Component"
+    numIntBitsForScale = literal_eval(attrs["numIntBitsForScale"])
+    coord = dict()
+    transform = dict()
+    for name, attrs, content in _filterContent(content):
+        if name == "Coord":
+            coord[attrs["axis"]] = _makeValueDict(attrs)
+        else:
+            transform[name] = _makeValueDict(attrs)
+    return ComponentRecord(coord, transform, numIntBitsForScale)
+
+
+def _makeValueDict(attrs, converter=None):
     value = literal_eval(attrs["value"])
+    if converter is not None:
+        value = converter(value)
     valueDict = dict(value=value)
     if "outer" in attrs:
         outer = literal_eval(attrs["outer"])
