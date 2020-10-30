@@ -1,3 +1,4 @@
+from ast import literal_eval
 import functools
 import struct
 from typing import NamedTuple
@@ -254,7 +255,53 @@ class table_VarC(DefaultTable):
             self.VarStore.toXML(writer, ttFont)
 
     def fromXML(self, name, attrs, content, ttFont):
-        ...
+        if name == "Version":
+            self.Version = literal_eval(attrs["value"])
+        elif name == "GlyphData":
+            self.GlyphData =  {}
+            for name, attrs, content in _filterContent(content):
+                self._glyph_fromXML(name, attrs, content, ttFont)
+        elif name == "VarStore":
+            self.VarStore = VarStore()
+            for name, attrs, content in _filterContent(content):
+                self.VarStore.fromXML(name, attrs, content, ttFont)
+        else:
+            assert False, f"Unknown VarC sub-element {name}"
+
+    def _glyph_fromXML(self, name, attrs, content, ttFont):
+        assert name == "Glyph"
+        glyphName = attrs["name"]
+        components = []
+        for name, attrs, content in _filterContent(content):
+            components.append(self._component_fromXML(name, attrs, content, ttFont))
+        self.GlyphData[glyphName] = components
+
+    def _component_fromXML(self, name, attrs, content, ttFont):
+        assert name == "Component"
+        numIntBitsForScale = literal_eval(attrs["numIntBitsForScale"])
+        coord = dict()
+        transform = dict()
+        for name, attrs, content in _filterContent(content):
+            if name == "Coord":
+                coord[attrs["axis"]] = _makeValueDict(attrs)
+            else:
+                transform[name] = _makeValueDict(attrs)
+        return ComponentRecord(coord, transform, numIntBitsForScale)
+
+
+def _makeValueDict(attrs):
+    value = literal_eval(attrs["value"])
+    valueDict = dict(value=value)
+    if "outer" in attrs:
+        outer = literal_eval(attrs["outer"])
+        inner = literal_eval(attrs["inner"])
+        varIdx = (outer << 16) | inner
+        valueDict[VARIDX_KEY] = varIdx
+    return valueDict
+
+
+def _filterContent(content):
+    return [item for item in content if isinstance(item, tuple)]
 
 
 def splitVarIdx(value):
