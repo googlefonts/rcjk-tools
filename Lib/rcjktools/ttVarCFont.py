@@ -25,7 +25,7 @@ class TTVarCFont:
         self.hbFont.scale = (upem, upem)
         hb.ot_font_set_funcs(self.hbFont)
 
-    def drawGlyph(self, glyphName, pen, location):
+    def drawGlyph(self, pen, glyphName, location):
         normLocation = normalizeLocation(location, self.axes)
         fvarTable = self.ttFont["fvar"]
         glyfTable = self.ttFont["glyf"]
@@ -41,7 +41,7 @@ class TTVarCFont:
                 componentLocation = unpackComponentLocation(vc.coord, varcInstancer)
                 transform = unpackComponentTransform(vc.transform, varcInstancer, vc.numIntBitsForScale)
                 tPen = TransformPen(pen, _makeTransform(x, y, transform))
-                self.drawGlyph(gc.glyphName, tPen, componentLocation)
+                self.drawGlyph(tPen, gc.glyphName, componentLocation)
         else:
             glyphID = self.ttFont.getGlyphID(glyphName)
             self.hbFont.set_variations(location)
