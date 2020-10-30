@@ -119,6 +119,9 @@ def remapVarIdxs(precompiled, mapping):
             for v in component.coord.values():
                 if VARIDX_KEY in v:
                     v[VARIDX_KEY] = mapping[v[VARIDX_KEY]]
+            for v in component.transform.values():
+                if VARIDX_KEY in v:
+                    v[VARIDX_KEY] = mapping[v[VARIDX_KEY]]
 
 
 def buildVarCTable(ttf, vcData, allLocations):
