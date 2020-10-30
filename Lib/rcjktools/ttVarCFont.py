@@ -1,0 +1,100 @@
+from fontTools.pens.transformPen import TransformPen
+from fontTools.ttLib import TTFont
+from fontTools.ttLib.tables._g_l_y_f import GlyphCoordinates
+from fontTools.varLib.iup import iup_delta
+from fontTools.varLib.models import normalizeLocation, supportScalar
+from fontTools.varLib.varStore import VarStoreInstancer
+import uharfbuzz as hb
+from rcjktools.table_VarC import VARIDX_KEY, intToDegrees
+from rcjktools.utils import makeTransformVarCo
+
+
+class TTVarCFont:
+
+    def __init__(self, path):
+        self.ttFont = TTFont(path)
+        self.axes = {
+            axis.axisTag:
+            (axis.minValue, axis.defaultValue, axis.maxValue)
+            for axis in self.ttFont["fvar"].axes
+        }
+        with open(path, "rb") as f:
+            face = hb.Face(f.read())
+        self.hbFont = hb.Font(face)
+        upem = face.upem
+        self.hbFont.scale = (upem, upem)
+        hb.ot_font_set_funcs(self.hbFont)
+
+    def drawGlyph(self, glyphName, pen, location):
+        normLocation = normalizeLocation(location, self.axes)
+        fvarTable = self.ttFont["fvar"]
+        glyfTable = self.ttFont["glyf"]
+        varcTable = self.ttFont["VarC"]
+        varcInstancer = VarStoreInstancer(varcTable.VarStore, fvarTable.axes, normLocation)
+
+        g = glyfTable[glyphName]
+        varComponents = varcTable.GlyphData.get(glyphName)
+        if g.isComposite() and varComponents is not None:
+            assert len(g.components) == len(varComponents)
+            componentOffsets = instantiateComponentOffsets(self.ttFont, glyphName, normLocation)
+            for (x, y), gc, vc in zip(componentOffsets, g.components, varComponents):
+                componentLocation = {}
+                for axis, valueDict in vc.coord.items():
+                    value = valueDict["value"]
+                    if VARIDX_KEY in valueDict:
+                        delta = varcInstancer[valueDict[VARIDX_KEY]]
+                        value += delta / (1 << 14)
+                    componentLocation[axis] = value
+                transform = {}
+                for name, valueDict in vc.transform.items():
+                    value = valueDict["value"]
+                    if VARIDX_KEY in valueDict:
+                        delta = varcInstancer[valueDict[VARIDX_KEY]]
+                        if name in {"ScaleX", "ScaleY"}:
+                            delta = delta / (1 << (16 - vc.numIntBitsForScale))
+                        elif name in {"Rotation", "SkewX", "SkewY"}:
+                            delta = intToDegrees(delta)
+                        value += delta
+                    transform[name] = value
+                tPen = TransformPen(pen, _makeTransform(x, y, transform))
+                self.drawGlyph(gc.glyphName, tPen, componentLocation)
+        else:
+            glyphID = self.ttFont.getGlyphID(glyphName)
+            self.hbFont.set_variations(location)
+            self.hbFont.draw_glyph_with_pen(glyphID, pen)
+
+
+def instantiateComponentOffsets(ttFont, glyphName, location):
+    glyfTable = ttFont["glyf"]
+    gvarTable = ttFont["gvar"]
+    assert glyfTable[glyphName].isComposite()
+    variations = gvarTable.variations[glyphName]
+    coordinates, _ = glyfTable.getCoordinatesAndControls(glyphName, ttFont)
+    origCoords, endPts = None, None
+    for var in variations:
+        scalar = supportScalar(location, var.axes)
+        if not scalar:
+            continue
+        delta = var.coordinates
+        if None in delta:
+            if origCoords is None:
+                origCoords, g = glyfTable.getCoordinatesAndControls(glyphName, ttFont)
+                endPts = g.endPts
+            delta = iup_delta(delta, origCoords, endPts)
+        coordinates += GlyphCoordinates(delta) * scalar
+    assert len(coordinates) == len(glyfTable[glyphName].components) + 4
+    return coordinates[:-4]
+
+
+def _makeTransform(x, y, transform):
+    return makeTransformVarCo(
+        x=x,
+        y=y,
+        rotation=transform.get("Rotation", 0),
+        scalex=transform.get("ScaleX", 1.0),
+        scaley=transform.get("ScaleY", 1.0),
+        skewx=transform.get("SkewX", 0),
+        skewy=transform.get("SkewY", 0),
+        tcenterx=transform.get("TCenterX", 0),
+        tcentery=transform.get("TCenterY", 0),
+    )
