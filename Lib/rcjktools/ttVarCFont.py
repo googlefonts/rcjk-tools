@@ -38,24 +38,8 @@ class TTVarCFont:
             assert len(g.components) == len(varComponents)
             componentOffsets = instantiateComponentOffsets(self.ttFont, glyphName, normLocation)
             for (x, y), gc, vc in zip(componentOffsets, g.components, varComponents):
-                componentLocation = {}
-                for axis, valueDict in vc.coord.items():
-                    value = valueDict["value"]
-                    if VARIDX_KEY in valueDict:
-                        delta = varcInstancer[valueDict[VARIDX_KEY]]
-                        value += delta / (1 << 14)
-                    componentLocation[axis] = value
-                transform = {}
-                for name, valueDict in vc.transform.items():
-                    value = valueDict["value"]
-                    if VARIDX_KEY in valueDict:
-                        delta = varcInstancer[valueDict[VARIDX_KEY]]
-                        if name in {"ScaleX", "ScaleY"}:
-                            delta = delta / (1 << (16 - vc.numIntBitsForScale))
-                        elif name in {"Rotation", "SkewX", "SkewY"}:
-                            delta = intToDegrees(delta)
-                        value += delta
-                    transform[name] = value
+                componentLocation = unpackComponentLocation(vc.coord, varcInstancer)
+                transform = unpackComponentTransform(vc.transform, varcInstancer, vc.numIntBitsForScale)
                 tPen = TransformPen(pen, _makeTransform(x, y, transform))
                 self.drawGlyph(gc.glyphName, tPen, componentLocation)
         else:
@@ -84,6 +68,32 @@ def instantiateComponentOffsets(ttFont, glyphName, location):
         coordinates += GlyphCoordinates(delta) * scalar
     assert len(coordinates) == len(glyfTable[glyphName].components) + 4
     return coordinates[:-4]
+
+
+def unpackComponentLocation(coordDict, varcInstancer):
+    componentLocation = {}
+    for axis, valueDict in coordDict.items():
+        value = valueDict["value"]
+        if VARIDX_KEY in valueDict:
+            delta = varcInstancer[valueDict[VARIDX_KEY]]
+            value += delta / (1 << 14)
+        componentLocation[axis] = value
+    return componentLocation
+
+
+def unpackComponentTransform(transformDict, varcInstancer, numIntBitsForScale):
+    transform = {}
+    for name, valueDict in transformDict.items():
+        value = valueDict["value"]
+        if VARIDX_KEY in valueDict:
+            delta = varcInstancer[valueDict[VARIDX_KEY]]
+            if name in {"ScaleX", "ScaleY"}:
+                delta = delta / (1 << (16 - numIntBitsForScale))
+            elif name in {"Rotation", "SkewX", "SkewY"}:
+                delta = intToDegrees(delta)
+            value += delta
+        transform[name] = value
+    return transform
 
 
 def _makeTransform(x, y, transform):
