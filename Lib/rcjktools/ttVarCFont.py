@@ -32,13 +32,17 @@ class TTVarCFont:
         normLocation = normalizeLocation(location, self.axes)
         fvarTable = self.ttFont["fvar"]
         glyfTable = self.ttFont["glyf"]
-        varcTable = self.ttFont["VarC"]
-        varcInstancer = VarStoreInstancer(varcTable.VarStore, fvarTable.axes, normLocation)
+        varcTable = self.ttFont.get("VarC")
+        if varcTable is not None:
+            glyphData = varcTable.GlyphData
+        else:
+            glyphData = {}
 
         g = glyfTable[glyphName]
-        varComponents = varcTable.GlyphData.get(glyphName)
+        varComponents = glyphData.get(glyphName)
         if g.isComposite() and varComponents is not None:
             assert len(g.components) == len(varComponents)
+            varcInstancer = VarStoreInstancer(varcTable.VarStore, fvarTable.axes, normLocation)
             componentOffsets = instantiateComponentOffsets(self.ttFont, glyphName, normLocation)
             for (x, y), gc, vc in zip(componentOffsets, g.components, varComponents):
                 componentLocation = unpackComponentLocation(vc.coord, varcInstancer)
