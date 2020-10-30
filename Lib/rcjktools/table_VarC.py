@@ -258,7 +258,7 @@ class table_VarC(DefaultTable):
         if name == "Version":
             self.Version = literal_eval(attrs["value"])
         elif name == "GlyphData":
-            self.GlyphData =  {}
+            self.GlyphData = {}
             for name, attrs, content in _filterContent(content):
                 self._glyph_fromXML(name, attrs, content, ttFont)
         elif name == "VarStore":
