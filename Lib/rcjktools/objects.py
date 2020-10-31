@@ -1,9 +1,13 @@
+import logging
 import operator
 from typing import NamedTuple
 from fontTools.misc.transform import Transform
 from fontTools.pens.pointPen import PointToSegmentPen, SegmentToPointPen
 from fontTools.pens.recordingPen import RecordingPointPen
 from fontTools.ufoLib.glifLib import readGlyphFromString
+
+
+logger = logging.getLogger(__name__)
 
 
 class InterpolationError(Exception):
@@ -32,7 +36,11 @@ class Glyph(_MathMixin):
         with open(glifPath) as f:
             data = f.read()
         self = cls()
-        readGlyphFromString(data, self, self.getPointPen())
+        try:
+            readGlyphFromString(data, self, self.getPointPen())
+        except Exception:
+            logger.error(f"failed to load .glif file: {glifPath}")
+            raise
         return self
 
     @classmethod
