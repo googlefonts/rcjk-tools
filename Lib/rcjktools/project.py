@@ -551,4 +551,4 @@ def rcjk2ufo():
 
     project = RoboCJKProject(args.rcjk)
     ufoPath = pathlib.Path(args.ufo)
-    project.saveVarCoUFO(ufoPath, ufoPath.stem, "VarCo")
+    project.saveVarCoUFO(args.ufo, ufoPath.stem, "VarCo")
