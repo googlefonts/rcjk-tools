@@ -540,34 +540,15 @@ def _getVarKey(lib):
     return None
 
 
-if __name__ == "__main__":
-    # DrawBot test snippet
-    from drawBot import BezierPath, translate, scale, fill, stroke, drawPath
+def rcjk2ufo():
+    import argparse
+    import sys
 
-    def drawOutline(outline):
-        bez = BezierPath()
-        outline.drawPoints(bez)
-        drawPath(bez)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("rcjk", help="The .rcjk project folder")
+    parser.add_argument("ufo", help="The output .ufo")
+    args = parser.parse_args()
 
-    testPath = "/Users/just/code/git/BlackFoundry/gs-cjk-rcjk/Hanzi.rcjk/"
-    project = RoboCJKProject(testPath)
-
-    glyphName = "uni3A00"
-    # glyphName = "uni2EBB"
-    # glyphName = "uni3A10"
-    # glyphName = "uni3A69"  # outlines
-    glyphName = "uni540E"  # mix outlines / components
-
-    translate(100, 200)
-    scale(0.8)
-    fill(0, 0.02)
-    stroke(0)
-    steps = 3
-    for i in range(steps):
-        f = i / (steps - 1)
-        outline, deepItems, width = project.instantiateCharacterGlyph(glyphName, {"wght": f})
-        if outline is not None:
-            drawOutline(outline)
-        for dcName, atomicOutlines in deepItems:
-            for atomicName, atomicOutline in atomicOutlines:
-                drawOutline(atomicOutline)
+    project = RoboCJKProject(args.rcjk)
+    ufoPath = pathlib.Path(args.ufo)
+    project.saveVarCoUFO(ufoPath, ufoPath.stem, "VarCo")
