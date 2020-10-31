@@ -14,6 +14,7 @@ setup(
         'console_scripts': [
             'ttxv=rcjktools.ttxv:main',
             'rcjk2ufo=rcjktools.project:rcjk2ufo',
+            'buildvarc=rcjktools.buildVarC:main',
         ],
     },
 )
