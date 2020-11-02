@@ -11,12 +11,12 @@
       <string>glyphs.wght=1</string>
     </array>
     <array>
-      <string>vcaxis000=1</string>
-      <string>glyphs.vcaxis000=1</string>
+      <string>V000=1</string>
+      <string>glyphs.V000=1</string>
     </array>
     <array>
-      <string>vcaxis001=1</string>
-      <string>glyphs.vcaxis001=1</string>
+      <string>V001=1</string>
+      <string>glyphs.V001=1</string>
     </array>
   </array>
 </plist>

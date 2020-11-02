@@ -2,36 +2,36 @@
 <designspace format="4.1">
   <axes>
     <axis tag="wght" name="Weight" minimum="300" maximum="600" default="300"/>
-    <axis tag="V000" name="vcaxis000" minimum="0" maximum="1" default="0" hidden="1"/>
-    <axis tag="V001" name="vcaxis001" minimum="0" maximum="1" default="0" hidden="1"/>
+    <axis tag="V000" name="V000" minimum="0" maximum="1" default="0" hidden="1"/>
+    <axis tag="V001" name="V001" minimum="0" maximum="1" default="0" hidden="1"/>
   </axes>
   <sources>
     <source filename="VarCoTest.ufo">
       <location>
         <dimension name="Weight" xvalue="300"/>
-        <dimension name="vcaxis000" xvalue="0"/>
-        <dimension name="vcaxis001" xvalue="0"/>
+        <dimension name="V000" xvalue="0"/>
+        <dimension name="V001" xvalue="0"/>
       </location>
     </source>
     <source filename="VarCoTest.ufo" layer="wght=1">
       <location>
         <dimension name="Weight" xvalue="600"/>
-        <dimension name="vcaxis000" xvalue="0"/>
-        <dimension name="vcaxis001" xvalue="0"/>
+        <dimension name="V000" xvalue="0"/>
+        <dimension name="V001" xvalue="0"/>
       </location>
     </source>
-    <source filename="VarCoTest.ufo" layer="vcaxis000=1">
+    <source filename="VarCoTest.ufo" layer="V000=1">
       <location>
         <dimension name="Weight" xvalue="300"/>
-        <dimension name="vcaxis000" xvalue="1"/>
-        <dimension name="vcaxis001" xvalue="0"/>
+        <dimension name="V000" xvalue="1"/>
+        <dimension name="V001" xvalue="0"/>
       </location>
     </source>
-    <source filename="VarCoTest.ufo" layer="vcaxis001=1">
+    <source filename="VarCoTest.ufo" layer="V001=1">
       <location>
         <dimension name="Weight" xvalue="300"/>
-        <dimension name="vcaxis000" xvalue="0"/>
-        <dimension name="vcaxis001" xvalue="1"/>
+        <dimension name="V000" xvalue="0"/>
+        <dimension name="V001" xvalue="1"/>
       </location>
     </source>
   </sources>
