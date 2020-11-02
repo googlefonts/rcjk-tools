@@ -292,7 +292,7 @@ def addRCJKGlyphToVarCoUFO(
     rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet)
 
     if globalAxisNames is None:
-        axisNameMapping =_makeAxisNameMapping(rcjkGlyph.axes)
+        axisNameMapping = _makeAxisNameMapping(rcjkGlyph.axes)
         axisNames = set(axisNameMapping.values())
     else:
         axisNames = globalAxisNames
@@ -535,7 +535,6 @@ def _getVarKey(lib):
 
 def rcjk2ufo():
     import argparse
-    import sys
 
     parser = argparse.ArgumentParser()
     parser.add_argument("rcjk", help="The .rcjk project folder")
