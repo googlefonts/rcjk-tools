@@ -135,7 +135,7 @@ def buildVarCTable(ttf, vcData, allLocations):
     varc_table.VarStore = store
 
 
-def buildVarC(ufoPath, ttfPath, outTTFPath, doTTX, saveWoff2):
+def buildVarC(designspacePath, ttfPath, outTTFPath, doTTX, saveWoff2):
     import pathlib
     registerCustomTableClass("VarC", "rcjktools.table_VarC", "table_VarC")
     ttfPath = pathlib.Path(ttfPath)
@@ -145,7 +145,7 @@ def buildVarC(ufoPath, ttfPath, outTTFPath, doTTX, saveWoff2):
 
     axisTags = [axis.axisTag for axis in ttf["fvar"].axes]
     globalAxisNames = {axisTag for axisTag in axisTags if axisTag[0] != "V"}
-    vcFont = VarCoFont(ufoPath)
+    vcFont = VarCoFont(designspacePath)
     vcData, allLocations = vcFont.extractVarCoData(globalAxisNames)
 
     buildVarCTable(ttf, vcData, allLocations)
@@ -171,7 +171,7 @@ def buildVarC(ufoPath, ttfPath, outTTFPath, doTTX, saveWoff2):
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("ufo", help="The VarCo UFO source")
+    parser.add_argument("designspace", help="The VarCo .designspace source")
     parser.add_argument("ttf", help="The input Variable Font")
     parser.add_argument("--output", help="The output Variable Font")
     parser.add_argument("--ttx", action="store_true", help="write TTX dumps vor the VarC table.")
