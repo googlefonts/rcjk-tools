@@ -227,11 +227,11 @@ class RoboCJKProject:
             doc.addAxisDescriptor(**axisDict)
 
         for axisName in sorted(localAxes):
-            assert axisName.startswith("vcaxis")
-            assert len(axisName) == 9
+            assert axisName.startswith("V")
+            assert len(axisName) == 4
             doc.addAxisDescriptor(
                 name=axisName,
-                tag="V" + axisName[-3:],
+                tag=axisName,
                 minimum=0, default=0, maximum=1,
                 hidden=True,
             )
@@ -291,28 +291,28 @@ def addRCJKGlyphToVarCoUFO(
     glyph.width = max(0, rcjkGlyph.width)  # width can't be negative
     rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet)
 
-    axisNames = list(rcjkGlyph.axes.keys())
-    glyph.lib["varco.axisnames"] = axisNames
-    axisIndices = {axisName: axisIndex for axisIndex, axisName in enumerate(axisNames)}
-
-    variationInfo = []
+    if globalAxisNames is None:
+        axisNameMapping =_makeAxisNameMapping(rcjkGlyph.axes)
+        axisNames = set(axisNameMapping.values())
+    else:
+        axisNames = globalAxisNames
 
     for varIndex, rcjkVarGlyph in enumerate(rcjkGlyph.variations):
-        if globalAxisNames is not None:
-            layerName = layerNameFromGlobalLocation(rcjkVarGlyph.location, globalAxisNames)
-        else:
-            layerName = layerNameFromLocalLocation(rcjkVarGlyph.location, axisIndices)
+        location = rcjkVarGlyph.location
+        if globalAxisNames is None:
+            location = {axisNameMapping[k]: v for k, v in location.items()}
+        layerName = layerNameFromLocation(location, axisNames)
         layer = getUFOLayer(ufo, layerName)
         varGlyph = UGlyph(dstGlyphName)
         varGlyph.width = max(0, rcjkVarGlyph.width)  # width can't be negative
         rcjkGlyphToVarCoGlyph(rcjkVarGlyph, varGlyph, renameTable, componentSourceGlyphSet)
-        variationInfo.append(dict(layerName=layerName, location=rcjkVarGlyph.location))
         layer[dstGlyphName] = varGlyph
 
-    if variationInfo:
-        glyph.lib["varco.variations"] = variationInfo
-
     ufo[dstGlyphName] = glyph
+
+
+def _makeAxisNameMapping(axes):
+    return {axisName: f"V{axisIndex:03}" for axisIndex, axisName in enumerate(axes)}
 
 
 def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet):
@@ -334,8 +334,11 @@ def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet
             tcentery=transform["rcentery"],
         )
         baseGlyph = componentSourceGlyphSet.getGlyph(compo.name)
+        axisNameMapping = _makeAxisNameMapping(baseGlyph.axes)
+        coord = normalizeLocation(compo.coord, baseGlyph.axes)
+        coord = {axisNameMapping[k]: v for k, v in coord.items() if k in axisNameMapping}
         info = dict(
-            coord=normalizeLocation(compo.coord, baseGlyph.axes),
+            coord=coord,
             transform=varCoTransform,
         )
         compoVarInfo.append(info)
@@ -373,23 +376,13 @@ def getUFOLayer(ufo, layerName):
     return layer
 
 
-def layerNameFromGlobalLocation(location, axisNames):
+def layerNameFromLocation(location, axisNames):
     nameParts = []
     for axisName, axisValue in sorted(location.items()):
-        assert axisName in axisNames
+        assert axisName in axisNames, (axisName, axisNames)
         if isinstance(axisValue, float) and axisValue.is_integer():
             axisValue = int(axisValue)
         nameParts.append(f"{axisName}={axisValue}")
-    return "+".join(nameParts)
-
-
-def layerNameFromLocalLocation(location, axisIndices):
-    loc = {axisIndices[axisName]: axisValue for axisName, axisValue in location.items()}
-    nameParts = []
-    for axisIndex, axisValue in sorted(loc.items()):
-        if isinstance(axisValue, float) and axisValue.is_integer():
-            axisValue = int(axisValue)
-        nameParts.append(f"vcaxis{axisIndex:03}={axisValue}")
     return "+".join(nameParts)
 
 
