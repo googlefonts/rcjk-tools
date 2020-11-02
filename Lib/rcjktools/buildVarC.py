@@ -177,7 +177,7 @@ def main():
     parser.add_argument("--ttx", action="store_true", help="write TTX dumps vor the VarC table.")
     parser.add_argument("--no-woff2", action="store_true")
     args = parser.parse_args()
-    buildVarC(args.ufo, args.ttf, args.output, args.ttx, not args.no_woff2)
+    buildVarC(args.designspace, args.ttf, args.output, args.ttx, not args.no_woff2)
 
 
 if __name__ == "__main__":
