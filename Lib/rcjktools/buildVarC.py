@@ -141,7 +141,9 @@ def buildVarC(designspacePath, ttfPath, outTTFPath, doTTX, saveWoff2):
     ttfPath = pathlib.Path(ttfPath)
     if outTTFPath is None:
         outTTFPath = ttfPath.parent / (ttfPath.stem + "-varc" + ttfPath.suffix)
-    ttf = TTFont(ttfPath, lazy=True)
+    else:
+        outTTFPath = pathlib.Path(outTTFPath)
+    ttf = TTFont(ttfPath)
 
     axisTags = [axis.axisTag for axis in ttf["fvar"].axes]
     globalAxisNames = {axisTag for axisTag in axisTags if axisTag[0] != "V"}
