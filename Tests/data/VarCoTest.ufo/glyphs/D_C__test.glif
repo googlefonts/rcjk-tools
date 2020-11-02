@@ -7,19 +7,14 @@
   </outline>
   <lib>
     <dict>
-      <key>varco.axisnames</key>
-      <array>
-        <string>DCTestAxis0</string>
-        <string>DCTestAxis1</string>
-      </array>
       <key>varco.components</key>
       <array>
         <dict>
           <key>coord</key>
           <dict>
-            <key>AETestAxis0</key>
+            <key>V000</key>
             <real>0.5</real>
-            <key>AETestAxis1</key>
+            <key>V001</key>
             <integer>0</integer>
           </dict>
           <key>transform</key>
@@ -28,34 +23,13 @@
         <dict>
           <key>coord</key>
           <dict>
-            <key>AETestAxis0</key>
+            <key>V000</key>
             <integer>0</integer>
-            <key>AETestAxis1</key>
+            <key>V001</key>
             <real>0.5</real>
           </dict>
           <key>transform</key>
           <dict/>
-        </dict>
-      </array>
-      <key>varco.variations</key>
-      <array>
-        <dict>
-          <key>layerName</key>
-          <string>vcaxis000=1</string>
-          <key>location</key>
-          <dict>
-            <key>DCTestAxis0</key>
-            <integer>1</integer>
-          </dict>
-        </dict>
-        <dict>
-          <key>layerName</key>
-          <string>vcaxis001=1</string>
-          <key>location</key>
-          <dict>
-            <key>DCTestAxis1</key>
-            <integer>1</integer>
-          </dict>
         </dict>
       </array>
     </dict>

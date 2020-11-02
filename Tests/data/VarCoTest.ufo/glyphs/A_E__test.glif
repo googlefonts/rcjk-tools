@@ -9,34 +9,4 @@
       <point x="0" y="500" type="line"/>
     </contour>
   </outline>
-  <lib>
-    <dict>
-      <key>varco.axisnames</key>
-      <array>
-        <string>AETestAxis0</string>
-        <string>AETestAxis1</string>
-      </array>
-      <key>varco.variations</key>
-      <array>
-        <dict>
-          <key>layerName</key>
-          <string>vcaxis000=1</string>
-          <key>location</key>
-          <dict>
-            <key>AETestAxis0</key>
-            <integer>1</integer>
-          </dict>
-        </dict>
-        <dict>
-          <key>layerName</key>
-          <string>vcaxis001=1</string>
-          <key>location</key>
-          <dict>
-            <key>AETestAxis1</key>
-            <integer>1</integer>
-          </dict>
-        </dict>
-      </array>
-    </dict>
-  </lib>
 </glyph>

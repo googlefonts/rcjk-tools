@@ -1,6 +1,7 @@
+from fontTools.designspaceLib import DesignSpaceDocument
 from fontTools.pens.filterPen import FilterPointPen
 from fontTools.pens.pointPen import PointToSegmentPen
-from fontTools.varLib.models import VariationModel, allEqual
+from fontTools.varLib.models import VariationModel, allEqual, normalizeLocation
 from ufoLib2 import Font as UFont
 from .objects import Component, Glyph, MathDict, MathOutline
 from .utils import makeTransformVarCo
@@ -9,13 +10,13 @@ from .utils import makeTransformVarCo
 class VarCoGlyph(Glyph):
 
     @classmethod
-    def loadFromUFont(cls, ufont, glyphName):
-        uglyph = ufont[glyphName]
+    def loadFromUFOs(cls, ufos, locations, glyphName):
+        uglyph = ufos[0][glyphName]
         self = cls.loadFromGlyphObject(uglyph)
-        self._postParse(ufont)
+        self._postParse(ufos, locations)
         return self
 
-    def _postParse(self, ufont):
+    def _postParse(self, ufos, locations):
         # Filter out and collect component info from the outline
         outline = MathOutline()
         cc = ComponentCollector(outline)
@@ -47,24 +48,27 @@ class VarCoGlyph(Glyph):
         self.axisNames = {axisName: axisIndex for axisIndex, axisName in enumerate(self.lib.get("varco.axisnames", []))}
 
         assert len(self.variations) == 0
-        for varDict in self.lib.get("varco.variations", []):
-            layerName = varDict["layerName"]
-            location = varDict["location"]
-            for axisName, axisValue in location.items():
-                assert 0 <= axisValue <= 1, (axisName, axisValue)
-            varGlyph = self.__class__.loadFromGlyphObject(ufont.layers[layerName][self.name])
-            varGlyph._postParse(ufont)
-            varGlyph.location = location
-            self.variations.append(varGlyph)
-        if self.variations:
-            locations = [{}] + [variation.location for variation in self.variations]
-            self.model = VariationModel(locations)
+        if ufos:
+            assert len(ufos) == len(locations)
+            for ufo, location in zip(ufos[1:], locations[1:]):
+                if self.name not in ufo:
+                    continue
+                for axisName, axisValue in location.items():
+                    assert 0 <= axisValue <= 1, (axisName, axisValue)
+                varGlyph = self.__class__.loadFromGlyphObject(ufo[self.name])
+                varGlyph._postParse([], [])
+                varGlyph.location = location
+                self.variations.append(varGlyph)
+            if self.variations:
+                locations = [{}] + [variation.location for variation in self.variations]
+                self.model = VariationModel(locations)
 
 
 class VarCoFont:
 
-    def __init__(self, ufoPath):
-        self.ufont = UFont(ufoPath)
+    def __init__(self, designSpacePath):
+        doc = DesignSpaceDocument.fromfile(designSpacePath)
+        self.ufos, self.locations = unpackDesignSpace(doc)
         self.varcoGlyphs = {}
 
     def drawGlyph(self, pen, glyphName, location):
@@ -84,21 +88,21 @@ class VarCoFont:
             self.drawPointsGlyph(pen, component.name, component.coord, t)
 
     def keys(self):
-        return self.ufont.keys()
+        return self.ufos[0].keys()
 
     def __contains__(self, glyphName):
-        return glyphName in self.ufont
+        return glyphName in self.ufos[0]
 
     def __len__(self):
-        return len(self.ufont)
+        return len(self.ufos[0])
 
     def __iter__(self):
-        return iter(self.ufont.keys())
+        return iter(self.ufos[0].keys())
 
     def __getitem__(self, glyphName):
         varcoGlyph = self.varcoGlyphs.get(glyphName)
         if varcoGlyph is None:
-            varcoGlyph = VarCoGlyph.loadFromUFont(self.ufont, glyphName)
+            varcoGlyph = VarCoGlyph.loadFromUFOs(self.ufos, self.locations, glyphName)
             self.varcoGlyphs[glyphName] = varcoGlyph
         return varcoGlyph
 
@@ -115,30 +119,12 @@ class VarCoFont:
         for glyphName in sorted(self.keys()):
             glyph = self[glyphName]
             masters = [glyph] + glyph.variations
-            componentAxisMappings = [
-                {axisName: f"V{axisIndex:03}" for axisName, axisIndex in self[c.name].axisNames.items()}
-                for c in glyph.components
-            ]
-            localAxisMapping = {
-                axisName: axisName if axisName in globalAxisNames else f"V{axisIndex:03}"
-                for axisName, axisIndex in glyph.axisNames.items()
-            }
-            locations = [
-                {localAxisMapping[k]: v for k, v in m.location.items()}
-                for m in masters
-            ]
+            locations = [m.location for m in masters]
             allLocations.update(tuplifyLocation(loc) for loc in locations)
             components = []
             for i in range(len(glyph.components)):
                 assert allEqual([m.components[i].name for m in masters])
-                compMap = componentAxisMappings[i]
-                coords = [
-                    {
-                        compMap[k]: m.components[i].coord.get(k, 0)
-                        for k in compMap
-                    }
-                    for m in masters
-                ]
+                coords = [m.components[i].coord for m in masters]
                 transforms = [
                     # Filter out x and y, as they'll be in glyf and gvar
                     {
@@ -153,6 +139,33 @@ class VarCoFont:
                 vcData[glyphName] = components, locations
         allLocations = [dict(items) for items in sorted(allLocations)]
         return vcData, allLocations
+
+
+def unpackDesignSpace(doc):
+    axisTagMapping = {axis.name: axis.tag for axis in doc.axes}
+    axes = {axis.tag: (axis.minimum, axis.default, axis.maximum) for axis in doc.axes}
+
+    # We want the default source to be the first in the list; the rest of
+    # the order is not important
+    sources = sorted(doc.sources, key=lambda src: src != doc.default)
+
+    ufos = []
+    locations = []
+
+    for index, src in enumerate(sources):
+        loc = src.location
+        loc = {axisTagMapping[axisName]: axisValue for axisName, axisValue in loc.items()}
+        loc = normalizeLocation(loc, axes)
+        loc = {axisName: axisValue for axisName, axisValue in loc.items() if axisValue != 0}
+        locations.append(loc)
+        ufo = UFont(src.path)
+        if src.layerName is None:
+            ufo.layers.defaultLayer
+        else:
+            ufo = ufo.layers[src.layerName]
+        ufos.append(ufo)
+
+    return ufos, locations
 
 
 _transformFieldMapping = {

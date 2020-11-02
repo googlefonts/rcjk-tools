@@ -12,9 +12,9 @@
         <dict>
           <key>coord</key>
           <dict>
-            <key>DCTestAxis0</key>
+            <key>V000</key>
             <integer>1</integer>
-            <key>DCTestAxis1</key>
+            <key>V001</key>
             <integer>0</integer>
           </dict>
           <key>transform</key>
