@@ -44,9 +44,6 @@ class VarCoGlyph(Glyph):
             )
             self.components.append(Component(baseGlyph, MathDict(vcCompo["coord"]), transform))
 
-        # Unpack axis names
-        self.axisNames = {axisName: axisIndex for axisIndex, axisName in enumerate(self.lib.get("varco.axisnames", []))}
-
         assert len(self.variations) == 0
         if ufos:
             assert len(ufos) == len(locations)
