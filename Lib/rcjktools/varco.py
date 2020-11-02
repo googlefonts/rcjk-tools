@@ -149,13 +149,18 @@ def unpackDesignSpace(doc):
     ufos = []
     locations = []
 
-    for index, src in enumerate(sources):
+    _loaded = {}
+
+    for src in sources:
         loc = src.location
         loc = {axisTagMapping[axisName]: axisValue for axisName, axisValue in loc.items()}
         loc = normalizeLocation(loc, axes)
         loc = {axisName: axisValue for axisName, axisValue in loc.items() if axisValue != 0}
         locations.append(loc)
-        ufo = UFont(src.path)
+        ufo = _loaded.get(src.path)
+        if ufo is None:
+            ufo = UFont(src.path)
+            _loaded[src.path] = ufo
         if src.layerName is None:
             ufo.layers.defaultLayer
         else:
