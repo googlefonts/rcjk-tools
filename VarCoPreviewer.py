@@ -41,7 +41,7 @@ class VarCoPreviewer:
     def __init__(self, fontPath):
         base, ext = os.path.splitext(fontPath)
         ext = ext.lower()
-        if ext == ".ufo":
+        if ext == ".designspace":
             from rcjktools.varco import VarCoFont
             self.varcoFont = VarCoFont(fontPath)
             self.minWeight, self.maxWeight = (0.0, 1.0)
@@ -147,6 +147,6 @@ if __name__ == "__main__":
 
     registerCustomTableClass("VarC", "rcjktools.table_VarC", "table_VarC")
 
-    result = getFileOrFolder("Please select a VarCo .ufo", fileTypes=["ufo", "ttf", "rcjk"])
+    result = getFileOrFolder("Please select a VarCo .designspace, .ttf or .rcjk project", fileTypes=["designspace", "ttf", "rcjk"])
     if result:
         VarCoPreviewer(result[0])
