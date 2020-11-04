@@ -1,4 +1,5 @@
 import logging
+import json
 import re
 import pathlib
 
@@ -21,10 +22,22 @@ class RoboCJKProject:
 
     def __init__(self, path, scaleUsesCenter=False):
         self._path = pathlib.Path(path)
+        assert self._path.is_dir(), f"No .rcjk project found: {path}"
+        self._loadDesignSpace(self._path / "designspace.json")
         self.characterGlyphGlyphSet = GlyphSet(self._path / "characterGlyph", scaleUsesCenter=scaleUsesCenter)
         self.deepComponentGlyphSet = GlyphSet(self._path / "deepComponent", scaleUsesCenter=scaleUsesCenter)
         self.atomicElementGlyphSet = GlyphSet(self._path / "atomicElement", scaleUsesCenter=scaleUsesCenter)
         self._scaleUsesCenter = scaleUsesCenter
+
+    def _loadDesignSpace(self, path):
+        self.designspace = {}
+        self.axes = {}
+        self.axisNames = {}
+        with open(path) as f:
+            self.designspace = json.load(f)
+        for axis in self.designspace["axes"]:
+            self.axes[axis["tag"]] = (axis["minValue"], axis["defaultValue"], axis["maxValue"])
+            self.axisNames[axis["tag"]] = axis["name"]
 
     def keys(self):
         return self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes().keys()
@@ -118,9 +131,15 @@ class RoboCJKProject:
         # NOTE: this has quite a few GS-CJK assumptions that may or may
         # not be fair for RoboCJK projects in general.
         globalAxes = [
-            dict(name="Weight", tag="wght", minimum=300, default=300, maximum=600),
+            dict(
+                name=self.axisNames[axisTag],
+                tag=axisTag,
+                minimum=minValue,
+                default=defaultValue,
+                maximum=maxValue)
+            for axisTag, (minValue, defaultValue, maxValue) in self.axes.items()
         ]
-        globalAxisNames = set(axis["tag"] for axis in globalAxes)
+        globalAxisNames = set(self.axes.keys())
 
         ufo = setupFont(familyName, styleName)
         ufo.lib[UFO2FT_FILTERS_KEY] = [
