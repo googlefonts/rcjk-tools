@@ -28,6 +28,9 @@ class TTVarCFont:
     def keys(self):
         return self.ttFont.getGlyphNames()
 
+    def __contains__(self, glyphName):
+        return glyphName in self.ttFont.getReverseGlyphMap()
+
     def drawGlyph(self, pen, glyphName, location):
         normLocation = normalizeLocation(location, self.axes)
         fvarTable = self.ttFont["fvar"]

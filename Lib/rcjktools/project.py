@@ -29,6 +29,9 @@ class RoboCJKProject:
     def keys(self):
         return self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes().keys()
 
+    def __contains__(self, glyphName):
+        return glyphName in self.characterGlyphGlyphSet
+
     def drawGlyph(self, pen, glyphName, location):
         self.drawPointsCharacterGlyph(glyphName, location, PointToSegmentPen(pen))
 
