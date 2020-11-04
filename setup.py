@@ -15,6 +15,7 @@ setup(
             'ttxv=rcjktools.ttxv:main',
             'rcjk2ufo=rcjktools.project:rcjk2ufo',
             'buildvarc=rcjktools.buildVarC:main',
+            'ttf2woff2=rcjktools.ttf2woff2:main',
         ],
     },
 )
