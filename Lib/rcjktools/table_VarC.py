@@ -15,9 +15,9 @@ AXIS_INDICES_ARE_WORDS = (1 << 3)
 HAS_TRANSFORM_VARIATIONS = (1 << 4)
 _FIRST_TRANSFORM_FIELD_BIT = 5
 
-
-fixed2dot14 = functools.partial(floatToFixed, precisionBits=14)
-strToFixed2dot14ToFloat = functools.partial(strToFixedToFloat, precisionBits=14)
+COORD_PRECISIONBITS = 14
+fixedCoord = functools.partial(floatToFixed, precisionBits=COORD_PRECISIONBITS)
+strToFixedCoordToFloat = functools.partial(strToFixedToFloat, precisionBits=COORD_PRECISIONBITS)
 
 
 transformFieldNames = ["Rotation", "ScaleX", "ScaleY", "SkewX", "SkewY", "TCenterX", "TCenterY"]
@@ -227,7 +227,7 @@ class table_VarC(DefaultTable):
                 writer.newline()
 
                 for axisName, valueDict in sorted(varcComponent.coord.items()):
-                    attrs = [("axis", axisName), ("value", floatToFixedToStr(valueDict["value"], 14))]
+                    attrs = [("axis", axisName), ("value", floatToFixedToStr(valueDict["value"], COORD_PRECISIONBITS))]
                     if "varIdx" in valueDict:
                         outer, inner = splitVarIdx(valueDict["varIdx"])
                         attrs.extend([("outer", outer), ("inner", inner)])
@@ -291,7 +291,7 @@ def _component_fromXML(name, attrs, content, ttFont):
     transform = dict()
     for name, attrs, content in _filterContent(content):
         if name == "Coord":
-            coord[attrs["axis"]] = _makeValueDict(attrs, strToFixed2dot14ToFloat)
+            coord[attrs["axis"]] = _makeValueDict(attrs, strToFixedCoordToFloat)
         else:
             if name in {"ScaleX", "ScaleY"}:
                 converter = scaleConverter
@@ -378,7 +378,7 @@ def _compileCoords(coordDict, axisTags, axisTagToIndex):
         assert axisIndex <= maxAxisIndex
         axisName = axisTags[axisIndex]
         valueDict = coordDict[axisName]
-        coordValues.append(fixed2dot14(valueDict["value"]))
+        coordValues.append(fixedCoord(valueDict["value"]))
         if VARIDX_KEY in valueDict:
             coordVarIdxs.append(valueDict[VARIDX_KEY])
             axisIndices[i] |= hasVarIdxFlag
@@ -486,7 +486,7 @@ def decompileComponent(reader, axisTags):
     axisIndices = [axisIndex & axisIndexMask for axisIndex in axisIndices]
 
     coord = [
-        (axisTags[i], dict(value=fixedToFloat(reader.readShort(), 14)))
+        (axisTags[i], dict(value=fixedToFloat(reader.readShort(), COORD_PRECISIONBITS)))
         for i in axisIndices
     ]
     numVarIdxs = sum(axisHasVarIdx)

@@ -5,7 +5,7 @@ from fontTools.varLib.iup import iup_delta
 from fontTools.varLib.models import normalizeLocation, supportScalar
 from fontTools.varLib.varStore import VarStoreInstancer
 import uharfbuzz as hb
-from rcjktools.table_VarC import VARIDX_KEY, intToDegrees
+from rcjktools.table_VarC import COORD_PRECISIONBITS, VARIDX_KEY, intToDegrees
 from rcjktools.utils import makeTransformVarCo
 
 
@@ -86,7 +86,7 @@ def unpackComponentLocation(coordDict, varcInstancer):
         value = valueDict["value"]
         if VARIDX_KEY in valueDict:
             delta = varcInstancer[valueDict[VARIDX_KEY]]
-            value += delta / (1 << 14)
+            value += delta / (1 << COORD_PRECISIONBITS)
         componentLocation[axis] = value
     return componentLocation
 

@@ -4,7 +4,7 @@ from fontTools.varLib.models import VariationModel, allEqual
 from fontTools.varLib.varStore import OnlineVarStoreBuilder
 from rcjktools.varco import VarCoFont
 from rcjktools.table_VarC import (
-    fixed2dot14, getToFixedConverterForNumIntBitsForScale, transformToIntConverters,
+    fixedCoord, getToFixedConverterForNumIntBitsForScale, transformToIntConverters,
     transformDefaults, VARIDX_KEY, ComponentRecord, CoordinateRecord, TransformRecord)
 
 
@@ -33,7 +33,7 @@ def precompileVarComponents(glyphName, components, storeBuilder, axisTags):
     for component in components:
         coordKeys = sorted({k for coord, transform in component for k in coord})
         coordDefaults = {k: 0 for k in coordKeys}
-        coordConverters = {k: fixed2dot14 for k in coordKeys}
+        coordConverters = {k: fixedCoord for k in coordKeys}
         dicts = [coord for coord, transform in component]
         coordDict = compileDicts(dicts, coordDefaults, coordConverters, storeBuilder, allowIndividualVarIdx=True)
 
@@ -79,6 +79,7 @@ def compileDicts(dicts, dictDefaults, dictConverters, storeBuilder, allowIndivid
             if allowIndividualVarIdx and allEqual(masterValues):  # TODO: Avoid second allEqual() call?
                 continue
             base, varIdx = storeBuilder.storeMasters(masterValues)
+            print("....", masterValues, k)
             assert base == masterValues[0], (k, base, masterValues)
             resultDict[k][VARIDX_KEY] = varIdx
     return resultDict
@@ -129,8 +130,8 @@ def buildVarCTable(ttf, vcData, allLocations):
     varc_table = ttf["VarC"] = newTable("VarC")
     varc_table.Version = 0x00010000
     precompiled, store = precompileAllComponents(vcData, allLocations, axisTags)
-    mapping = store.optimize()
-    remapVarIdxs(precompiled, mapping)
+    # mapping = store.optimize()
+    # remapVarIdxs(precompiled, mapping)
     varc_table.GlyphData = precompiled
     varc_table.VarStore = store
 
