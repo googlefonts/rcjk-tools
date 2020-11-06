@@ -39,6 +39,9 @@ transformDefaults = {
 }
 
 
+DEGREES_SCALE = 0x8000 / 360
+
+
 def degreesToInt(value):
     # Fit the range -360..360 into -32768..32768
     # If angle is outside the range, force it into the range
@@ -48,16 +51,15 @@ def degreesToInt(value):
     elif value <= -360:
         # print("warning, angle out of range:", value)
         value %= -360
-    return otRound(0x8000 * value / 360)
+    return otRound(value * DEGREES_SCALE)
 
 
 def degreestToIntToStr(value):
     # Mostly taken from fixedToStr()
     if not value:
         return "0.0"
-    scale = 0x8000 / 360
-    value = degreesToInt(value) / scale
-    eps = .5 / scale
+    value = degreesToInt(value) / DEGREES_SCALE
+    eps = .5 / DEGREES_SCALE
     lo = value - eps
     hi = value + eps
     # If the range of valid choices spans an integer, return the integer.
@@ -77,7 +79,7 @@ def degreestToIntToStr(value):
 
 
 def intToDegrees(value):
-    return value * 360 / 0x8000
+    return value / DEGREES_SCALE
 
 
 def strToIntToDegrees(value):
