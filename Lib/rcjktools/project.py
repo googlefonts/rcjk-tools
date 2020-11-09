@@ -17,10 +17,9 @@ class RoboCJKProject:
 
     def __init__(self, path, scaleUsesCenter=False):
         self._path = pathlib.Path(path)
-        self.characterGlyphGlyphSet = GlyphSet(self._path / "characterGlyph", scaleUsesCenter=scaleUsesCenter)
-        self.deepComponentGlyphSet = GlyphSet(self._path / "deepComponent", scaleUsesCenter=scaleUsesCenter)
-        self.atomicElementGlyphSet = GlyphSet(self._path / "atomicElement", scaleUsesCenter=scaleUsesCenter)
-        self._scaleUsesCenter = scaleUsesCenter
+        self.characterGlyphGlyphSet = GlyphSet(self._path / "characterGlyph")
+        self.deepComponentGlyphSet = GlyphSet(self._path / "deepComponent")
+        self.atomicElementGlyphSet = GlyphSet(self._path / "atomicElement")
 
     def getGlyphNamesAndUnicodes(self):
         return self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
@@ -40,7 +39,7 @@ class RoboCJKProject:
         for component in glyph.components:
             deepItem = self.instantiateDeepComponent(
                 component.name, component.coord,
-                makeTransform(**component.transform, scaleUsesCenter=self._scaleUsesCenter),
+                makeTransform(**component.transform),
             )
             deepItems.append((component.name, deepItem))
         return glyph.outline, deepItems, glyph.width
@@ -50,7 +49,7 @@ class RoboCJKProject:
         glyph = glyph.instantiate(location)
         atomicOutlines = []
         for component in glyph.components:
-            t = transform.transform(makeTransform(**component.transform, scaleUsesCenter=self._scaleUsesCenter))
+            t = transform.transform(makeTransform(**component.transform))
             atomicOutline = self.instantiateAtomicElement(
                 component.name, component.coord, t,
             )
@@ -381,12 +380,11 @@ _unicodePat = re.compile(rb'<unicode\s+hex\s*=\s*"([^"]+)"')
 
 class GlyphSet:
 
-    def __init__(self, path, scaleUsesCenter=False):
+    def __init__(self, path):
         self._path = path
         self._glyphs = {}
         self._layers = {}
         self._revCmap = None
-        self._scaleUsesCenter = scaleUsesCenter
 
     def getGlyphNamesAndUnicodes(self):
         if self._revCmap is None:
@@ -424,21 +422,21 @@ class GlyphSet:
         if glyph is None:
             fileName = userNameToFileName(glyphName, suffix=".glif")
             glyph = RCJKGlyph.loadFromGLIF(self._path / fileName)
-            glyph._postParse(self, scaleUsesCenter=self._scaleUsesCenter)
+            glyph._postParse(self)
             self._glyphs[glyphName] = glyph
         return glyph
 
     def getLayer(self, layerName):
         layer = self._layers.get(layerName)
         if layer is None:
-            layer = GlyphSet(self._path / layerName, scaleUsesCenter=self._scaleUsesCenter)
+            layer = GlyphSet(self._path / layerName)
             self._layers[layerName] = layer
         return layer
 
 
 class RCJKGlyph(Glyph):
 
-    def _postParse(self, glyphSet, scaleUsesCenter=False):
+    def _postParse(self, glyphSet):
         """This gets called soon after parsing the .glif file. Any layer glyphs
         and variation info is unpacked here, and put into a subglyph, as part
         of the self.variations list.
@@ -446,7 +444,7 @@ class RCJKGlyph(Glyph):
         dcNames = []
         for dc in self.lib.get("robocjk.deepComponents", []):
             dcNames.append(dc["name"])
-            self.components.append(_unpackDeepComponent(dc, scaleUsesCenter=scaleUsesCenter))
+            self.components.append(_unpackDeepComponent(dc))
 
         self.axes = {
             axisDict["name"]: (axisDict["minValue"], axisDict["maxValue"])
@@ -478,7 +476,7 @@ class RCJKGlyph(Glyph):
             deepComponents = varDict["deepComponents"]
             assert len(dcNames) == len(deepComponents)
             for dc, dcName in zip(deepComponents, dcNames):
-                varGlyph.components.append(_unpackDeepComponent(dc, dcName, scaleUsesCenter=scaleUsesCenter))
+                varGlyph.components.append(_unpackDeepComponent(dc, dcName))
             assert len(varGlyph.components) == len(self.components)
 
             self.variations.append(varGlyph)
@@ -490,17 +488,12 @@ class RCJKGlyph(Glyph):
         self.model = VariationModel(locations)
 
 
-def _unpackDeepComponent(dc, name=None, scaleUsesCenter=False):
+def _unpackDeepComponent(dc, name=None):
     if name is None:
         # "name" is defined in neutral components, but is implied in variations
         name = dc["name"]
     coord = dc["coord"]
     transform = dc["transform"]
-    if scaleUsesCenter:
-        # abscenterx, abscentery = (x + rcenterx * scalex, y + rcentery * scaley)
-        # newx, newy = abscenterx - rcenterx, abscentery - rcentery
-        transform["x"] = transform["x"] + (transform["scalex"] - 1) * transform["rcenterx"]
-        transform["y"] = transform["y"] + (transform["scaley"] - 1) * transform["rcentery"]
     return Component(name, MathDict(coord), MathDict(transform))
 
 

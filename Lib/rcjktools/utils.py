@@ -2,22 +2,13 @@ import math
 from fontTools.misc.transform import Transform
 
 
-def makeTransform(x, y, rotation, scalex, scaley, rcenterx, rcentery, scaleUsesCenter=False):
+def makeTransform(x, y, rotation, scalex, scaley, tcenterx, tcentery):
     rotation = math.radians(rotation)
-    if not scaleUsesCenter:
-        rcenterx *= scalex
-        rcentery *= scaley
-        t = Transform()
-        t = t.translate(x + rcenterx, y + rcentery)
-        t = t.rotate(rotation)
-        t = t.translate(-rcenterx, -rcentery)
-        t = t.scale(scalex, scaley)
-    else:
-        t = Transform()
-        t = t.translate(x + rcenterx, y + rcentery)
-        t = t.rotate(rotation)
-        t = t.scale(scalex, scaley)
-        t = t.translate(-rcenterx, -rcentery)
+    t = Transform()
+    t = t.translate(x + tcenterx, y + tcentery)
+    t = t.rotate(rotation)
+    t = t.scale(scalex, scaley)
+    t = t.translate(-tcenterx, -tcentery)
     return t
 
 
