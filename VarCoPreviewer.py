@@ -132,8 +132,8 @@ class VarCoPreviewer:
 
 
 def getWeightRange(ttFont):
-    minWeight = None
-    maxWeight = None
+    minWeight = 0
+    maxWeight = 1
     for axis in ttFont["fvar"].axes:
         if axis.axisTag == "wght":
             minWeight = axis.minValue
