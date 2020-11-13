@@ -33,11 +33,12 @@ class RoboCJKProject:
         self.designspace = {}
         self.axes = {}
         self.axisNames = {}
-        with open(path) as f:
-            self.designspace = json.load(f)
-        for axis in self.designspace["axes"]:
-            self.axes[axis["tag"]] = (axis["minValue"], axis["defaultValue"], axis["maxValue"])
-            self.axisNames[axis["tag"]] = axis["name"]
+        if path.exists():
+            with open(path) as f:
+                self.designspace = json.load(f)
+            for axis in self.designspace["axes"]:
+                self.axes[axis["tag"]] = (axis["minValue"], axis["defaultValue"], axis["maxValue"])
+                self.axisNames[axis["tag"]] = axis["name"]
 
     def keys(self):
         return self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes().keys()
