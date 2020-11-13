@@ -43,15 +43,21 @@ class TTVarCFont:
 
         g = glyfTable[glyphName]
         varComponents = glyphData.get(glyphName)
-        if g.isComposite() and varComponents is not None:
-            assert len(g.components) == len(varComponents)
-            varcInstancer = VarStoreInstancer(varcTable.VarStore, fvarTable.axes, normLocation)
-            componentOffsets = instantiateComponentOffsets(self.ttFont, glyphName, normLocation)
-            for (x, y), gc, vc in zip(componentOffsets, g.components, varComponents):
-                componentLocation = unpackComponentLocation(vc.coord, varcInstancer)
-                transform = unpackComponentTransform(vc.transform, varcInstancer, vc.numIntBitsForScale)
-                tPen = TransformPen(pen, _makeTransform(x, y, transform))
-                self.drawGlyph(tPen, gc.glyphName, componentLocation)
+        if g.isComposite():
+            if varComponents is not None:
+                assert len(g.components) == len(varComponents)
+                varcInstancer = VarStoreInstancer(varcTable.VarStore, fvarTable.axes, normLocation)
+                componentOffsets = instantiateComponentOffsets(self.ttFont, glyphName, normLocation)
+                for (x, y), gc, vc in zip(componentOffsets, g.components, varComponents):
+                    componentLocation = unpackComponentLocation(vc.coord, varcInstancer)
+                    transform = unpackComponentTransform(vc.transform, varcInstancer, vc.numIntBitsForScale)
+                    tPen = TransformPen(pen, _makeTransform(x, y, transform))
+                    self.drawGlyph(tPen, gc.glyphName, componentLocation)
+            else:
+                componentOffsets = instantiateComponentOffsets(self.ttFont, glyphName, normLocation)
+                for (x, y), gc in zip(componentOffsets, g.components):
+                    tPen = TransformPen(pen, (1, 0, 0, 1, x, y))
+                    self.drawGlyph(tPen, gc.glyphName, {})
         else:
             glyphID = self.ttFont.getGlyphID(glyphName)
             self.hbFont.set_variations(location)
