@@ -65,7 +65,7 @@ class VarCoFont:
 
     def __init__(self, designSpacePath):
         doc = DesignSpaceDocument.fromfile(designSpacePath)
-        self.ufos, self.locations = unpackDesignSpace(doc)
+        self.axes, self.ufos, self.locations = unpackDesignSpace(doc)
         self.varcoGlyphs = {}
 
     def drawGlyph(self, pen, glyphName, location):
@@ -167,7 +167,12 @@ def unpackDesignSpace(doc):
             ufo = ufo.layers[src.layerName]
         ufos.append(ufo)
 
-    return ufos, locations
+    userAxes = {
+        axis.tag: (axis.minimum, axis.default, axis.maximum)
+        for axis in doc.axes
+        if not axis.hidden
+    }
+    return userAxes, ufos, locations
 
 
 _transformFieldMapping = {
