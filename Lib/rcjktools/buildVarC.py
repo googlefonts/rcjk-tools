@@ -79,7 +79,6 @@ def compileDicts(dicts, dictDefaults, dictConverters, storeBuilder, allowIndivid
             if allowIndividualVarIdx and allEqual(masterValues):  # TODO: Avoid second allEqual() call?
                 continue
             base, varIdx = storeBuilder.storeMasters(masterValues)
-            print("....", masterValues, k)
             assert base == masterValues[0], (k, base, masterValues)
             resultDict[k][VARIDX_KEY] = varIdx
     return resultDict
