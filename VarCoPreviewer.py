@@ -44,15 +44,25 @@ class VarCoPreviewer:
         if ext == ".designspace":
             from rcjktools.varco import VarCoFont
             self.varcoFont = VarCoFont(fontPath)
-            self.minWeight, self.maxWeight = (0.0, 1.0)
+            axisInfo = [
+                (axisTag, minValue, defaultValue, maxValue)
+                for axisTag, (minValue, defaultValue, maxValue) in self.varcoFont.axes.items()
+            ]
         elif ext == ".ttf":
             from rcjktools.ttVarCFont import TTVarCFont
             self.varcoFont = TTVarCFont(fontPath)
-            self.minWeight, self.maxWeight = getWeightRange(self.varcoFont.ttFont)
+            axisInfo = [
+                (axis.axisTag, axis.minValue, axis.defaultValue, axis.maxValue)
+                for axis in self.varcoFont.ttFont["fvar"].axes
+                if not axis.flags & 0x0001
+            ]
         elif ext == ".rcjk":
             from rcjktools.project import RoboCJKProject
-            self.minWeight, self.maxWeight = (0.0, 1.0)
             self.varcoFont = RoboCJKProject(fontPath)
+            axisInfo = [
+                (axisTag, 0, 0, 1)
+                for axisTag, (minValue, defaultValue, maxValue) in self.varcoFont.axes.items()
+            ]
         else:
             assert 0, "unsupported file type"
 
@@ -60,10 +70,25 @@ class VarCoPreviewer:
 
         self.w = Window((1000, 400), f"VarCo Previewer — {fontPath}",
             minSize=(600, 400), autosaveName="VarCoPreviewer")
+
         self.w.findGlyphField = EditText((10, 10, 180, 20), callback=self.findGlyphFieldCallback)
-        self.w.axisSlider = Slider((210, 8, 180, 20),
-            value=self.minWeight, minValue=self.minWeight, maxValue=self.maxWeight,
-            callback=self.axisSliderCallback)
+
+        y = 8
+        self.axisSliderMapping = []
+        for axisIndex, (axisTag, minValue, defaultValue, maxValue) in enumerate(axisInfo):
+            axisSliderAttrName = f"axisSlider{axisIndex}"
+            axisLabelAttrName = f"axisLabel{axisIndex}"
+            label = TextBox((-210, y, 200, 20), f"{axisTag}")
+            y += 20
+            slider = Slider(
+                (-210, y, 200, 20),
+                value=defaultValue, minValue=minValue, maxValue=maxValue,
+                callback=self.axisSliderCallback,
+            )
+            y += 30
+            setattr(self.w, axisLabelAttrName, label)
+            setattr(self.w, axisSliderAttrName, slider)
+            self.axisSliderMapping.append((axisSliderAttrName, axisTag))
 
         top = 40
         self.w.characterGlyphList = List((0, top, 200, 0), self.glyphList,
@@ -73,7 +98,7 @@ class VarCoPreviewer:
             drawFocusRing=False,
             selectionCallback=self.characterGlyphListSelectionChangedCallback)
 
-        self.w.dbView = DrawView((200, top, 0, 0))  # The DrawBot PDF view
+        self.w.dbView = DrawView((200, 0, -220, 0))  # The DrawBot PDF view
         self.w.characterGlyphList.setSelection([])
         self.w.open()
 
@@ -94,7 +119,9 @@ class VarCoPreviewer:
     def updateCurrentGlyph(self):
         sel = self.w.characterGlyphList.getSelection()
         if sel:
-            location = dict(wght=self.w.axisSlider.get())
+            location = {}
+            for sliderAttrName, axisTag in self.axisSliderMapping:
+                location[axisTag] = getattr(self.w, sliderAttrName).get()
             glyphName = self.w.characterGlyphList[sel[0]]
             self._currentGlyphPath = BezierPath()
             self.varcoFont.drawGlyph(
