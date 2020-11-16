@@ -41,6 +41,9 @@ class VarCoPreviewer:
     def __init__(self, fontPath):
         base, ext = os.path.splitext(fontPath)
         ext = ext.lower()
+        # TODO: the axisInfo extraction below is a bit messy because the various
+        # objects don't agree what's in obj.axes: user axes or all axes? Also:
+        # does obj.drawGlyph() take a normalized location or not?
         if ext == ".designspace":
             from rcjktools.varco import VarCoFont
             self.varcoFont = VarCoFont(fontPath)
@@ -60,7 +63,7 @@ class VarCoPreviewer:
             from rcjktools.project import RoboCJKProject
             self.varcoFont = RoboCJKProject(fontPath)
             axisInfo = [
-                (axisTag, 0, 0, 1)
+                (axisTag, 0, 0, 1)  # self.varcoFont.drawGlyph() takes normalized coords
                 for axisTag, (minValue, defaultValue, maxValue) in self.varcoFont.axes.items()
             ]
         else:
