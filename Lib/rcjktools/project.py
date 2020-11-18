@@ -17,6 +17,7 @@ class RoboCJKProject:
 
     def __init__(self, path, scaleUsesCenter=False):
         self._path = pathlib.Path(path)
+
         self.characterGlyphGlyphSet = GlyphSet(self._path / "characterGlyph")
         self.deepComponentGlyphSet = GlyphSet(self._path / "deepComponent")
         self.atomicElementGlyphSet = GlyphSet(self._path / "atomicElement")
