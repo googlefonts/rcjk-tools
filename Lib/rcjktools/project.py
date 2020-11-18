@@ -24,6 +24,7 @@ class RoboCJKProject:
         self._path = pathlib.Path(path)
         assert self._path.is_dir(), f"No .rcjk project found: {path}"
         self._loadDesignSpace(self._path / "designspace.json")
+
         self.characterGlyphGlyphSet = GlyphSet(self._path / "characterGlyph", scaleUsesCenter=scaleUsesCenter)
         self.deepComponentGlyphSet = GlyphSet(self._path / "deepComponent", scaleUsesCenter=scaleUsesCenter)
         self.atomicElementGlyphSet = GlyphSet(self._path / "atomicElement", scaleUsesCenter=scaleUsesCenter)
