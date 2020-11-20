@@ -8,3 +8,7 @@ def main():
     f = TTFont(p)
     f.flavor = "woff2"
     f.save(p.parent / (p.stem + ".woff2"))
+
+
+if __name__ == "__main__":
+    main()
