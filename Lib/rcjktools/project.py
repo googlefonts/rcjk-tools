@@ -233,7 +233,7 @@ class RoboCJKProject:
             else:
                 location = parseLayerName(layerName)
             for axisName, axisValue in location.items():
-                assert axisValue == 1  # for now, we don't support intermediates
+                assert axisValue == 1, location  # for now, we don't support intermediates
                 if axisName not in globalAxisNames:
                     localAxes.add(axisName)
 
@@ -324,6 +324,7 @@ def addRCJKGlyphToVarCoUFO(
         location = rcjkVarGlyph.location
         if globalAxisNames is None:
             location = {axisNameMapping[k]: v for k, v in location.items()}
+        location = normalizeLocation(location, rcjkGlyph.axes)
         layerName = layerNameFromLocation(location, axisNames)
         layer = getUFOLayer(ufo, layerName)
         varGlyph = UGlyph(dstGlyphName)
