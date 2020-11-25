@@ -12,7 +12,7 @@ from ufo2ft.filters import UFO2FT_FILTERS_KEY
 from ufoLib2.objects import Font as UFont, Glyph as UGlyph
 
 from .objects import Component, Glyph, InterpolationError, MathDict, MathOutline, normalizeLocation
-from .utils import convertOffsetFromRCenterToTCenter, makeTransform
+from .utils import makeTransform
 
 
 logger = logging.getLogger(__name__)
@@ -343,9 +343,8 @@ def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet
     rcjkGlyph.drawPoints(pen)
     compoVarInfo = []
     for compo in rcjkGlyph.components:
-        # (x, y, rotation, scalex, scaley, rcenterx, rcentery)
         transform = compo.transform
-        x, y = convertOffsetFromRCenterToTCenter(**transform)
+        x, y = transform["x"], transform["y"]
         pen.addComponent(renameTable.get(compo.name, compo.name), (1, 0, 0, 1, x, y))
         # the transformation center goes into varco data
         varCoTransform = dict(
@@ -353,8 +352,8 @@ def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet
             rotation=transform["rotation"],
             scalex=transform["scalex"],
             scaley=transform["scaley"],
-            tcenterx=transform["rcenterx"],
-            tcentery=transform["rcentery"],
+            tcenterx=transform["tcenterx"],
+            tcentery=transform["tcentery"],
         )
         baseGlyph = componentSourceGlyphSet.getGlyph(compo.name)
         axisNameMapping = _makeAxisNameMapping(baseGlyph.axes)
