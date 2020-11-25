@@ -116,7 +116,9 @@ def normalizeLocation(location, axes):
 
 
 def normalizeValue(value, minValue, maxValue):
-    assert minValue < maxValue
+    # minValue and maxValue are effectively initialValue and finalValue,
+    # so maxValue may be less than minValue
+    # assert minValue < maxValue
     return (value - minValue) / (maxValue - minValue)
 
 

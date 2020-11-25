@@ -44,7 +44,7 @@ class UnicodesFormatter(NSFormatter, metaclass=ClassNameIncrementer):
 class RoboCJKPreviewer:
 
     def __init__(self, rcjkProjectPath):
-        self.project = RoboCJKProject(rcjkProjectPath, scaleUsesCenter=False)
+        self.project = RoboCJKProject(rcjkProjectPath)
         self.glyphList = [dict(glyphName=glyphName, unicode=unicodes)
             for glyphName, unicodes in self.project.getGlyphNamesAndUnicodes().items()]
         self.glyphList.sort(key=lambda item: (item["unicode"], item["glyphName"]))

@@ -12,7 +12,7 @@ from ufo2ft.filters import UFO2FT_FILTERS_KEY
 from ufoLib2.objects import Font as UFont, Glyph as UGlyph
 
 from .objects import Component, Glyph, InterpolationError, MathDict, MathOutline, normalizeLocation
-from .utils import convertOffsetFromRCenterToTCenter, makeTransform
+from .utils import makeTransform
 
 
 logger = logging.getLogger(__name__)
@@ -20,15 +20,14 @@ logger = logging.getLogger(__name__)
 
 class RoboCJKProject:
 
-    def __init__(self, path, scaleUsesCenter=False):
+    def __init__(self, path):
         self._path = pathlib.Path(path)
         assert self._path.is_dir(), f"No .rcjk project found: {path}"
         self._loadDesignSpace(self._path / "designspace.json")
 
-        self.characterGlyphGlyphSet = GlyphSet(self._path / "characterGlyph", scaleUsesCenter=scaleUsesCenter)
-        self.deepComponentGlyphSet = GlyphSet(self._path / "deepComponent", scaleUsesCenter=scaleUsesCenter)
-        self.atomicElementGlyphSet = GlyphSet(self._path / "atomicElement", scaleUsesCenter=scaleUsesCenter)
-        self._scaleUsesCenter = scaleUsesCenter
+        self.characterGlyphGlyphSet = GlyphSet(self._path / "characterGlyph")
+        self.deepComponentGlyphSet = GlyphSet(self._path / "deepComponent")
+        self.atomicElementGlyphSet = GlyphSet(self._path / "atomicElement")
 
     def _loadDesignSpace(self, path):
         self.designspace = {}
@@ -68,7 +67,7 @@ class RoboCJKProject:
         for component in glyph.components:
             deepItem = self.instantiateDeepComponent(
                 component.name, component.coord,
-                makeTransform(**component.transform, scaleUsesCenter=self._scaleUsesCenter),
+                makeTransform(**component.transform),
             )
             deepItems.append((component.name, deepItem))
         return glyph.outline, deepItems, glyph.width
@@ -78,7 +77,7 @@ class RoboCJKProject:
         glyph = glyph.instantiate(location)
         atomicOutlines = []
         for component in glyph.components:
-            t = transform.transform(makeTransform(**component.transform, scaleUsesCenter=self._scaleUsesCenter))
+            t = transform.transform(makeTransform(**component.transform))
             atomicOutline = self.instantiateAtomicElement(
                 component.name, component.coord, t,
             )
@@ -234,7 +233,7 @@ class RoboCJKProject:
             else:
                 location = parseLayerName(layerName)
             for axisName, axisValue in location.items():
-                assert axisValue == 1  # for now, we don't support intermediates
+                assert axisValue == 1, location  # for now, we don't support intermediates
                 if axisName not in globalAxisNames:
                     localAxes.add(axisName)
 
@@ -325,6 +324,7 @@ def addRCJKGlyphToVarCoUFO(
         location = rcjkVarGlyph.location
         if globalAxisNames is None:
             location = {axisNameMapping[k]: v for k, v in location.items()}
+        location = normalizeLocation(location, rcjkGlyph.axes)
         layerName = layerNameFromLocation(location, axisNames)
         layer = getUFOLayer(ufo, layerName)
         varGlyph = UGlyph(dstGlyphName)
@@ -344,9 +344,8 @@ def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet
     rcjkGlyph.drawPoints(pen)
     compoVarInfo = []
     for compo in rcjkGlyph.components:
-        # (x, y, rotation, scalex, scaley, rcenterx, rcentery)
         transform = compo.transform
-        x, y = convertOffsetFromRCenterToTCenter(**transform)
+        x, y = transform["x"], transform["y"]
         pen.addComponent(renameTable.get(compo.name, compo.name), (1, 0, 0, 1, x, y))
         # the transformation center goes into varco data
         varCoTransform = dict(
@@ -354,8 +353,8 @@ def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet
             rotation=transform["rotation"],
             scalex=transform["scalex"],
             scaley=transform["scaley"],
-            tcenterx=transform["rcenterx"],
-            tcentery=transform["rcentery"],
+            tcenterx=transform["tcenterx"],
+            tcentery=transform["tcentery"],
         )
         baseGlyph = componentSourceGlyphSet.getGlyph(compo.name)
         axisNameMapping = _makeAxisNameMapping(baseGlyph.axes)
@@ -425,12 +424,11 @@ _unicodePat = re.compile(rb'<unicode\s+hex\s*=\s*"([^"]+)"')
 
 class GlyphSet:
 
-    def __init__(self, path, scaleUsesCenter=False):
+    def __init__(self, path):
         self._path = path
         self._glyphs = {}
         self._layers = {}
         self._revCmap = None
-        self._scaleUsesCenter = scaleUsesCenter
 
     def getGlyphNamesAndUnicodes(self):
         if self._revCmap is None:
@@ -468,21 +466,21 @@ class GlyphSet:
         if glyph is None:
             fileName = userNameToFileName(glyphName, suffix=".glif")
             glyph = RCJKGlyph.loadFromGLIF(self._path / fileName)
-            glyph._postParse(self, scaleUsesCenter=self._scaleUsesCenter)
+            glyph._postParse(self)
             self._glyphs[glyphName] = glyph
         return glyph
 
     def getLayer(self, layerName):
         layer = self._layers.get(layerName)
         if layer is None:
-            layer = GlyphSet(self._path / layerName, scaleUsesCenter=self._scaleUsesCenter)
+            layer = GlyphSet(self._path / layerName)
             self._layers[layerName] = layer
         return layer
 
 
 class RCJKGlyph(Glyph):
 
-    def _postParse(self, glyphSet, scaleUsesCenter=False):
+    def _postParse(self, glyphSet):
         """This gets called soon after parsing the .glif file. Any layer glyphs
         and variation info is unpacked here, and put into a subglyph, as part
         of the self.variations list.
@@ -490,16 +488,19 @@ class RCJKGlyph(Glyph):
         dcNames = []
         for dc in self.lib.get("robocjk.deepComponents", []):
             dcNames.append(dc["name"])
-            self.components.append(_unpackDeepComponent(dc, scaleUsesCenter=scaleUsesCenter))
+            self.components.append(_unpackDeepComponent(dc))
 
-        varKey = _getVarKey(self.lib)
-        if varKey is None:
+        self.axes = {
+            axisDict["name"]: (axisDict["minValue"], axisDict["maxValue"])
+            for axisDict in self.lib.get("robocjk.axes", [])
+        }
+
+        variationGlyphs = self.lib.get("robocjk.variationGlyphs")
+        if variationGlyphs is None:
             return
 
-        for axisName, varDict in self.lib[varKey].items():
-            layerName = varDict["layerName"]
-            minValue = varDict["minValue"]
-            maxValue = varDict["maxValue"]
+        for varDict in variationGlyphs:
+            layerName = varDict.get("layerName")
             if not self.outline.isEmpty() and layerName:
                 layer = glyphSet.getLayer(layerName)
                 if self.name in layer:
@@ -514,47 +515,30 @@ class RCJKGlyph(Glyph):
                 varGlyph = self.__class__()
                 varGlyph.width = self.width
 
-            varGlyph.location = {axisName: 1.0}
-            self.axes[axisName] = (minValue, maxValue)
+            varGlyph.location = varDict["location"]
 
-            deepComponents = varDict["content"]["deepComponents"]
+            deepComponents = varDict["deepComponents"]
             assert len(dcNames) == len(deepComponents)
             for dc, dcName in zip(deepComponents, dcNames):
-                varGlyph.components.append(_unpackDeepComponent(dc, dcName, scaleUsesCenter=scaleUsesCenter))
+                varGlyph.components.append(_unpackDeepComponent(dc, dcName))
             assert len(varGlyph.components) == len(self.components)
 
             self.variations.append(varGlyph)
 
-        locations = [{}] + [variation.location for variation in self.variations]
+        locations = [{}] + [
+            normalizeLocation(variation.location, self.axes)
+            for variation in self.variations
+        ]
         self.model = VariationModel(locations)
 
 
-_rcjkTransformParameters = {"x", "y", "rotation", "scalex", "scaley", "rcenterx", "rcentery"}
-
-
-def _unpackDeepComponent(dc, name=None, scaleUsesCenter=False):
+def _unpackDeepComponent(dc, name=None):
     if name is None:
         # "name" is defined in neutral components, but is implied in variations
         name = dc["name"]
     coord = dc["coord"]
-    transform = {k: v for k, v in dc.items() if k in _rcjkTransformParameters}
-    if scaleUsesCenter:
-        # abscenterx, abscentery = (x + rcenterx * scalex, y + rcentery * scaley)
-        # newx, newy = abscenterx - rcenterx, abscentery - rcentery
-        transform["x"] = transform["x"] + (transform["scalex"] - 1) * transform["rcenterx"]
-        transform["y"] = transform["y"] + (transform["scaley"] - 1) * transform["rcentery"]
+    transform = dc["transform"]
     return Component(name, MathDict(coord), MathDict(transform))
-
-
-def _getVarKey(lib):
-    roboVarKeys = (
-        "robocjk.fontVariationGlyphs",
-        "robocjk.glyphVariationGlyphs",
-    )
-    for varKey in roboVarKeys:
-        if varKey in lib:
-            return varKey
-    return None
 
 
 def rcjk2ufo():
