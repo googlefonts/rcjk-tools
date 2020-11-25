@@ -10,9 +10,10 @@ from .utils import makeTransformVarCo
 class VarCoGlyph(Glyph):
 
     @classmethod
-    def loadFromUFOs(cls, ufos, locations, glyphName):
+    def loadFromUFOs(cls, ufos, locations, glyphName, axes):
         uglyph = ufos[0][glyphName]
         self = cls.loadFromGlyphObject(uglyph)
+        self.axes = axes
         self._postParse(ufos, locations)
         return self
 
@@ -66,6 +67,10 @@ class VarCoFont:
     def __init__(self, designSpacePath):
         doc = DesignSpaceDocument.fromfile(designSpacePath)
         self.axes, self.ufos, self.locations = unpackDesignSpace(doc)
+        self.glyphAxes = {}
+        for axisName, (minValue, defaultValue, maxValue) in self.axes.items():
+            assert minValue == defaultValue
+            self.glyphAxes[axisName] = minValue, maxValue
         self.varcoGlyphs = {}
 
     def drawGlyph(self, pen, glyphName, location):
@@ -99,7 +104,7 @@ class VarCoFont:
     def __getitem__(self, glyphName):
         varcoGlyph = self.varcoGlyphs.get(glyphName)
         if varcoGlyph is None:
-            varcoGlyph = VarCoGlyph.loadFromUFOs(self.ufos, self.locations, glyphName)
+            varcoGlyph = VarCoGlyph.loadFromUFOs(self.ufos, self.locations, glyphName, self.glyphAxes)
             self.varcoGlyphs[glyphName] = varcoGlyph
         return varcoGlyph
 
