@@ -322,10 +322,12 @@ def addRCJKGlyphToVarCoUFO(
 
     for varIndex, rcjkVarGlyph in enumerate(rcjkGlyph.variations):
         location = rcjkVarGlyph.location
+        location = normalizeLocation(location, rcjkGlyph.axes)
         if globalAxisNames is None:
             location = {axisNameMapping[k]: v for k, v in location.items()}
-        location = normalizeLocation(location, rcjkGlyph.axes)
+        location = {k: v for k, v in location.items() if v != 0}
         layerName = layerNameFromLocation(location, axisNames)
+        assert layerName
         layer = getUFOLayer(ufo, layerName)
         varGlyph = UGlyph(dstGlyphName)
         varGlyph.width = max(0, rcjkVarGlyph.width)  # width can't be negative
