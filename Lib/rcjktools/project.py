@@ -547,10 +547,45 @@ def rcjk2ufo():
     import argparse
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--familyname", help="The family name for the output .ufo")
+    parser.add_argument("-s", "--stylename", help="The style name for the output .ufo")
+    parser.add_argument(
+        "--location", metavar="AXIS=LOC", nargs="*", default=[],
+        help="List of space separated locations. A location consist in "
+        "the name of a variation axis, followed by '=' and a number. E.g.: "
+        " wght=700 wdth=80. If no location is given, a VarCo UFO will be "
+        "written."
+    )
     parser.add_argument("rcjk", help="The .rcjk project folder")
     parser.add_argument("ufo", help="The output .ufo")
+
     args = parser.parse_args()
+
+    location = {}
+    for arg in args.location:
+        try:
+            tag, val = arg.split('=')
+            assert len(tag) <= 4
+            location[tag.ljust(4)] = float(val)
+        except (ValueError, AssertionError):
+            parser.error("invalid location argument format: %r" % arg)
 
     project = RoboCJKProject(args.rcjk)
     ufoPath = pathlib.Path(args.ufo)
-    project.saveVarCoUFO(args.ufo, ufoPath.stem, "VarCo")
+    if "-" in ufoPath.stem:
+        familyNameDefault, styleNameDefault = ufoPath.stem.split("-", 1)
+    else:
+        familyNameDefault = ufoPath.stem
+        styleNameDefault = "Regular" if location else "VarCo"
+    familyName = args.familyname if args.familyname else familyNameDefault
+    styleName = args.stylename if args.stylename else styleNameDefault
+    if location:
+        axes = {}
+        for axisName, (minValue, defaultValue, maxValue) in project.axes.items():
+            assert minValue == defaultValue
+            axes[axisName] = minValue, maxValue
+        location = normalizeLocation(location, axes)
+        print("normalized location:", location)
+        project.saveFlattenedUFO(args.ufo, location, familyName, styleName)
+    else:
+        project.saveVarCoUFO(args.ufo, familyName, styleName)
