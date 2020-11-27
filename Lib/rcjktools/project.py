@@ -116,7 +116,7 @@ class RoboCJKProject:
             except InterpolationError as e:
                 logger.warning(f"glyph {glyphName} can't be interpolated ({e})")
             except Exception as e:
-                logger.warning(f"glyph {glyphName} caused an error ({e!r})")
+                logger.warning(f"glyph {glyphName} caused an error: {e!r}")
                 raise
             else:
                 glyph.width = max(0, width)  # can't be negative
