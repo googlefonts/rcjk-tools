@@ -18,6 +18,10 @@ from .utils import makeTransform
 logger = logging.getLogger(__name__)
 
 
+class ComponentMismatchError(Exception):
+    pass
+
+
 class RoboCJKProject:
 
     def __init__(self, path):
@@ -523,7 +527,8 @@ class RCJKGlyph(Glyph):
             varGlyph.location = varDict["location"]
 
             deepComponents = varDict["deepComponents"]
-            assert len(dcNames) == len(deepComponents)
+            if len(dcNames) != len(deepComponents):
+                raise ComponentMismatchError(f"different number of components in variations: {len(dcNames)} vs {len(deepComponents)}")
             for dc, dcName in zip(deepComponents, dcNames):
                 varGlyph.components.append(_unpackDeepComponent(dc, dcName))
             assert len(varGlyph.components) == len(self.components)
