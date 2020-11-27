@@ -562,7 +562,7 @@ def rcjk2ufo():
         help="List of space separated locations. A location consist in "
         "the name of a variation axis, followed by '=' and a number. E.g.: "
         " wght=700 wdth=80. If no location is given, a VarCo UFO will be "
-        "written."
+        "written, as well as a .designspace file."
     )
     parser.add_argument("rcjk", help="The .rcjk project folder")
     parser.add_argument("ufo", help="The output .ufo")
