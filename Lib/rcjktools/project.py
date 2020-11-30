@@ -509,6 +509,10 @@ class RCJKGlyph(Glyph):
             return
 
         for varDict in variationGlyphs:
+            if not varDict.get("on", True):
+                # This source is "off", and should not be used.
+                # They are a bit like background layers.
+                continue
             layerName = varDict.get("layerName")
             if not self.outline.isEmpty() and layerName:
                 layer = glyphSet.getLayer(layerName)
