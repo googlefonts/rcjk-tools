@@ -6,7 +6,7 @@ Relates to the Robo-CJK tool: https://github.com/BlackFoundryCom/robo-cjk
 
 Prototype implementation of the Variable Components proposal: https://github.com/BlackFoundryCom/variable-components-spec
 
-Contents:
+## Contents
 
 - `rcjktools`: a Python library, implementing a RoboCJK reader, `VarC` table reader/writer, and various other conversion tools
 - `ttxv`: same as the `ttx` command line tool, but with support for the `VarC` table
@@ -15,7 +15,7 @@ Contents:
 - `VarCoPreviewer.py`: a simple Mac-only Variable Components previewer tool for `.rcjk`, `.ufo` and `.ttf`
 - `RoboCJKPreviewer.py`: similar to `VarCoPreviewer.py`, but only for `.rcjk`, showing the three-level RoboCJK component hierarchy
 
-To do:
+## To document
 
 - Describe VarCo-enhanced UFO
 - Describe workflow to build a VarC-enabled VF
