@@ -6,7 +6,7 @@ Contents:
 
 - `rcjktools`: a Python library, implementing a RoboCJK reader, `VarC` table reader/writer, and various other conversion tools
 - `ttxv`: same as the `ttx` command line tool, but with support for the `VarC` table
-- `rcjk2ufo`: command line tool to convert an `.rcjk` project folder to a UFO
+- `rcjk2ufo`: command line tool to convert an `.rcjk` project folder to a `.ufo`
 - `buildvarc`: command line tool to add a `VarC` table to a variable font
 - `VarCoPreviewer.py`: a simple Mac-only Variable Components previewer tool for `.rcjk`, `.ufo` and `.ttf`
 - `RoboCJKPreviewer.py`: similar to `VarCoPreviewer.py`, but only for `.rcjk`, showing the three-level RoboCJK component hierarchy
