@@ -15,7 +15,7 @@ AXIS_INDICES_ARE_WORDS = (1 << 3)
 HAS_TRANSFORM_VARIATIONS = (1 << 4)
 _FIRST_TRANSFORM_FIELD_BIT = 5
 
-COORD_PRECISIONBITS = 14
+COORD_PRECISIONBITS = 12
 fixedCoord = functools.partial(floatToFixed, precisionBits=COORD_PRECISIONBITS)
 strToFixedCoordToFloat = functools.partial(strToFixedToFloat, precisionBits=COORD_PRECISIONBITS)
 
@@ -39,7 +39,7 @@ transformDefaults = {
 }
 
 
-DEGREES_SCALE = 0x8000 / 360
+DEGREES_SCALE = 0x8000 / (4 * 360)
 
 
 def degreesToInt(value):
