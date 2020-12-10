@@ -332,9 +332,9 @@ def addRCJKGlyphToVarCoUFO(
         location = normalizeLocation(location, rcjkGlyph.axes)
         if globalAxisNames is None:
             location = {axisNameMapping[k]: v for k, v in location.items()}
-        location = {k: v for k, v in location.items() if v != 0}
-        layerName = layerNameFromLocation(location, axisNames)
-        assert layerName
+        sparseLocation = {k: v for k, v in location.items() if v != 0}
+        layerName = layerNameFromLocation(sparseLocation, axisNames)
+        assert layerName, (srcGlyphName, varIndex, location, rcjkGlyph.axes)
         layer = getUFOLayer(ufo, layerName)
         varGlyph = UGlyph(dstGlyphName)
         varGlyph.width = max(0, rcjkVarGlyph.width)  # width can't be negative
