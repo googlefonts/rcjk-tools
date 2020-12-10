@@ -44,6 +44,14 @@ class RoboCJKProject:
                 self.axes[axis["tag"]] = (axis["minValue"], axis["defaultValue"], axis["maxValue"])
                 self.axisNames[axis["tag"]] = axis["name"]
 
+    @property
+    def features(self):
+        featuresPath = self._path / "features.fea"
+        if featuresPath.exists():
+            with open(featuresPath, encoding="utf-8") as f:
+                return f.read()
+        return None
+
     def keys(self):
         return self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes().keys()
 
@@ -157,11 +165,18 @@ class RoboCJKProject:
                 pre=False,
             ),
         ]
+        features = self.features
+        if features:
+            ufo.features.text = features
 
         revCmap = self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
         characterGlyphNames = []
         for glyphName in filterGlyphNames(sorted(revCmap)):
-            glyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
+            try:
+                glyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
+            except Exception:
+                logger.error(f"An error occurred while processing {glyphName}")
+                raise
             try:
                 glyph.instantiate({"wght": 0.5})
             except InterpolationError as e:
