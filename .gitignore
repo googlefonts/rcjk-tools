@@ -5,6 +5,7 @@ __pycache__/
 
 # Distribution / Packaging
 *.egg-info
+*.eggs
 MANIFEST
 build
 dist
@@ -20,3 +21,10 @@ htmlcov/
 
 # OSX Finder
 .DS_Store
+
+# This project
+Lib/rcjktools/_version.py
+/*.rcjk/
+/*.ufo/
+/*.designspace
+/*.zip

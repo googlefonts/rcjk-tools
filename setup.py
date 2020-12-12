@@ -3,6 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="rcjktools",
+    use_scm_version={"write_to": "Lib/rcjktools/_version.py"},
     python_requires=">=3.7",
     package_dir={"": "Lib"},
     packages=find_packages("Lib"),
@@ -10,6 +11,7 @@ setup(
         "fonttools[ufo,lxml,unicode] >= 4.17.0",
         "ufoLib2",
     ],
+    setup_requires=["setuptools_scm"],
     entry_points={
         'console_scripts': [
             'ttxv=rcjktools.ttxv:main',
