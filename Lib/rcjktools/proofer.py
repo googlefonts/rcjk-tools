@@ -104,6 +104,7 @@ def makeProof(
     colorCount = defaultdict(int)
     deepComponentsCharacterCount = 0
 
+    db.newDrawing()
     for pageIndex in range(numPages):
         db.newPage(pageWidth, pageHeight)
         db.translate(margin, margin)
