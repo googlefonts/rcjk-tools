@@ -152,7 +152,7 @@ def addStatusPage(pageWidth, pageHeight, colorCount, deepComponentsCharacterCoun
     characterCount = sum(colorCount.values())
     rectWidth = 800
     rectHeight = 30
-    relativeLabelSize = 0.6
+    relativeLabelSize = 0.5
     marginleft = (pageWidth - rectWidth)*.5
     marginbottom = ((pageHeight - rectHeight) * 0.5) + rectHeight * len(colorCount)
 
@@ -173,7 +173,6 @@ def addStatusPage(pageWidth, pageHeight, colorCount, deepComponentsCharacterCoun
         db.fill(0)
         db.text(f"{percent} %", (width + 6, rectHeight * (1 - relativeLabelSize)), align="left")
         db.translate(0, -rectHeight * 2)
-
 
     db.text(
         f"{100 * deepComponentsCharacterCount / characterCount:.1f} % "
