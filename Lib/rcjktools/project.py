@@ -22,6 +22,10 @@ class ComponentMismatchError(Exception):
     pass
 
 
+class LocationOutOfBoundsError(Exception):
+    pass
+
+
 class RoboCJKProject:
 
     def __init__(self, path):
@@ -545,6 +549,12 @@ class RCJKGlyph(Glyph):
                 varGlyph.width = self.width
 
             varGlyph.location = varDict["location"]
+            if _isLocationOutOfBounds(varGlyph.location, self.axes):
+                raise LocationOutOfBoundsError(
+                    f"location out of bounds for {self.name}; "
+                    f"location: {_formatDict(varGlyph.location)}"
+                    f"axes: {_formatDict(self.axes)}"
+                )
 
             deepComponents = varDict["deepComponents"]
             if len(dcNames) != len(deepComponents):
@@ -569,6 +579,19 @@ def _unpackDeepComponent(dc, name=None):
     coord = dc["coord"]
     transform = dc["transform"]
     return Component(name, MathDict(coord), MathDict(transform))
+
+
+def _isLocationOutOfBounds(location, axes):
+    for axisName, axisValue in location.items():
+        minValue, maxValue = axes.get(axisName, (0, 1))
+        if not (minValue <= axisValue <= maxValue):
+            return True
+    return False
+
+
+def _formatDict(d):
+    kvPairs = (f"{k}={v}" for k, v in d.items())
+    return f"dict({', '.join(kvPairs)})"
 
 
 def rcjk2ufo():
