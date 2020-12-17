@@ -14,10 +14,11 @@ setup(
     setup_requires=["setuptools_scm"],
     entry_points={
         'console_scripts': [
-            'ttxv=rcjktools.ttxv:main',
-            'rcjk2ufo=rcjktools.project:rcjk2ufo',
             'buildvarc=rcjktools.buildVarC:main',
+            'rcjk2ufo=rcjktools.project:rcjk2ufo',
+            'rcjkproofer=rcjktools.proofer:main',
             'ttf2woff2=rcjktools.ttf2woff2:main',
+            'ttxv=rcjktools.ttxv:main',
         ],
     },
 )

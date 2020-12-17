@@ -29,7 +29,7 @@ class LocationOutOfBoundsError(Exception):
 class RoboCJKProject:
 
     def __init__(self, path):
-        self._path = pathlib.Path(path)
+        self._path = pathlib.Path(path).resolve()
         assert self._path.is_dir(), f"No .rcjk project found: {path}"
         self._loadDesignSpace(self._path / "designspace.json")
 
