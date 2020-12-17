@@ -558,7 +558,10 @@ class RCJKGlyph(Glyph):
 
             deepComponents = varDict["deepComponents"]
             if len(dcNames) != len(deepComponents):
-                raise ComponentMismatchError(f"different number of components in variations: {len(dcNames)} vs {len(deepComponents)}")
+                raise ComponentMismatchError(
+                    f"different number of components in variations: "
+                    f"{len(dcNames)} vs {len(deepComponents)}",
+                )
             for dc, dcName in zip(deepComponents, dcNames):
                 varGlyph.components.append(_unpackDeepComponent(dc, dcName))
             assert len(varGlyph.components) == len(self.components)
