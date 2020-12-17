@@ -102,6 +102,7 @@ def makeProof(
     utcnow = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 
     colorCount = defaultdict(int)
+    deepComponentsCharacterCount = 0
 
     for pageIndex in range(numPages):
         db.newPage(pageWidth, pageHeight)
@@ -130,6 +131,8 @@ def makeProof(
                         glyphColor = (1, 0.35, 0.35)
                     elif hasOutline:
                         glyphColor = (0.35, 0.35, 1)
+                    elif hasComponents:
+                        deepComponentsCharacterCount += 1
                 db.fill(*glyphColor)
                 for fontIndex, fontPath in enumerate(fontPaths):
                     db.fontSize(cellSize * 0.9)
@@ -137,7 +140,7 @@ def makeProof(
                     db.text(chr(char), (x, y + 0.12 * cellSize + (numFonts - 1 - fontIndex) * cellSize + statusColorSize))
 
     if colorCount:
-        addStatusPage(pageWidth, pageHeight, colorCount)
+        addStatusPage(pageWidth, pageHeight, colorCount, deepComponentsCharacterCount)
 
     if not pdfPath.parent.exists():
         # Make parent dir if it doesn't exist
@@ -145,8 +148,8 @@ def makeProof(
     db.saveImage(pdfPath)
 
 
-def addStatusPage(pageWidth, pageHeight, colorCount):
-    totalColors = sum(colorCount.values())
+def addStatusPage(pageWidth, pageHeight, colorCount, deepComponentsCharacterCount):
+    characterCount = sum(colorCount.values())
     rectWidth = 800
     rectHeight = 30
     relativeLabelSize = 0.6
@@ -161,15 +164,23 @@ def addStatusPage(pageWidth, pageHeight, colorCount):
     for color in statusColors:
         if color not in colorCount:
             continue
-        width = (rectWidth / totalColors) * colorCount[color]
-        percent = round((100 / totalColors) * colorCount[color], 3)
+        width = (rectWidth / characterCount) * colorCount[color]
+        percent = round((100 / characterCount) * colorCount[color], 3)
         # if color is None:
         #     continue
         db.fill(*color)
         db.rect(0, 0, width, rectHeight)
-        db.fill(0, 0, 0, 1)
+        db.fill(0)
         db.text(f"{percent} %", (width + 6, rectHeight * (1 - relativeLabelSize)), align="left")
         db.translate(0, -rectHeight * 2)
+
+
+    db.text(
+        f"{100 * deepComponentsCharacterCount / characterCount:.1f} % "
+        f"of the characters were made purely with deep components "
+        f"({deepComponentsCharacterCount} of {characterCount} characters total)",
+        (0, 0),
+    )
 
 
 def main():
