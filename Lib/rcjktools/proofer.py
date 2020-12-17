@@ -4,6 +4,7 @@ import math
 import pathlib
 from fontTools.ttLib import TTFont
 import drawbot_skia.drawbot as db
+from .project import RoboCJKProject
 
 
 def iterNonEmptyGlyphs(font):
@@ -57,7 +58,7 @@ def makeProof(
         fontPaths,
         pdfPath,
         *,
-        rcjkPath=None,
+        rcjkProject=None,
         characters=None,
         pageWidth=842,
         pageHeight=595,
@@ -68,10 +69,9 @@ def makeProof(
         statusColorSize=4,
         ):
 
-    rcjkProject = None
-    if rcjkPath is not None:
-        from .project import RoboCJKProject
-        rcjkProject = RoboCJKProject(rcjkPath)
+    if rcjkProject is not None:
+        if not isinstance(rcjkProject, RoboCJKProject):
+            rcjkProject = RoboCJKProject(rcjkProject)
     else:
         statusColorSize = 0
     statusColor = None
@@ -202,7 +202,7 @@ def main():
     if args.characters is not None:
         characters = sorted({ord(char) for char in args.characters.read() if char != "\n"})
 
-    makeProof(args.fontpaths, args.pdfpath, rcjkPath=args.rcjkpath, characters=characters)
+    makeProof(args.fontpaths, args.pdfpath, rcjkProject=args.rcjkpath, characters=characters)
 
 
 if __name__ == "__main__":
