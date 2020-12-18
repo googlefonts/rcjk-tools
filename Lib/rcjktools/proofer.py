@@ -143,9 +143,6 @@ def makeProof(
     if colorCount:
         addStatusPage(pageWidth, pageHeight, colorCount, deepComponentsCharacterCount)
 
-    if not pdfPath.parent.exists():
-        # Make parent dir if it doesn't exist
-        pdfPath.parent.mkdir()
     db.saveImage(pdfPath)
 
 
