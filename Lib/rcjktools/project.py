@@ -587,6 +587,8 @@ def _unpackDeepComponent(dc, name=None):
 def _isLocationOutOfBounds(location, axes):
     for axisName, axisValue in location.items():
         minValue, maxValue = axes.get(axisName, (0, 1))
+        # These values should be seen as "initialValue" and "finalValue"
+        minValue, maxValue = sorted([minValue, maxValue])
         if not (minValue <= axisValue <= maxValue):
             return True
     return False
