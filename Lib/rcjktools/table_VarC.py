@@ -4,7 +4,6 @@ import struct
 from typing import NamedTuple
 from fontTools.misc.fixedTools import fixedToFloat, floatToFixed, floatToFixedToStr, otRound, strToFixedToFloat
 from fontTools.ttLib.tables.DefaultTable import DefaultTable
-from fontTools.ttLib.tables.otConverters import OTTableReader, OTTableWriter
 from fontTools.ttLib.tables.otTables import VarStore
 
 
@@ -136,6 +135,8 @@ def _getSubWriter(writer):
 class table_VarC(DefaultTable):
 
     def decompile(self, data, ttFont):
+        from fontTools.ttLib.tables.otConverters import OTTableReader
+
         axisTags = [axis.axisTag for axis in ttFont["fvar"].axes]
         glyfTable = ttFont["glyf"]
 
@@ -164,6 +165,8 @@ class table_VarC(DefaultTable):
             self.VarStore = None
 
     def compile(self, ttFont):
+        from fontTools.ttLib.tables.otConverters import OTTableWriter
+
         axisTags = [axis.axisTag for axis in ttFont["fvar"].axes]
         axisTagToIndex = {tag: i for i, tag in enumerate(axisTags)}
         glyfTable = ttFont["glyf"]
