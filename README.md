@@ -15,6 +15,25 @@ Prototype implementation of the Variable Components proposal: https://github.com
 - `VarCoPreviewer.py`: a simple Mac-only Variable Components previewer tool for `.rcjk`, `.ufo` and `.ttf`
 - `RoboCJKPreviewer.py`: similar to `VarCoPreviewer.py`, but only for `.rcjk`, showing the three-level RoboCJK component hierarchy
 
+## RoboCJK to VarC-VF workflow
+
+To build a VarC-enable Variable font from a RoboCJK project, these steps need to be performed:
+
+Export the RoboCJK project as a VarCo-UFO (variable component data is in lib entries):
+```
+rcjk2ufo projectname.rcjk projectname.ufo -f TheFamilyName -s TheStyleName
+```
+
+Build the skeleton VF (the parts of the VarC-VF that are standard OT 1.8):
+```
+fontmake -m projectname.designspace -o variable
+```
+
+Add the `VarC` table:
+```
+buildvarc projectname.designspace variable_ttf/projectname-VF.ttf
+```
+
 ## To document
 
 - Describe VarCo-enhanced UFO
