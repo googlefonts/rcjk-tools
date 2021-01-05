@@ -129,8 +129,8 @@ def buildVarCTable(ttf, vcData, allLocations):
     varc_table = ttf["VarC"] = newTable("VarC")
     varc_table.Version = 0x00010000
     precompiled, store = precompileAllComponents(vcData, allLocations, axisTags)
-    # mapping = store.optimize()
-    # remapVarIdxs(precompiled, mapping)
+    mapping = store.optimize()
+    remapVarIdxs(precompiled, mapping)
     varc_table.GlyphData = precompiled
     varc_table.VarStore = store
 
