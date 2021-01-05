@@ -37,4 +37,4 @@ $ buildvarc ProjectName.designspace variable_ttf/ProjectName-VF.ttf
 ## To document
 
 - Describe VarCo-enhanced UFO
-- Describe workflow to build a VarC-enabled VF
+- Describe exporting flat UFOs from .rcjk
