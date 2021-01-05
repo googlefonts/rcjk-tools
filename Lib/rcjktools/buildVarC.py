@@ -176,7 +176,7 @@ def main():
     parser.add_argument("designspace", help="The VarCo .designspace source")
     parser.add_argument("ttf", help="The input Variable Font")
     parser.add_argument("--output", help="The output Variable Font")
-    parser.add_argument("--ttx", action="store_true", help="write TTX dumps vor the VarC table.")
+    parser.add_argument("--ttx", action="store_true", help="write TTX dumps for the VarC table.")
     parser.add_argument("--no-woff2", action="store_true")
     args = parser.parse_args()
     buildVarC(args.designspace, args.ttf, args.output, args.ttx, not args.no_woff2)
