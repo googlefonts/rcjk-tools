@@ -19,7 +19,7 @@ Prototype implementation of the Variable Components proposal: https://github.com
 
 To build a VarC-enable Variable font from a RoboCJK project, these steps need to be performed:
 
-Export the RoboCJK project as a VarCo-UFO (variable component data is in lib entries):
+Export the RoboCJK project as a VarCo-UFO (variable component data is stored in glyph lib entries):
 ```
 $ rcjk2ufo ProjectName.rcjk ProjectName.ufo -f TheFamilyName -s TheStyleName
 ```
