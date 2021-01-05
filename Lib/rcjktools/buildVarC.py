@@ -20,6 +20,8 @@ def precompileAllComponents(vcData, allLocations, axisTags):
             items[index] = True  # anything not None
         subModel, subItems = masterModel.getSubModel(items)
         storeBuilder.setModel(subModel)
+        components = [[c[i] for i in subModel.mapping] for c in components]
+        # We will have to offer the master values in the model order to the store builder
         precompiledGlyph = precompileVarComponents(gn, components, storeBuilder, axisTags)
         if precompiledGlyph is not None:
             # glyph components do not contain data that has to go to the 'VarC' table
