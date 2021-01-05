@@ -21,17 +21,17 @@ To build a VarC-enable Variable font from a RoboCJK project, these steps need to
 
 Export the RoboCJK project as a VarCo-UFO (variable component data is in lib entries):
 ```
-rcjk2ufo projectname.rcjk projectname.ufo -f TheFamilyName -s TheStyleName
+rcjk2ufo ProjectName.rcjk ProjectName.ufo -f TheFamilyName -s TheStyleName
 ```
 
 Build the skeleton VF (the parts of the VarC-VF that are standard OT 1.8):
 ```
-fontmake -m projectname.designspace -o variable
+fontmake -m ProjectName.designspace -o variable
 ```
 
 Add the `VarC` table:
 ```
-buildvarc projectname.designspace variable_ttf/projectname-VF.ttf
+buildvarc ProjectName.designspace variable_ttf/ProjectName-VF.ttf
 ```
 
 ## To document
