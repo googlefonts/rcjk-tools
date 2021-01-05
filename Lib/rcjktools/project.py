@@ -105,15 +105,20 @@ class RoboCJKProject:
         glyph = glyph.instantiate(location)
         return glyph.outline.transform(transform)
 
-    def saveFlattenedUFO(self, ufoPath, location, familyName, styleName, numDecimalsRounding=0):
+    def saveFlattenedUFO(self, ufoPath, location, familyName, styleName,
+            numDecimalsRounding=0, characterSet=None):
         ufo = setupFont(familyName, styleName)
-        self.addFlattenedGlyphsToUFO(ufo, location, numDecimalsRounding)
+        self.addFlattenedGlyphsToUFO(ufo, location, numDecimalsRounding, characterSet)
         ufo.save(ufoPath, overwrite=True)
 
-    def addFlattenedGlyphsToUFO(self, ufo, location, numDecimalsRounding=0):
+    def addFlattenedGlyphsToUFO(self, ufo, location, numDecimalsRounding=0, characterSet=None):
         revCmap = self.getGlyphNamesAndUnicodes()
         glyphNames = filterGlyphNames(sorted(revCmap))
         for glyphName in glyphNames:
+            if characterSet is not None:
+                codePoints = set(revCmap[glyphName])
+                if not codePoints & characterSet:
+                    continue
             glyph = UGlyph(glyphName)
             glyph.unicodes = revCmap[glyphName]
             if numDecimalsRounding == 1:
@@ -146,7 +151,7 @@ class RoboCJKProject:
             varGlyph.outline = outline
             varGlyph.components = []
 
-    def saveVarCoUFO(self, ufoPath, familyName, styleName):
+    def saveVarCoUFO(self, ufoPath, familyName, styleName, characterSet=None):
         """Save a UFO with Variable Components glyph.lib extensions."""
         # NOTE: this has quite a few GS-CJK assumptions that may or may
         # not be fair for RoboCJK projects in general.
@@ -176,6 +181,10 @@ class RoboCJKProject:
         revCmap = self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
         characterGlyphNames = []
         for glyphName in filterGlyphNames(sorted(revCmap)):
+            if characterSet is not None:
+                codePoints = set(revCmap[glyphName])
+                if not codePoints & characterSet:
+                    continue
             try:
                 glyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
             except Exception:
@@ -612,6 +621,11 @@ def rcjk2ufo():
         " wght=700 wdth=80. If no location is given, a VarCo UFO will be "
         "written, as well as a .designspace file."
     )
+    parser.add_argument(
+        "--characters",
+        type=argparse.FileType("r", encoding="utf-8"),
+        help="A path to a UTF-8 encoded text file containing characters to include "
+        "in the exported UFO. When omitted, all characters will be exported.")
     parser.add_argument("rcjk", help="The .rcjk project folder")
     parser.add_argument("ufo", help="The output .ufo")
 
@@ -625,6 +639,11 @@ def rcjk2ufo():
             location[tag.ljust(4)] = float(val)
         except (ValueError, AssertionError):
             parser.error("invalid location argument format: %r" % arg)
+
+    if args.characters:
+        characterSet = set(ord(c) for c in args.characters.read())
+    else:
+        characterSet = None
 
     project = RoboCJKProject(args.rcjk)
     ufoPath = pathlib.Path(args.ufo)
@@ -642,6 +661,6 @@ def rcjk2ufo():
             axes[axisName] = minValue, maxValue
         location = normalizeLocation(location, axes)
         print("normalized location:", location)
-        project.saveFlattenedUFO(args.ufo, location, familyName, styleName)
+        project.saveFlattenedUFO(args.ufo, location, familyName, styleName, characterSet=characterSet)
     else:
-        project.saveVarCoUFO(args.ufo, familyName, styleName)
+        project.saveVarCoUFO(args.ufo, familyName, styleName, characterSet=characterSet)
