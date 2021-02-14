@@ -501,10 +501,14 @@ class GlyphSet:
     def getGlyph(self, glyphName):
         glyph = self._glyphs.get(glyphName)
         if glyph is None:
-            fileName = userNameToFileName(glyphName, suffix=".glif")
-            glyph = RCJKGlyph.loadFromGLIF(self._path / fileName)
-            glyph._postParse(self)
+            glyph = self.getGlyphNoCache(glyphName)
             self._glyphs[glyphName] = glyph
+        return glyph
+
+    def getGlyphNoCache(self, glyphName):
+        fileName = userNameToFileName(glyphName, suffix=".glif")
+        glyph = RCJKGlyph.loadFromGLIF(self._path / fileName)
+        glyph._postParse(self)
         return glyph
 
     def getLayer(self, layerName):
@@ -545,7 +549,7 @@ class RCJKGlyph(Glyph):
             if not self.outline.isEmpty() and layerName:
                 layer = glyphSet.getLayer(layerName)
                 if self.name in layer:
-                    varGlyph = layer.getGlyph(self.name)
+                    varGlyph = layer.getGlyphNoCache(self.name)
                 else:
                     # Layer glyph does not exist, make one up by copying
                     # self.width and self.outline
