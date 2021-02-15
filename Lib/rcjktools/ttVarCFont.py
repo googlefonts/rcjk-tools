@@ -11,19 +11,25 @@ from rcjktools.utils import makeTransformVarCo
 
 class TTVarCFont:
 
-    def __init__(self, path):
-        self.ttFont = TTFont(path)
+    def __init__(self, path, ttFont=None, hbFont=None):
+        if ttFont is not None:
+            assert hbFont is not None
+            assert path is None
+            self.ttFont = ttFont
+        else:
+            assert hbFont is None
+            self.ttFont = TTFont(path)
         self.axes = {
             axis.axisTag:
             (axis.minValue, axis.defaultValue, axis.maxValue)
             for axis in self.ttFont["fvar"].axes
         }
-        with open(path, "rb") as f:
-            face = hb.Face(f.read())
-        self.hbFont = hb.Font(face)
-        upem = face.upem
-        self.hbFont.scale = (upem, upem)
-        hb.ot_font_set_funcs(self.hbFont)
+        if hbFont is not None:
+            self.hbFont = hbFont
+        else:
+            with open(path, "rb") as f:
+                face = hb.Face(f.read())
+            self.hbFont = hb.Font(face)
 
     def keys(self):
         return self.ttFont.getGlyphNames()
