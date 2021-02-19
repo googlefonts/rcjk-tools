@@ -83,11 +83,7 @@ class Glyph(_MathMixin):
         if self.model is None:
             return self  # XXX raise error?
         if self.deltas is None:
-            try:
-                self.deltas = self.model.getDeltas([self] + self.variations)
-            except:
-                print(self.name, "!!!!!!")
-                raise
+            self.deltas = self.model.getDeltas([self] + self.variations)
         location = normalizeLocation(location, self.axes)
         return self.model.interpolateFromDeltas(location, self.deltas)
 
