@@ -568,7 +568,7 @@ class RCJKGlyph(Glyph):
                     f"axes: {_formatDict(self.axes)}"
                 )
 
-            deepComponents = varDict["deepComponents"]
+            deepComponents = varDict.get("deepComponents", [])
             if len(dcNames) != len(deepComponents):
                 raise ComponentMismatchError(
                     f"different number of components in variations: "
