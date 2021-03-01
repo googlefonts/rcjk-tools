@@ -22,24 +22,45 @@ class VarCoGlyph(Glyph):
 
         # Build Component objects
         vcComponentData = self.lib.get("varco.components", [])
-        assert len(components) == len(vcComponentData), (self.name, len(components), len(vcComponentData), components)
+        if vcComponentData:
+            assert len(components) == len(vcComponentData), (self.name, len(components), len(vcComponentData), components)
+        else:
+            vcComponentData = [None] * len(components)
         assert len(self.components) == 0
         for (baseGlyph, affine), vcCompo in zip(components, vcComponentData):
-            assert affine[:4] == (1, 0, 0, 1)
-            x, y = affine[4:]
-            transformDict = vcCompo["transform"]
-            transform = MathDict(
-                x=affine[4],
-                y=affine[5],
-                rotation=transformDict.get("rotation", 0),
-                scalex=transformDict.get("scalex", 1),
-                scaley=transformDict.get("scaley", 1),
-                skewx=transformDict.get("skewx", 0),
-                skewy=transformDict.get("skewy", 0),
-                tcenterx=transformDict.get("tcenterx", 0),
-                tcentery=transformDict.get("tcentery", 0),
-            )
-            self.components.append(Component(baseGlyph, MathDict(vcCompo["coord"]), transform))
+            if vcCompo is None:
+                xx, xy, yx, yy, dx, dy = affine
+                assert xy == 0,  "rotation and skew are not implemented"
+                assert yx == 0,  "rotation and skew are not implemented"
+                coord = {}
+                transform = MathDict(
+                    x=dx,
+                    y=dy,
+                    rotation=0,
+                    scalex=xx,
+                    scaley=yy,
+                    skewx=0,
+                    skewy=0,
+                    tcenterx=0,
+                    tcentery=0,
+                )
+            else:
+                assert affine[:4] == (1, 0, 0, 1)
+                x, y = affine[4:]
+                coord = vcCompo["coord"]
+                transformDict = vcCompo["transform"]
+                transform = MathDict(
+                    x=affine[4],
+                    y=affine[5],
+                    rotation=transformDict.get("rotation", 0),
+                    scalex=transformDict.get("scalex", 1),
+                    scaley=transformDict.get("scaley", 1),
+                    skewx=transformDict.get("skewx", 0),
+                    skewy=transformDict.get("skewy", 0),
+                    tcenterx=transformDict.get("tcenterx", 0),
+                    tcentery=transformDict.get("tcentery", 0),
+                )
+            self.components.append(Component(baseGlyph, MathDict(coord), transform))
 
         assert len(self.variations) == 0
         if ufos:
@@ -117,6 +138,17 @@ class VarCoFont:
         for glyphName in sorted(self.keys()):
             glyph = self[glyphName]
             masters = [glyph] + glyph.variations
+
+            if not glyph.outline.isEmpty() and glyph.components:
+                assert not any(c.coord for c in glyph.components), "can't mix outlines and variable components"
+                # ensure only the offset may vary across masters
+                for attr in ['rotation', 'scalex', 'scaley', 'skewx', 'skewy', 'tcenterx', 'tcentery']:
+                    values = {c.transform[attr] for m in masters for c in m.components}
+                    assert len(values) == 1, "classic component varies scale, skew or rotation"
+                # This glyph mixes outlines and classic components, it will be
+                # flattened upon TTF compilation, so should not be part of the VarC table
+                continue
+
             locations = [m.location for m in masters]
             allLocations.update(tuplifyLocation(loc) for loc in locations)
             components = []

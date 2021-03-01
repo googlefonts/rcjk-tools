@@ -69,24 +69,31 @@ class RoboCJKProject:
         return self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
 
     def drawPointsCharacterGlyph(self, glyphName, location, pen):
-        outline, dcItems, width = self.instantiateCharacterGlyph(glyphName, location)
+        outline, dcItems, classicComponents, width = self.instantiateCharacterGlyph(glyphName, location)
         outline.drawPoints(pen)
         for dcName, atomicElements in dcItems:
             for aeName, atomicOutline in atomicElements:
                 atomicOutline.drawPoints(pen)
+        for baseGlyphName, transform in classicComponents:
+            pen.addComponent(baseGlyphName, transform)
         return width
 
     def instantiateCharacterGlyph(self, glyphName, location):
         glyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
         glyph = glyph.instantiate(location)
         deepItems = []
+        classicComponents = []
         for component in glyph.components:
-            deepItem = self.instantiateDeepComponent(
-                component.name, component.coord,
-                makeTransform(**component.transform),
-            )
-            deepItems.append((component.name, deepItem))
-        return glyph.outline, deepItems, glyph.width
+            if component.name not in self.deepComponentGlyphSet:
+                assert not component.coord, (glyphName, component.name, component.coord)
+                classicComponents.append((component.name, makeTransform(**component.transform)))
+            else:
+                deepItem = self.instantiateDeepComponent(
+                    component.name, component.coord,
+                    makeTransform(**component.transform),
+                )
+                deepItems.append((component.name, deepItem))
+        return glyph.outline, deepItems, classicComponents, glyph.width
 
     def instantiateDeepComponent(self, glyphName, location, transform):
         glyph = self.deepComponentGlyphSet.getGlyph(glyphName)
@@ -200,7 +207,7 @@ class RoboCJKProject:
                     logger.warning(f"decomposing {glyphName}: it has both an outline and components")
                     self.decomposeCharacterGlyph(glyphName)
 
-        dcNames = getComponentNames(self.characterGlyphGlyphSet, characterGlyphNames)
+        dcNames = getComponentNames(self.characterGlyphGlyphSet, characterGlyphNames, self.deepComponentGlyphSet)
         # check whether all DC glyphnames start with "DC_"
         ensureDCGlyphNames(dcNames)
         aeNames = getComponentNames(self.deepComponentGlyphSet, sorted(dcNames))
@@ -305,12 +312,13 @@ def roundFuncOneDecimal(value):
         return value
 
 
-def getComponentNames(glyphSet, glyphNames):
+def getComponentNames(glyphSet, glyphNames, componentGlyphSet=None):
     componentNames = set()
     for glyphName in glyphNames:
         glyph = glyphSet.getGlyph(glyphName)
         for dc in glyph.components:
-            componentNames.add(dc.name)
+            if componentGlyphSet is None or dc.name in componentGlyphSet:
+                componentNames.add(dc.name)
     return componentNames
 
 
@@ -392,10 +400,13 @@ def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet
             tcenterx=transform["tcenterx"],
             tcentery=transform["tcentery"],
         )
-        baseGlyph = componentSourceGlyphSet.getGlyph(compo.name)
-        axisNameMapping = _makeAxisNameMapping(baseGlyph.axes)
-        coord = normalizeLocation(compo.coord, baseGlyph.axes)
-        coord = {axisNameMapping[k]: v for k, v in coord.items() if k in axisNameMapping}
+        if compo.name not in componentSourceGlyphSet:
+            coord = {}
+        else:
+            baseGlyph = componentSourceGlyphSet.getGlyph(compo.name)
+            axisNameMapping = _makeAxisNameMapping(baseGlyph.axes)
+            coord = normalizeLocation(compo.coord, baseGlyph.axes)
+            coord = {axisNameMapping[k]: v for k, v in coord.items() if k in axisNameMapping}
         info = dict(
             coord=coord,
             transform=varCoTransform,
@@ -525,6 +536,21 @@ class RCJKGlyph(Glyph):
         and variation info is unpacked here, and put into a subglyph, as part
         of the self.variations list.
         """
+        self.outline, classicComponents = self.outline.splitComponents()
+        for baseGlyphName, affineTransform in classicComponents:
+            xx, xy, yx, yy, dx, dy = affineTransform
+            assert xy == 0, "rotation and skewing is not implemented"
+            assert yx == 0, "rotation and skewing is not implemented"
+            transform = MathDict(
+                x=dx,
+                y=dy,
+                scalex=xx,
+                scaley=yy,
+                rotation=0,
+                tcenterx=0,
+                tcentery=0,
+            )
+            self.components.append(Component(baseGlyphName, MathDict(), transform))
         dcNames = []
         for dc in self.lib.get("robocjk.deepComponents", []):
             dcNames.append(dc["name"])
