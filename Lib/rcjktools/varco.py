@@ -26,7 +26,7 @@ class VarCoGlyph(Glyph):
 
         # Build Component objects
         vcComponentData = self.lib.get("varco.components", [])
-        assert len(cc.components) == len(vcComponentData)
+        assert len(cc.components) == len(vcComponentData), (self.name, len(cc.components), len(vcComponentData))
         assert len(self.components) == 0
         for (baseGlyph, affine), vcCompo in zip(cc.components, vcComponentData):
             assert affine[:4] == (1, 0, 0, 1)
