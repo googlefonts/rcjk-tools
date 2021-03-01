@@ -2,7 +2,7 @@ from fontTools.designspaceLib import DesignSpaceDocument
 from fontTools.pens.pointPen import PointToSegmentPen
 from fontTools.varLib.models import VariationModel, allEqual, normalizeLocation
 from ufoLib2 import Font as UFont
-from .objects import Component, ComponentCollector, Glyph, MathDict, MathOutline
+from .objects import Component, Glyph, MathDict, MathOutline
 from .utils import makeTransformVarCo
 
 
@@ -18,16 +18,13 @@ class VarCoGlyph(Glyph):
 
     def _postParse(self, ufos, locations):
         # Filter out and collect component info from the outline
-        outline = MathOutline()
-        cc = ComponentCollector(outline)
-        self.outline.drawPoints(cc)
-        self.outline = outline
+        self.outline, components = self.outline.splitComponents()
 
         # Build Component objects
         vcComponentData = self.lib.get("varco.components", [])
-        assert len(cc.components) == len(vcComponentData), (self.name, len(cc.components), len(vcComponentData))
+        assert len(components) == len(vcComponentData), (self.name, len(components), len(vcComponentData), components)
         assert len(self.components) == 0
-        for (baseGlyph, affine), vcCompo in zip(cc.components, vcComponentData):
+        for (baseGlyph, affine), vcCompo in zip(components, vcComponentData):
             assert affine[:4] == (1, 0, 0, 1)
             x, y = affine[4:]
             transformDict = vcCompo["transform"]

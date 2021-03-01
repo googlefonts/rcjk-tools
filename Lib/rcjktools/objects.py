@@ -246,6 +246,16 @@ class MathOutline(RecordingPointPen, _MathMixin):
                 assert False, f"unsupported method: {m1}"
         return result
 
+    def splitComponents(self):
+        """Separate outlines from components; return a new MathOutline object that
+        does not contain components, and a list of (baseGlyphName, transformation)
+        tuples.
+        """
+        outline = MathOutline()
+        cc = ComponentCollector(outline)
+        self.drawPoints(cc)
+        return outline, cc.components
+
 
 class ComponentCollector(FilterPointPen):
 
