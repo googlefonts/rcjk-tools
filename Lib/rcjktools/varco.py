@@ -1,9 +1,8 @@
 from fontTools.designspaceLib import DesignSpaceDocument
-from fontTools.pens.filterPen import FilterPointPen
 from fontTools.pens.pointPen import PointToSegmentPen
 from fontTools.varLib.models import VariationModel, allEqual, normalizeLocation
 from ufoLib2 import Font as UFont
-from .objects import Component, Glyph, MathDict, MathOutline
+from .objects import Component, ComponentCollector, Glyph, MathDict, MathOutline
 from .utils import makeTransformVarCo
 
 
@@ -193,20 +192,6 @@ _transformFieldMapping = {
 
 def tuplifyLocation(loc):
     return tuple(sorted(loc.items()))
-
-
-class ComponentCollector(FilterPointPen):
-
-    """This pen passes all outline data on to the outPen, and
-    stores component data in a list.
-    """
-
-    def __init__(self, outPen):
-        super().__init__(outPen)
-        self.components = []
-
-    def addComponent(self, glyphName, transformation, **kwargs):
-        self.components.append((glyphName, transformation))
 
 
 if __name__ == "__main__":

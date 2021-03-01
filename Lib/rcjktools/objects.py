@@ -2,6 +2,7 @@ import logging
 import operator
 from typing import NamedTuple
 from fontTools.misc.transform import Transform
+from fontTools.pens.filterPen import FilterPointPen
 from fontTools.pens.pointPen import PointToSegmentPen, SegmentToPointPen
 from fontTools.pens.recordingPen import RecordingPointPen
 from fontTools.ufoLib.glifLib import readGlyphFromString
@@ -244,3 +245,17 @@ class MathOutline(RecordingPointPen, _MathMixin):
             else:
                 assert False, f"unsupported method: {m1}"
         return result
+
+
+class ComponentCollector(FilterPointPen):
+
+    """This pen passes all outline data on to the outPen, and
+    stores component data in a list.
+    """
+
+    def __init__(self, outPen):
+        super().__init__(outPen)
+        self.components = []
+
+    def addComponent(self, glyphName, transformation, **kwargs):
+        self.components.append((glyphName, transformation))
