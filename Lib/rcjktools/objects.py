@@ -249,7 +249,7 @@ class MathOutline(RecordingPointPen, _MathMixin):
     def splitComponents(self):
         """Separate outlines from components; return a new MathOutline object that
         does not contain components, and a list of (baseGlyphName, transformation)
-        tuples.
+        tuples representing the components.
         """
         outline = MathOutline()
         cc = ComponentCollector(outline)
