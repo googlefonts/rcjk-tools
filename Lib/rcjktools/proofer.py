@@ -100,11 +100,10 @@ def makeProof(
     charIter = iter(characters)
 
     utcnow = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+    fontFileNamesLabel = ", ".join(f"{index}: {p.name}" for index, p in enumerate(fontPaths, 1))
 
     colorCount = defaultdict(int)
     deepComponentsCharacterCount = 0
-
-    fontFileNamesLabel = ", ".join(f"{index}: {p.name}" for index, p in enumerate(fontPaths, 1))
 
     db.newDrawing()
     for pageIndex in range(numPages):
