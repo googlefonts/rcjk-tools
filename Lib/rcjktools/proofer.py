@@ -77,8 +77,8 @@ def makeProof(
     statusColor = None
     pdfPath = pathlib.Path(pdfPath).resolve()
 
+    numFonts = len(fontPaths)
     with TTFont(fontPaths[0], lazy=True) as font:
-        numFonts = len(fontPaths)
         cmap = font.getBestCmap()
         if characters is None:
             characters = sorted(cmap.keys())
@@ -104,12 +104,14 @@ def makeProof(
     colorCount = defaultdict(int)
     deepComponentsCharacterCount = 0
 
+    fontFileNamesLabel = ", ".join(f"{index}: {p.name}" for index, p in enumerate(fontPaths, 1))
+
     db.newDrawing()
     for pageIndex in range(numPages):
         db.newPage(pageWidth, pageHeight)
         db.translate(margin, margin)
         db.font("Helvetica", 7)
-        db.text(f"Page {pageIndex + 1} — {utcnow}", (0, -5))
+        db.text(f"Page {pageIndex + 1} — {utcnow} — {fontFileNamesLabel}", (0, -5))
         for y in range(numVerCells):
             y = areaHeight - cellHeight * (y + 1) - lineGap * y
             for x in range(numHorCells):
