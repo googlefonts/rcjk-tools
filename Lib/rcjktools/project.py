@@ -571,7 +571,7 @@ class RCJKGlyph(Glyph):
                 # They are a bit like background layers.
                 continue
             layerName = varDict.get("layerName")
-            if not self.outline.isEmpty() and layerName:
+            if (not self.outline.isEmpty() or classicComponents) and layerName:
                 layer = glyphSet.getLayer(layerName)
                 if self.name in layer:
                     varGlyph = layer.getGlyphNoCache(self.name)
