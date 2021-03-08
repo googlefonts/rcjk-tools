@@ -61,7 +61,7 @@ class VarCoPreviewer:
             ]
         elif ext == ".rcjk":
             from rcjktools.project import RoboCJKProject
-            self.varcoFont = RoboCJKProject(fontPath)
+            self.varcoFont = RoboCJKProject(fontPath, decomposeClassicComponents=True)
             axisInfo = [
                 (axisTag, 0, 0, 1)  # self.varcoFont.drawGlyph() takes normalized coords
                 for axisTag, (minValue, defaultValue, maxValue) in self.varcoFont.axes.items()

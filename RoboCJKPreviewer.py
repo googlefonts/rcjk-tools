@@ -44,7 +44,7 @@ class UnicodesFormatter(NSFormatter, metaclass=ClassNameIncrementer):
 class RoboCJKPreviewer:
 
     def __init__(self, rcjkProjectPath):
-        self.project = RoboCJKProject(rcjkProjectPath)
+        self.project = RoboCJKProject(rcjkProjectPath, decomposeClassicComponents=True)
         self.glyphList = [dict(glyphName=glyphName, unicode=unicodes)
             for glyphName, unicodes in self.project.getGlyphNamesAndUnicodes().items()]
         self.glyphList.sort(key=lambda item: (item["unicode"], item["glyphName"]))
@@ -105,13 +105,12 @@ class RoboCJKPreviewer:
             glyphName = self.w.characterGlyphList[sel[0]]["glyphName"]
             outline, dcItems, classicComponents, width = self.project.instantiateCharacterGlyph(
                 glyphName, location={"wght": self.w.axisSlider.get()})
+            assert not classicComponents
         else:
             outline = None
             dcItems = []
-            classicComponents = []
         self._currentGlyphOutline = outline
         self._currentGlyphComponents = dcItems
-        self._currentGlyphClassicComponents = classicComponents
 
     def deepComponentListSelectionChangedCallback(self, sender):
         sel = sender.getSelection()
@@ -147,8 +146,6 @@ class RoboCJKPreviewer:
         aeSelection = set(self.w.atomicElementList.getSelection())
         if self._currentGlyphOutline is not None:
             drawOutline(self._currentGlyphOutline)
-        if self._currentGlyphClassicComponents:
-            drawClassicComponents(self._currentGlyphClassicComponents, self.project.characterGlyphGlyphSet)
         if self._currentGlyphComponents:
             for dcIndex, (dcName, atomicElements) in enumerate(self._currentGlyphComponents):
                 for aeIndex, (aeName, atomicOutline) in enumerate(atomicElements):
@@ -172,25 +169,6 @@ def drawOutline(outline):
     bez = db.BezierPath()
     outline.drawPoints(bez)
     db.drawPath(bez)
-
-
-def drawClassicComponents(components, glyphSet):
-    bez = db.BezierPath(glyphSet=GlyphSetAdapter(glyphSet))
-    for baseGlyph, transform in components:
-        bez.addComponent(baseGlyph, transform)
-    db.drawPath(bez)
-
-
-class GlyphSetAdapter:
-
-    def __init__(self, rcjkGlyphSet):
-        self.rcjkGlyphSet = rcjkGlyphSet
-
-    def __contains__(self, glyphName):
-        return glyphName in self.rcjkGlyphSet
-
-    def __getitem__(self, glyphName):
-        return self.rcjkGlyphSet.getGlyph(glyphName)
 
 
 if __name__ == "__main__":

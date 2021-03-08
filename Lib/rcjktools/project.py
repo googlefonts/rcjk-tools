@@ -28,8 +28,9 @@ class LocationOutOfBoundsError(Exception):
 
 class RoboCJKProject:
 
-    def __init__(self, path):
+    def __init__(self, path, decomposeClassicComponents=False):
         self._path = pathlib.Path(path).resolve()
+        self._decomposeClassicComponents = decomposeClassicComponents
         assert self._path.is_dir(), f"No .rcjk project found: {path}"
         self._loadDesignSpace(self._path / "designspace.json")
 
@@ -86,7 +87,15 @@ class RoboCJKProject:
         for component in glyph.components:
             if component.name not in self.deepComponentGlyphSet:
                 assert not component.coord, (glyphName, component.name, component.coord)
-                classicComponents.append((component.name, makeTransform(**component.transform)))
+                transform = makeTransform(**component.transform)
+                if self._decomposeClassicComponents:
+                    compoOutline, cdc, ccc, cw = self.instantiateCharacterGlyph(component.name, location)
+                    assert not cdc
+                    assert not ccc
+                    compoOutline = compoOutline.transform(transform)
+                    deepItems.append((component.name, [("<classic component>", compoOutline)]))
+                else:
+                    classicComponents.append((component.name, transform))
             else:
                 deepItem = self.instantiateDeepComponent(
                     component.name, component.coord,
