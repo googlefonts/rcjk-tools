@@ -144,7 +144,7 @@ class VarCoFont:
                 # ensure only the offset may vary across masters
                 for attr in ['rotation', 'scalex', 'scaley', 'skewx', 'skewy', 'tcenterx', 'tcentery']:
                     values = {c.transform[attr] for m in masters for c in m.components}
-                    assert len(values) == 1, "classic component varies scale, skew or rotation"
+                    assert len(values) == 1, f"classic component varies {attr}"
                 # This glyph mixes outlines and classic components, it will be
                 # flattened upon TTF compilation, so should not be part of the VarC table
                 continue
