@@ -103,6 +103,8 @@ class Glyph(_MathMixin):
         result.unicodes = self.unicodes
         result.width = op(self.width, other.width)
         result.outline = op(self.outline, other.outline)
+        # if len(self.components) != len(other.components):
+        #     raise InterpolationError("incompatible number of components")
         result.components = [
             op(compo1, compo2)
             for compo1, compo2 in zip(self.components, other.components)
@@ -134,6 +136,8 @@ class Component(NamedTuple):
     transform: dict
 
     def __add__(self, other):
+        # if self.name != other.name:
+        #     raise InterpolationError("incompatible component")
         return Component(
             self.name,
             self.coord + other.coord,
@@ -141,6 +145,8 @@ class Component(NamedTuple):
         )
 
     def __sub__(self, other):
+        # if self.name != other.name:
+        #     raise InterpolationError("incompatible component")
         return Component(
             self.name,
             self.coord - other.coord,
