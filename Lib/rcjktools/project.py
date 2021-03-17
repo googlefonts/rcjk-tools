@@ -135,12 +135,9 @@ class RoboCJKProject:
                 codePoints = set(revCmap[glyphName])
                 if not codePoints & characterSet:
                     continue
-            rcjkGlyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
             glyph = UGlyph(glyphName)
             glyph.unicodes = revCmap[glyphName]
-            colorString = rcjkGlyph.lib.get("public.markColor")
-            if colorString:
-                glyph.lib["public.markColor"] = colorString
+            copyMarkColor(self.characterGlyphGlyphSet.getGlyph(glyphName), glyph)
             if numDecimalsRounding == 1:
                 roundFunc = roundFuncOneDecimal
             elif numDecimalsRounding != 0:
@@ -476,6 +473,12 @@ def parseLayerName(layerName):
         axisValue = float(axisValue)
         location[axisName] = axisValue
     return location
+
+
+def copyMarkColor(fromGlyph, toGlyph):
+    colorString = fromGlyph.lib.get("public.markColor")
+    if colorString:
+        toGlyph.lib["public.markColor"] = colorString
 
 
 _glyphNamePat = re.compile(rb'<glyph\s+name\s*=\s*"([^"]+)"')
