@@ -4,8 +4,15 @@ from fontTools.varLib.models import VariationModel, allEqual
 from fontTools.varLib.varStore import OnlineVarStoreBuilder
 from rcjktools.varco import VarCoFont
 from rcjktools.table_VarC import (
-    fixedCoord, getToFixedConverterForNumIntBitsForScale, transformToIntConverters,
-    transformDefaults, VARIDX_KEY, ComponentRecord, CoordinateRecord, TransformRecord)
+    fixedCoord,
+    getToFixedConverterForNumIntBitsForScale,
+    transformToIntConverters,
+    transformDefaults,
+    VARIDX_KEY,
+    ComponentRecord,
+    CoordinateRecord,
+    TransformRecord,
+)
 
 
 def precompileAllComponents(vcData, allLocations, axisTags):
@@ -22,7 +29,9 @@ def precompileAllComponents(vcData, allLocations, axisTags):
         storeBuilder.setModel(subModel)
         components = [[c[i] for i in subModel.mapping] for c in components]
         # We will have to offer the master values in the model order to the store builder
-        precompiledGlyph = precompileVarComponents(gn, components, storeBuilder, axisTags)
+        precompiledGlyph = precompileVarComponents(
+            gn, components, storeBuilder, axisTags
+        )
         if precompiledGlyph is not None:
             # glyph components do not contain data that has to go to the 'VarC' table
             precompiled[gn] = precompiledGlyph
@@ -37,7 +46,13 @@ def precompileVarComponents(glyphName, components, storeBuilder, axisTags):
         coordDefaults = {k: 0 for k in coordKeys}
         coordConverters = {k: fixedCoord for k in coordKeys}
         dicts = [coord for coord, transform in component]
-        coordDict = compileDicts(dicts, coordDefaults, coordConverters, storeBuilder, allowIndividualVarIdx=True)
+        coordDict = compileDicts(
+            dicts,
+            coordDefaults,
+            coordConverters,
+            storeBuilder,
+            allowIndividualVarIdx=True,
+        )
 
         dicts = [transform for coord, transform in component]
         transformToIntConvertersLocal = dict(transformToIntConverters)
@@ -45,7 +60,9 @@ def precompileVarComponents(glyphName, components, storeBuilder, axisTags):
         scaleConvert = getToFixedConverterForNumIntBitsForScale(numIntBitsForScale)
         transformToIntConvertersLocal["ScaleX"] = scaleConvert
         transformToIntConvertersLocal["ScaleY"] = scaleConvert
-        transformDict = compileDicts(dicts, transformDefaults, transformToIntConvertersLocal, storeBuilder)
+        transformDict = compileDicts(
+            dicts, transformDefaults, transformToIntConvertersLocal, storeBuilder
+        )
         if coordDict or transformDict:
             haveVarCData = True
         precompiled.append(
@@ -62,7 +79,9 @@ def precompileVarComponents(glyphName, components, storeBuilder, axisTags):
         return None
 
 
-def compileDicts(dicts, dictDefaults, dictConverters, storeBuilder, allowIndividualVarIdx=False):
+def compileDicts(
+    dicts, dictDefaults, dictConverters, storeBuilder, allowIndividualVarIdx=False
+):
     resultDict = {}
     convertedMasterValues = {}
     hasVariations = False  # True if any key has variations
@@ -78,7 +97,9 @@ def compileDicts(dicts, dictDefaults, dictConverters, storeBuilder, allowIndivid
 
     if hasVariations:
         for k, masterValues in convertedMasterValues.items():
-            if allowIndividualVarIdx and allEqual(masterValues):  # TODO: Avoid second allEqual() call?
+            if allowIndividualVarIdx and allEqual(
+                masterValues
+            ):  # TODO: Avoid second allEqual() call?
                 continue
             base, varIdx = storeBuilder.storeMasters(masterValues)
             assert base == masterValues[0], (k, base, masterValues)
@@ -139,6 +160,7 @@ def buildVarCTable(ttf, vcData, allLocations):
 
 def buildVarC(designspacePath, ttfPath, outTTFPath, doTTX, saveWoff2):
     import pathlib
+
     registerCustomTableClass("VarC", "rcjktools.table_VarC", "table_VarC")
     ttfPath = pathlib.Path(ttfPath)
     if outTTFPath is None:
@@ -174,11 +196,14 @@ def buildVarC(designspacePath, ttfPath, outTTFPath, doTTX, saveWoff2):
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("designspace", help="The VarCo .designspace source")
     parser.add_argument("ttf", help="The input Variable Font")
     parser.add_argument("--output", help="The output Variable Font")
-    parser.add_argument("--ttx", action="store_true", help="write TTX dumps for the VarC table.")
+    parser.add_argument(
+        "--ttx", action="store_true", help="write TTX dumps for the VarC table."
+    )
     parser.add_argument("--no-woff2", action="store_true")
     args = parser.parse_args()
     buildVarC(args.designspace, args.ttf, args.output, args.ttx, not args.no_woff2)

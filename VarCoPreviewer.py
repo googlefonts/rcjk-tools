@@ -37,7 +37,6 @@ def ClassNameIncrementer(clsName, bases, dct):
 
 
 class VarCoPreviewer:
-
     def __init__(self, fontPath):
         base, ext = os.path.splitext(fontPath)
         ext = ext.lower()
@@ -46,13 +45,19 @@ class VarCoPreviewer:
         # does obj.drawGlyph() take a normalized location or not?
         if ext == ".designspace":
             from rcjktools.varco import VarCoFont
+
             self.varcoFont = VarCoFont(fontPath)
             axisInfo = [
                 (axisTag, minValue, defaultValue, maxValue)
-                for axisTag, (minValue, defaultValue, maxValue) in self.varcoFont.axes.items()
+                for axisTag, (
+                    minValue,
+                    defaultValue,
+                    maxValue,
+                ) in self.varcoFont.axes.items()
             ]
         elif ext == ".ttf":
             from rcjktools.ttVarCFont import TTVarCFont
+
             self.varcoFont = TTVarCFont(fontPath)
             axisInfo = [
                 (axis.axisTag, axis.minValue, axis.defaultValue, axis.maxValue)
@@ -61,31 +66,46 @@ class VarCoPreviewer:
             ]
         elif ext == ".rcjk":
             from rcjktools.project import RoboCJKProject
+
             self.varcoFont = RoboCJKProject(fontPath, decomposeClassicComponents=True)
             axisInfo = [
                 (axisTag, 0, 0, 1)  # self.varcoFont.drawGlyph() takes normalized coords
-                for axisTag, (minValue, defaultValue, maxValue) in self.varcoFont.axes.items()
+                for axisTag, (
+                    minValue,
+                    defaultValue,
+                    maxValue,
+                ) in self.varcoFont.axes.items()
             ]
         else:
             assert 0, "unsupported file type"
 
         self.glyphList = sorted(self.varcoFont.keys())
 
-        self.w = Window((1000, 400), f"VarCo Previewer — {fontPath}",
-            minSize=(600, 400), autosaveName="VarCoPreviewer")
+        self.w = Window(
+            (1000, 400),
+            f"VarCo Previewer — {fontPath}",
+            minSize=(600, 400),
+            autosaveName="VarCoPreviewer",
+        )
 
-        self.w.findGlyphField = EditText((10, 10, 180, 20), callback=self.findGlyphFieldCallback)
+        self.w.findGlyphField = EditText(
+            (10, 10, 180, 20), callback=self.findGlyphFieldCallback
+        )
 
         y = 8
         self.axisSliderMapping = []
-        for axisIndex, (axisTag, minValue, defaultValue, maxValue) in enumerate(axisInfo):
+        for axisIndex, (axisTag, minValue, defaultValue, maxValue) in enumerate(
+            axisInfo
+        ):
             axisSliderAttrName = f"axisSlider{axisIndex}"
             axisLabelAttrName = f"axisLabel{axisIndex}"
             label = TextBox((-210, y, 200, 20), f"{axisTag}")
             y += 20
             slider = Slider(
                 (-210, y, 200, 20),
-                value=defaultValue, minValue=minValue, maxValue=maxValue,
+                value=defaultValue,
+                minValue=minValue,
+                maxValue=maxValue,
                 callback=self.axisSliderCallback,
             )
             y += 30
@@ -94,12 +114,15 @@ class VarCoPreviewer:
             self.axisSliderMapping.append((axisSliderAttrName, axisTag))
 
         top = 40
-        self.w.characterGlyphList = List((0, top, 200, 0), self.glyphList,
+        self.w.characterGlyphList = List(
+            (0, top, 200, 0),
+            self.glyphList,
             allowsMultipleSelection=False,
             allowsSorting=False,
             showColumnTitles=False,
             drawFocusRing=False,
-            selectionCallback=self.characterGlyphListSelectionChangedCallback)
+            selectionCallback=self.characterGlyphListSelectionChangedCallback,
+        )
 
         self.w.dbView = DrawView((200, 0, -220, 0))  # The DrawBot PDF view
         self.w.characterGlyphList.setSelection([])
@@ -148,7 +171,9 @@ class VarCoPreviewer:
         db.stroke(0.2, 0.3, 1)
         db.rect(0, 0, 1000, 1000)
         db.stroke(None)
-        db.translate(0, 120)  # Baseline at 120 from the bottom of the Ideographic Em Square
+        db.translate(
+            0, 120
+        )  # Baseline at 120 from the bottom of the Ideographic Em Square
         db.fill(0, 0.3)
         db.stroke(0)
         if self._currentGlyphPath is not None:
@@ -177,6 +202,9 @@ if __name__ == "__main__":
 
     registerCustomTableClass("VarC", "rcjktools.table_VarC", "table_VarC")
 
-    result = getFileOrFolder("Please select a VarCo .designspace, .ttf or .rcjk project", fileTypes=["designspace", "ttf", "rcjk"])
+    result = getFileOrFolder(
+        "Please select a VarCo .designspace, .ttf or .rcjk project",
+        fileTypes=["designspace", "ttf", "rcjk"],
+    )
     if result:
         VarCoPreviewer(result[0])

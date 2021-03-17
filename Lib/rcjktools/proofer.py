@@ -55,19 +55,19 @@ def getGlyphInfo(project, glyphName):
 
 
 def makeProof(
-        fontPaths,
-        pdfPath,
-        *,
-        rcjkProject=None,
-        characters=None,
-        pageWidth=842,
-        pageHeight=595,
-        margin=20,
-        cellSize=40,
-        labelSize=9,
-        lineGap=4,
-        statusColorSize=4,
-        ):
+    fontPaths,
+    pdfPath,
+    *,
+    rcjkProject=None,
+    characters=None,
+    pageWidth=842,
+    pageHeight=595,
+    margin=20,
+    cellSize=40,
+    labelSize=9,
+    lineGap=4,
+    statusColorSize=4,
+):
 
     if rcjkProject is not None:
         if not isinstance(rcjkProject, RoboCJKProject):
@@ -100,7 +100,9 @@ def makeProof(
     charIter = iter(characters)
 
     utcnow = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
-    fontFileNamesLabel = ", ".join(f"{index}: {p.name}" for index, p in enumerate(fontPaths, 1))
+    fontFileNamesLabel = ", ".join(
+        f"{index}: {p.name}" for index, p in enumerate(fontPaths, 1)
+    )
 
     colorCount = defaultdict(int)
     deepComponentsCharacterCount = 0
@@ -125,7 +127,9 @@ def makeProof(
                 db.text(f"U+{char:04X}", (x, y + cellHeight - labelSize * 0.95))
                 glyphColor = (0,)
                 if rcjkProject is not None and glyphName is not None:
-                    hasOutline, hasComponents, statusColor = getGlyphInfo(rcjkProject, glyphName)
+                    hasOutline, hasComponents, statusColor = getGlyphInfo(
+                        rcjkProject, glyphName
+                    )
                     colorCount[statusColor] += 1
                     db.fill(*statusColor)
                     db.rect(x + 1, y, cellSize - 2, statusColorSize)
@@ -139,7 +143,16 @@ def makeProof(
                 for fontIndex, fontPath in enumerate(fontPaths):
                     db.fontSize(cellSize * 0.9)
                     db.font(fontPath)
-                    db.text(chr(char), (x, y + 0.12 * cellSize + (numFonts - 1 - fontIndex) * cellSize + statusColorSize))
+                    db.text(
+                        chr(char),
+                        (
+                            x,
+                            y
+                            + 0.12 * cellSize
+                            + (numFonts - 1 - fontIndex) * cellSize
+                            + statusColorSize,
+                        ),
+                    )
 
     if colorCount:
         addStatusPage(pageWidth, pageHeight, colorCount, deepComponentsCharacterCount)
@@ -152,7 +165,7 @@ def addStatusPage(pageWidth, pageHeight, colorCount, deepComponentsCharacterCoun
     rectWidth = 800
     rectHeight = 30
     relativeLabelSize = 0.5
-    marginleft = (pageWidth - rectWidth)*.5
+    marginleft = (pageWidth - rectWidth) * 0.5
     marginbottom = ((pageHeight - rectHeight) * 0.5) + rectHeight * len(colorCount)
 
     db.newPage(pageWidth, pageHeight)
@@ -170,7 +183,11 @@ def addStatusPage(pageWidth, pageHeight, colorCount, deepComponentsCharacterCoun
         db.fill(*color)
         db.rect(0, 0, width, rectHeight)
         db.fill(0)
-        db.text(f"{percent} %", (width + 6, rectHeight * (1 - relativeLabelSize)), align="left")
+        db.text(
+            f"{percent} %",
+            (width + 6, rectHeight * (1 - relativeLabelSize)),
+            align="left",
+        )
         db.translate(0, -rectHeight * 2)
 
     db.text(
@@ -183,6 +200,7 @@ def addStatusPage(pageWidth, pageHeight, colorCount, deepComponentsCharacterCoun
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("fontpaths", nargs="+", help="One or more paths to font files.")
     parser.add_argument(
@@ -191,7 +209,8 @@ def main():
     )
     parser.add_argument("--rcjkpath", help="The .rcjk project folder")
     parser.add_argument(
-        "--characters", type=argparse.FileType(),
+        "--characters",
+        type=argparse.FileType(),
         help="A path to a text file to be used as character input. "
         "If omitted, all non-empty characters from the font will be used.",
     )
@@ -199,9 +218,13 @@ def main():
     args = parser.parse_args()
     characters = None
     if args.characters is not None:
-        characters = sorted({ord(char) for char in args.characters.read() if char != "\n"})
+        characters = sorted(
+            {ord(char) for char in args.characters.read() if char != "\n"}
+        )
 
-    makeProof(args.fontpaths, args.pdfpath, rcjkProject=args.rcjkpath, characters=characters)
+    makeProof(
+        args.fontpaths, args.pdfpath, rcjkProject=args.rcjkpath, characters=characters
+    )
 
 
 if __name__ == "__main__":

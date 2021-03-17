@@ -10,7 +10,6 @@ from rcjktools.utils import makeTransformVarCo
 
 
 class TTVarCFont:
-
     def __init__(self, path, ttFont=None, hbFont=None):
         if ttFont is not None:
             assert hbFont is not None
@@ -20,8 +19,7 @@ class TTVarCFont:
             assert hbFont is None
             self.ttFont = TTFont(path)
         self.axes = {
-            axis.axisTag:
-            (axis.minValue, axis.defaultValue, axis.maxValue)
+            axis.axisTag: (axis.minValue, axis.defaultValue, axis.maxValue)
             for axis in self.ttFont["fvar"].axes
         }
         if hbFont is not None:
@@ -52,15 +50,25 @@ class TTVarCFont:
         if g.isComposite():
             if varComponents is not None:
                 assert len(g.components) == len(varComponents)
-                varcInstancer = VarStoreInstancer(varcTable.VarStore, fvarTable.axes, normLocation)
-                componentOffsets = instantiateComponentOffsets(self.ttFont, glyphName, normLocation)
-                for (x, y), gc, vc in zip(componentOffsets, g.components, varComponents):
+                varcInstancer = VarStoreInstancer(
+                    varcTable.VarStore, fvarTable.axes, normLocation
+                )
+                componentOffsets = instantiateComponentOffsets(
+                    self.ttFont, glyphName, normLocation
+                )
+                for (x, y), gc, vc in zip(
+                    componentOffsets, g.components, varComponents
+                ):
                     componentLocation = unpackComponentLocation(vc.coord, varcInstancer)
-                    transform = unpackComponentTransform(vc.transform, varcInstancer, vc.numIntBitsForScale)
+                    transform = unpackComponentTransform(
+                        vc.transform, varcInstancer, vc.numIntBitsForScale
+                    )
                     tPen = TransformPen(pen, _makeTransform(x, y, transform))
                     self.drawGlyph(tPen, gc.glyphName, componentLocation)
             else:
-                componentOffsets = instantiateComponentOffsets(self.ttFont, glyphName, normLocation)
+                componentOffsets = instantiateComponentOffsets(
+                    self.ttFont, glyphName, normLocation
+                )
                 for (x, y), gc in zip(componentOffsets, g.components):
                     tPen = TransformPen(pen, (1, 0, 0, 1, x, y))
                     self.drawGlyph(tPen, gc.glyphName, {})

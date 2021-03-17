@@ -16,7 +16,6 @@ class InterpolationError(Exception):
 
 
 class _MathMixin:
-
     def __add__(self, other):
         return self._doBinaryOperator(other, operator.add)
 
@@ -31,7 +30,6 @@ class _MathMixin:
 
 
 class Glyph(_MathMixin):
-
     @classmethod
     def loadFromGLIF(cls, glifPath):
         with open(glifPath) as f:
@@ -113,8 +111,10 @@ class Glyph(_MathMixin):
 
 
 def normalizeLocation(location, axes):
-    location = {axisName: normalizeValue(v, *axes.get(axisName, (0, 1)))
-                for axisName, v in location.items()}
+    location = {
+        axisName: normalizeValue(v, *axes.get(axisName, (0, 1)))
+        for axisName, v in location.items()
+    }
     return _clampLocation(location)
 
 
@@ -165,7 +165,6 @@ class Component(NamedTuple):
 
 
 class MathDict(dict, _MathMixin):
-
     def _doBinaryOperatorScalar(self, scalar, op):
         result = self.__class__()
         for k, v in self.items():
@@ -194,7 +193,6 @@ class MathDict(dict, _MathMixin):
 
 
 class MathOutline(RecordingPointPen, _MathMixin):
-
     def isEmpty(self):
         return not self.value
 
@@ -227,6 +225,7 @@ class MathOutline(RecordingPointPen, _MathMixin):
         def func(pt):
             x, y = pt
             return op(x, scalar), op(y, scalar)
+
         return self.applyUnaryFunc(func)
 
     def _doBinaryOperator(self, other, op):

@@ -2,7 +2,13 @@ from ast import literal_eval
 import functools
 import struct
 from typing import NamedTuple
-from fontTools.misc.fixedTools import fixedToFloat, floatToFixed, floatToFixedToStr, otRound, strToFixedToFloat
+from fontTools.misc.fixedTools import (
+    fixedToFloat,
+    floatToFixed,
+    floatToFixedToStr,
+    otRound,
+    strToFixedToFloat,
+)
 from fontTools.ttLib.tables.DefaultTable import DefaultTable
 from fontTools.ttLib.tables.otTables import VarStore
 
@@ -10,16 +16,26 @@ from fontTools.ttLib.tables.otTables import VarStore
 VARIDX_KEY = "varIdx"
 
 NUM_INT_BITS_FOR_SCALE_MASK = 0x07
-AXIS_INDICES_ARE_WORDS = (1 << 3)
-HAS_TRANSFORM_VARIATIONS = (1 << 4)
+AXIS_INDICES_ARE_WORDS = 1 << 3
+HAS_TRANSFORM_VARIATIONS = 1 << 4
 _FIRST_TRANSFORM_FIELD_BIT = 5
 
 COORD_PRECISIONBITS = 12
 fixedCoord = functools.partial(floatToFixed, precisionBits=COORD_PRECISIONBITS)
-strToFixedCoordToFloat = functools.partial(strToFixedToFloat, precisionBits=COORD_PRECISIONBITS)
+strToFixedCoordToFloat = functools.partial(
+    strToFixedToFloat, precisionBits=COORD_PRECISIONBITS
+)
 
 
-transformFieldNames = ["Rotation", "ScaleX", "ScaleY", "SkewX", "SkewY", "TCenterX", "TCenterY"]
+transformFieldNames = [
+    "Rotation",
+    "ScaleX",
+    "ScaleY",
+    "SkewX",
+    "SkewY",
+    "TCenterX",
+    "TCenterY",
+]
 transformFieldFlags = {
     fieldName: (1 << bitNum)
     for bitNum, fieldName in enumerate(transformFieldNames, _FIRST_TRANSFORM_FIELD_BIT)
@@ -58,7 +74,7 @@ def degreestToIntToStr(value):
     if not value:
         return "0.0"
     value = degreesToInt(value) / DEGREES_SCALE
-    eps = .5 / DEGREES_SCALE
+    eps = 0.5 / DEGREES_SCALE
     lo = value - eps
     hi = value + eps
     # If the range of valid choices spans an integer, return the integer.
@@ -71,7 +87,7 @@ def degreestToIntToStr(value):
     for i in range(len(lo)):
         if lo[i] != hi[i]:
             break
-    period = lo.find('.')
+    period = lo.find(".")
     assert period < i
     fmt = "%%.%df" % (i - period)
     return fmt % value
@@ -133,7 +149,6 @@ def _getSubWriter(writer):
 
 
 class table_VarC(DefaultTable):
-
     def decompile(self, data, ttFont):
         from fontTools.ttLib.tables.otConverters import OTTableReader
 
@@ -218,21 +233,36 @@ class table_VarC(DefaultTable):
                 print(f"WARNING: glyph {glyphName} does not exist in the VF, skipping")
                 continue
             if not glyfGlyph.isComposite():
-                print(f"WARNING: glyph {glyphName} is not a composite in the VF, skipping")
+                print(
+                    f"WARNING: glyph {glyphName} is not a composite in the VF, skipping"
+                )
                 continue
             assert len(glyfGlyph.components) == len(glyphData)  # TODO: Proper error
             writer.begintag("Glyph", [("name", glyphName)])
             writer.newline()
-            for index, (varcComponent, glyfComponent) in enumerate(zip(glyphData, glyfGlyph.components)):
-                writer.begintag("Component", [("numIntBitsForScale", varcComponent.numIntBitsForScale)])
+            for index, (varcComponent, glyfComponent) in enumerate(
+                zip(glyphData, glyfGlyph.components)
+            ):
+                writer.begintag(
+                    "Component",
+                    [("numIntBitsForScale", varcComponent.numIntBitsForScale)],
+                )
                 writer.newline()
-                writer.comment(f"component index: {index}; "
-                               f"base glyph: {glyfComponent.glyphName}; "
-                               f"offset: ({glyfComponent.x},{glyfComponent.y})")
+                writer.comment(
+                    f"component index: {index}; "
+                    f"base glyph: {glyfComponent.glyphName}; "
+                    f"offset: ({glyfComponent.x},{glyfComponent.y})"
+                )
                 writer.newline()
 
                 for axisName, valueDict in sorted(varcComponent.coord.items()):
-                    attrs = [("axis", axisName), ("value", floatToFixedToStr(valueDict["value"], COORD_PRECISIONBITS))]
+                    attrs = [
+                        ("axis", axisName),
+                        (
+                            "value",
+                            floatToFixedToStr(valueDict["value"], COORD_PRECISIONBITS),
+                        ),
+                    ]
                     if "varIdx" in valueDict:
                         outer, inner = splitVarIdx(valueDict["varIdx"])
                         attrs.extend([("outer", outer), ("inner", inner)])
@@ -241,7 +271,9 @@ class table_VarC(DefaultTable):
 
                 scalePrecisionBits = 16 - varcComponent.numIntBitsForScale
 
-                for transformFieldName, valueDict in sorted(varcComponent.transform.items()):
+                for transformFieldName, valueDict in sorted(
+                    varcComponent.transform.items()
+                ):
                     value = valueDict["value"]
                     if transformFieldName in {"ScaleX", "ScaleY"}:
                         value = floatToFixedToStr(value, scalePrecisionBits)
@@ -291,7 +323,9 @@ def _glyph_fromXML(name, attrs, content, ttFont):
 def _component_fromXML(name, attrs, content, ttFont):
     assert name == "Component"
     numIntBitsForScale = literal_eval(attrs["numIntBitsForScale"])
-    scaleConverter = functools.partial(strToFixedToFloat, precisionBits=16 - numIntBitsForScale)
+    scaleConverter = functools.partial(
+        strToFixedToFloat, precisionBits=16 - numIntBitsForScale
+    )
     coord = dict()
     transform = dict()
     for name, attrs, content in _filterContent(content):
@@ -345,10 +379,14 @@ def compileComponent(writer, component, axisTags, axisTagToIndex):
     assert flags == flags & NUM_INT_BITS_FOR_SCALE_MASK
 
     numAxes = len(component.coord)
-    coordFlags, coordData, coordVarIdxs = _compileCoords(component.coord, axisTags, axisTagToIndex)
+    coordFlags, coordData, coordVarIdxs = _compileCoords(
+        component.coord, axisTags, axisTagToIndex
+    )
     flags |= coordFlags
 
-    transformFlags, transformData, transformVarIdxs = _compileTransform(component.transform, component.numIntBitsForScale)
+    transformFlags, transformData, transformVarIdxs = _compileTransform(
+        component.transform, component.numIntBitsForScale
+    )
     flags |= transformFlags
     varIdxs = coordVarIdxs + transformVarIdxs
 
@@ -395,7 +433,9 @@ def _compileCoords(coordDict, axisTags, axisTagToIndex):
 
 def _compileTransform(transformDict, numIntBitsForScale):
     transformFlags = 0
-    hasTransformVariations = transformDict and VARIDX_KEY in next(iter(transformDict.values()))
+    hasTransformVariations = transformDict and VARIDX_KEY in next(
+        iter(transformDict.values())
+    )
     if hasTransformVariations:
         transformFlags |= HAS_TRANSFORM_VARIATIONS
 
@@ -436,7 +476,7 @@ def compileVarIdxs(writer, varIdxs):
     innerMask = (1 << innerBits) - 1
     outerMask = 0xFFFFFFFF - innerMask
 
-    ored = (ored >> (16-innerBits)) | (ored & ((1 << innerBits)-1))
+    ored = (ored >> (16 - innerBits)) | (ored & ((1 << innerBits) - 1))
     if ored <= 0x000000FF:
         entrySize = 1
         write = writer.writeUInt8
@@ -453,7 +493,9 @@ def compileVarIdxs(writer, varIdxs):
     entryFormat = ((entrySize - 1) << 4) | (innerBits - 1)
     writer.writeUInt8(entryFormat)
     outerShift = 16 - innerBits
-    varIdxInts = [((idx & outerMask) >> outerShift) | (idx & innerMask) for idx in varIdxs]
+    varIdxInts = [
+        ((idx & outerMask) >> outerShift) | (idx & innerMask) for idx in varIdxs
+    ]
     for value in varIdxInts:
         write(value)
 
@@ -543,7 +585,10 @@ def decompileVarIdxs(reader, count):
         varIdxs = reader.readArray("I", 4, count)
     else:
         assert False, "oops"
-    varIdxs = [(varIdx & innerMask) + ((varIdx & outerMask) << outerShift) for varIdx in varIdxs]
+    varIdxs = [
+        (varIdx & innerMask) + ((varIdx & outerMask) << outerShift)
+        for varIdx in varIdxs
+    ]
     return varIdxs
 
 
@@ -551,8 +596,8 @@ def decompileVarIdxs(reader, count):
 
 
 def getToFixedConverterForNumIntBitsForScale(numIntBits):
-    return functools.partial(floatToFixed, precisionBits=16-numIntBits)
+    return functools.partial(floatToFixed, precisionBits=16 - numIntBits)
 
 
 def getToFloatConverterForNumIntBitsForScale(numIntBits):
-    return functools.partial(fixedToFloat, precisionBits=16-numIntBits)
+    return functools.partial(fixedToFloat, precisionBits=16 - numIntBits)

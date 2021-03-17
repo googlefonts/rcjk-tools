@@ -11,7 +11,14 @@ from fontTools.varLib.models import VariationModel
 from ufo2ft.filters import UFO2FT_FILTERS_KEY
 from ufoLib2.objects import Font as UFont, Glyph as UGlyph
 
-from .objects import Component, Glyph, InterpolationError, MathDict, MathOutline, normalizeLocation
+from .objects import (
+    Component,
+    Glyph,
+    InterpolationError,
+    MathDict,
+    MathOutline,
+    normalizeLocation,
+)
 from .utils import makeTransform
 
 
@@ -27,7 +34,6 @@ class LocationOutOfBoundsError(Exception):
 
 
 class RoboCJKProject:
-
     def __init__(self, path, decomposeClassicComponents=False):
         self._path = pathlib.Path(path).resolve()
         self._decomposeClassicComponents = decomposeClassicComponents
@@ -46,7 +52,11 @@ class RoboCJKProject:
             with open(path) as f:
                 self.designspace = json.load(f)
             for axis in self.designspace["axes"]:
-                self.axes[axis["tag"]] = (axis["minValue"], axis["defaultValue"], axis["maxValue"])
+                self.axes[axis["tag"]] = (
+                    axis["minValue"],
+                    axis["defaultValue"],
+                    axis["maxValue"],
+                )
                 self.axisNames[axis["tag"]] = axis["name"]
 
     @property
@@ -70,7 +80,9 @@ class RoboCJKProject:
         return self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
 
     def drawPointsCharacterGlyph(self, glyphName, location, pen):
-        outline, dcItems, classicComponents, width = self.instantiateCharacterGlyph(glyphName, location)
+        outline, dcItems, classicComponents, width = self.instantiateCharacterGlyph(
+            glyphName, location
+        )
         outline.drawPoints(pen)
         for dcName, atomicElements in dcItems:
             for aeName, atomicOutline in atomicElements:
@@ -89,16 +101,21 @@ class RoboCJKProject:
                 assert not component.coord, (glyphName, component.name, component.coord)
                 transform = makeTransform(**component.transform)
                 if self._decomposeClassicComponents:
-                    compoOutline, cdc, ccc, cw = self.instantiateCharacterGlyph(component.name, location)
+                    compoOutline, cdc, ccc, cw = self.instantiateCharacterGlyph(
+                        component.name, location
+                    )
                     assert not cdc
                     assert not ccc
                     compoOutline = compoOutline.transform(transform)
-                    deepItems.append((component.name, [("<classic component>", compoOutline)]))
+                    deepItems.append(
+                        (component.name, [("<classic component>", compoOutline)])
+                    )
                 else:
                     classicComponents.append((component.name, transform))
             else:
                 deepItem = self.instantiateDeepComponent(
-                    component.name, component.coord,
+                    component.name,
+                    component.coord,
                     makeTransform(**component.transform),
                 )
                 deepItems.append((component.name, deepItem))
@@ -111,7 +128,9 @@ class RoboCJKProject:
         for component in glyph.components:
             t = transform.transform(makeTransform(**component.transform))
             atomicOutline = self.instantiateAtomicElement(
-                component.name, component.coord, t,
+                component.name,
+                component.coord,
+                t,
             )
             atomicOutlines.append((component.name, atomicOutline))
         return atomicOutlines
@@ -121,13 +140,22 @@ class RoboCJKProject:
         glyph = glyph.instantiate(location)
         return glyph.outline.transform(transform)
 
-    def saveFlattenedUFO(self, ufoPath, location, familyName, styleName,
-            numDecimalsRounding=0, characterSet=None):
+    def saveFlattenedUFO(
+        self,
+        ufoPath,
+        location,
+        familyName,
+        styleName,
+        numDecimalsRounding=0,
+        characterSet=None,
+    ):
         ufo = setupFont(familyName, styleName)
         self.addFlattenedGlyphsToUFO(ufo, location, numDecimalsRounding, characterSet)
         ufo.save(ufoPath, overwrite=True)
 
-    def addFlattenedGlyphsToUFO(self, ufo, location, numDecimalsRounding=0, characterSet=None):
+    def addFlattenedGlyphsToUFO(
+        self, ufo, location, numDecimalsRounding=0, characterSet=None
+    ):
         revCmap = self.getGlyphNamesAndUnicodes()
         glyphNames = filterGlyphNames(sorted(revCmap))
         for glyphName in glyphNames:
@@ -178,7 +206,8 @@ class RoboCJKProject:
                 tag=axisTag,
                 minimum=minValue,
                 default=defaultValue,
-                maximum=maxValue)
+                maximum=maxValue,
+            )
             for axisTag, (minValue, defaultValue, maxValue) in self.axes.items()
         ]
         globalAxisNames = set(self.axes.keys())
@@ -214,10 +243,14 @@ class RoboCJKProject:
             else:
                 characterGlyphNames.append(glyphName)
                 if glyph.components and not glyph.outline.isEmpty():
-                    logger.warning(f"decomposing {glyphName}: it has both an outline and components")
+                    logger.warning(
+                        f"decomposing {glyphName}: it has both an outline and components"
+                    )
                     self.decomposeCharacterGlyph(glyphName)
 
-        dcNames = getComponentNames(self.characterGlyphGlyphSet, characterGlyphNames, self.deepComponentGlyphSet)
+        dcNames = getComponentNames(
+            self.characterGlyphGlyphSet, characterGlyphNames, self.deepComponentGlyphSet
+        )
         # check whether all DC glyphnames start with "DC_"
         ensureDCGlyphNames(dcNames)
         aeNames = getComponentNames(self.deepComponentGlyphSet, sorted(dcNames))
@@ -295,7 +328,9 @@ class RoboCJKProject:
                     axisValue = minimum + (maximum - minimum) * axisValue
                 unnormalizedLocation[axisName] = axisValue
 
-            doc.addSourceDescriptor(path=ufoPath, layerName=layerName, location=unnormalizedLocation)
+            doc.addSourceDescriptor(
+                path=ufoPath, layerName=layerName, location=unnormalizedLocation
+            )
 
         for axisDict in globalAxes:
             doc.addAxisDescriptor(**axisDict)
@@ -306,7 +341,9 @@ class RoboCJKProject:
             doc.addAxisDescriptor(
                 name=axisName,
                 tag=axisName,
-                minimum=0, default=0, maximum=1,
+                minimum=0,
+                default=0,
+                maximum=1,
                 hidden=True,
             )
         return doc
@@ -346,14 +383,15 @@ def ensureDCGlyphNames(glyphNames):
 
 
 def addRCJKGlyphToVarCoUFO(
-        ufo,
-        rcjkGlyphSet,
-        srcGlyphName,
-        dstGlyphName,
-        unicodes,
-        renameTable,
-        componentSourceGlyphSet,
-        globalAxisNames):
+    ufo,
+    rcjkGlyphSet,
+    srcGlyphName,
+    dstGlyphName,
+    unicodes,
+    renameTable,
+    componentSourceGlyphSet,
+    globalAxisNames,
+):
 
     if renameTable is None:
         renameTable = {}
@@ -383,7 +421,9 @@ def addRCJKGlyphToVarCoUFO(
         layer = getUFOLayer(ufo, layerName)
         varGlyph = UGlyph(dstGlyphName)
         varGlyph.width = max(0, rcjkVarGlyph.width)  # width can't be negative
-        rcjkGlyphToVarCoGlyph(rcjkVarGlyph, varGlyph, renameTable, componentSourceGlyphSet)
+        rcjkGlyphToVarCoGlyph(
+            rcjkVarGlyph, varGlyph, renameTable, componentSourceGlyphSet
+        )
         layer[dstGlyphName] = varGlyph
 
     ufo[dstGlyphName] = glyph
@@ -417,7 +457,9 @@ def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet
             baseGlyph = componentSourceGlyphSet.getGlyph(compo.name)
             axisNameMapping = _makeAxisNameMapping(baseGlyph.axes)
             coord = normalizeLocation(compo.coord, baseGlyph.axes)
-            coord = {axisNameMapping[k]: v for k, v in coord.items() if k in axisNameMapping}
+            coord = {
+                axisNameMapping[k]: v for k, v in coord.items() if k in axisNameMapping
+            }
         info = dict(
             coord=coord,
             transform=varCoTransform,
@@ -443,7 +485,9 @@ def filterGlyphNames(glyphNames):
         try:
             glyphName.encode("ascii")
         except UnicodeEncodeError:
-            logger.warning(f"glyph name {glyphName} is not ASCII, and can not be exported")
+            logger.warning(
+                f"glyph name {glyphName} is not ASCII, and can not be exported"
+            )
         else:
             okGlyphNames.append(glyphName)
     return okGlyphNames
@@ -487,7 +531,6 @@ _unicodePat = re.compile(rb'<unicode\s+hex\s*=\s*"([^"]+)"')
 
 
 class GlyphSet:
-
     def __init__(self, path):
         self._path = path
         self._glyphs = {}
@@ -547,7 +590,6 @@ class GlyphSet:
 
 
 class RCJKGlyph(Glyph):
-
     def _postParse(self, glyphSet):
         """This gets called soon after parsing the .glif file. Any layer glyphs
         and variation info is unpacked here, and put into a subglyph, as part
@@ -658,20 +700,26 @@ def rcjk2ufo():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--familyname", help="The family name for the output .ufo")
+    parser.add_argument(
+        "-f", "--familyname", help="The family name for the output .ufo"
+    )
     parser.add_argument("-s", "--stylename", help="The style name for the output .ufo")
     parser.add_argument(
-        "--location", metavar="AXIS=LOC", nargs="*", default=[],
+        "--location",
+        metavar="AXIS=LOC",
+        nargs="*",
+        default=[],
         help="List of space separated locations. A location consist in "
         "the name of a variation axis, followed by '=' and a number. E.g.: "
         " wght=700 wdth=80. If no location is given, a VarCo UFO will be "
-        "written, as well as a .designspace file."
+        "written, as well as a .designspace file.",
     )
     parser.add_argument(
         "--characters",
         type=argparse.FileType("r", encoding="utf-8"),
         help="A path to a UTF-8 encoded text file containing characters to include "
-        "in the exported UFO. When omitted, all characters will be exported.")
+        "in the exported UFO. When omitted, all characters will be exported.",
+    )
     parser.add_argument("rcjk", help="The .rcjk project folder")
     parser.add_argument("ufo", help="The output .ufo")
 
@@ -680,7 +728,7 @@ def rcjk2ufo():
     location = {}
     for arg in args.location:
         try:
-            tag, val = arg.split('=')
+            tag, val = arg.split("=")
             assert len(tag) <= 4
             location[tag.ljust(4)] = float(val)
         except (ValueError, AssertionError):
@@ -707,6 +755,8 @@ def rcjk2ufo():
             axes[axisName] = minValue, maxValue
         location = normalizeLocation(location, axes)
         print("normalized location:", location)
-        project.saveFlattenedUFO(args.ufo, location, familyName, styleName, characterSet=characterSet)
+        project.saveFlattenedUFO(
+            args.ufo, location, familyName, styleName, characterSet=characterSet
+        )
     else:
         project.saveVarCoUFO(args.ufo, familyName, styleName, characterSet=characterSet)

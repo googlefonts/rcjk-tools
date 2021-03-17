@@ -7,7 +7,6 @@ from .utils import makeTransformVarCo
 
 
 class VarCoGlyph(Glyph):
-
     @classmethod
     def loadFromUFOs(cls, ufos, locations, glyphName, axes):
         uglyph = ufos[0][glyphName]
@@ -23,15 +22,20 @@ class VarCoGlyph(Glyph):
         # Build Component objects
         vcComponentData = self.lib.get("varco.components", [])
         if vcComponentData:
-            assert len(components) == len(vcComponentData), (self.name, len(components), len(vcComponentData), components)
+            assert len(components) == len(vcComponentData), (
+                self.name,
+                len(components),
+                len(vcComponentData),
+                components,
+            )
         else:
             vcComponentData = [None] * len(components)
         assert len(self.components) == 0
         for (baseGlyph, affine), vcCompo in zip(components, vcComponentData):
             if vcCompo is None:
                 xx, xy, yx, yy, dx, dy = affine
-                assert xy == 0,  "rotation and skew are not implemented"
-                assert yx == 0,  "rotation and skew are not implemented"
+                assert xy == 0, "rotation and skew are not implemented"
+                assert yx == 0, "rotation and skew are not implemented"
                 coord = {}
                 transform = MathDict(
                     x=dx,
@@ -80,7 +84,6 @@ class VarCoGlyph(Glyph):
 
 
 class VarCoFont:
-
     def __init__(self, designSpacePath):
         doc = DesignSpaceDocument.fromfile(designSpacePath)
         self.axes, self.ufos, self.locations = unpackDesignSpace(doc)
@@ -121,7 +124,9 @@ class VarCoFont:
     def __getitem__(self, glyphName):
         varcoGlyph = self.varcoGlyphs.get(glyphName)
         if varcoGlyph is None:
-            varcoGlyph = VarCoGlyph.loadFromUFOs(self.ufos, self.locations, glyphName, self.glyphAxes)
+            varcoGlyph = VarCoGlyph.loadFromUFOs(
+                self.ufos, self.locations, glyphName, self.glyphAxes
+            )
             self.varcoGlyphs[glyphName] = varcoGlyph
         return varcoGlyph
 
@@ -140,9 +145,19 @@ class VarCoFont:
             masters = [glyph] + glyph.variations
 
             if not glyph.outline.isEmpty() and glyph.components:
-                assert not any(c.coord for c in glyph.components), "can't mix outlines and variable components"
+                assert not any(
+                    c.coord for c in glyph.components
+                ), "can't mix outlines and variable components"
                 # ensure only the offset may vary across masters
-                for attr in ['rotation', 'scalex', 'scaley', 'skewx', 'skewy', 'tcenterx', 'tcentery']:
+                for attr in [
+                    "rotation",
+                    "scalex",
+                    "scaley",
+                    "skewx",
+                    "skewy",
+                    "tcenterx",
+                    "tcentery",
+                ]:
                     values = {c.transform[attr] for m in masters for c in m.components}
                     assert len(values) == 1, f"classic component varies {attr}"
                 # This glyph mixes outlines and classic components, it will be
@@ -186,9 +201,13 @@ def unpackDesignSpace(doc):
 
     for src in sources:
         loc = src.location
-        loc = {axisTagMapping[axisName]: axisValue for axisName, axisValue in loc.items()}
+        loc = {
+            axisTagMapping[axisName]: axisValue for axisName, axisValue in loc.items()
+        }
         loc = normalizeLocation(loc, axes)
-        loc = {axisName: axisValue for axisName, axisValue in loc.items() if axisValue != 0}
+        loc = {
+            axisName: axisValue for axisName, axisValue in loc.items() if axisValue != 0
+        }
         locations.append(loc)
         ufo = _loaded.get(src.path)
         if ufo is None:
@@ -225,6 +244,7 @@ def tuplifyLocation(loc):
 
 if __name__ == "__main__":
     import sys
+
     ufoPath = sys.argv[1]
     vcFont = VarCoFont(ufoPath)
     g = vcFont["DC_5927_03"]
