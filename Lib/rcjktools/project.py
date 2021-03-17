@@ -392,7 +392,6 @@ def addRCJKGlyphToVarCoUFO(
     componentSourceGlyphSet,
     globalAxisNames,
 ):
-
     if renameTable is None:
         renameTable = {}
     rcjkGlyph = rcjkGlyphSet.getGlyph(srcGlyphName)
