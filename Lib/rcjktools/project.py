@@ -525,10 +525,6 @@ def copyMarkColor(fromGlyph, toGlyph):
         toGlyph.lib["public.markColor"] = colorString
 
 
-_glyphNamePat = re.compile(rb'<glyph\s+name\s*=\s*"([^"]+)"')
-_unicodePat = re.compile(rb'<unicode\s+hex\s*=\s*"([^"]+)"')
-
-
 class GlyphSet:
     def __init__(self, path):
         self._path = path
@@ -543,19 +539,7 @@ class GlyphSet:
                 with open(path, "rb") as f:
                     # assuming all unicodes are in the first 1024 bytes of the file
                     data = f.read(1024)
-                m = _glyphNamePat.search(data)
-                if m is None:
-                    raise ValueError(
-                        f"invalid .glif file, glyph name not found ({path})"
-                    )
-                glyphName = m.group(1).decode("utf-8")
-                refFileName = userNameToFileName(glyphName, suffix=".glif")
-                if refFileName != path.name:
-                    logger.warning(
-                        f"actual file name does not match predicted file name: "
-                        f"{refFileName} {path.name} {glyphName}"
-                    )
-                unicodes = [int(u, 16) for u in _unicodePat.findall(data)]
+                glyphName, unicodes = extractGlyphNameAndUnicodes(data, path.name)
                 glyphNames[glyphName] = unicodes
             self._revCmap = glyphNames
         return self._revCmap
@@ -586,6 +570,28 @@ class GlyphSet:
             layer = GlyphSet(self._path / layerName)
             self._layers[layerName] = layer
         return layer
+
+
+_glyphNamePat = re.compile(rb'<glyph\s+name\s*=\s*"([^"]+)"')
+_unicodePat = re.compile(rb'<unicode\s+hex\s*=\s*"([^"]+)"')
+
+
+def extractGlyphNameAndUnicodes(data, fileName=None):
+    m = _glyphNamePat.search(data)
+    if m is None:
+        raise ValueError(
+            f"invalid .glif file, glyph name not found ({fileName})"
+        )
+    glyphName = m.group(1).decode("utf-8")
+    if fileName is not None:
+        refFileName = userNameToFileName(glyphName, suffix=".glif")
+        if refFileName != fileName:
+            logger.warning(
+                f"actual file name does not match predicted file name: "
+                f"{refFileName} {fileName} {glyphName}"
+            )
+    unicodes = [int(u, 16) for u in _unicodePat.findall(data)]
+    return glyphName, unicodes
 
 
 class RCJKGlyph(Glyph):
