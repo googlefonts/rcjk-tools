@@ -394,6 +394,7 @@ def _makeAxisNameMapping(axes):
 
 
 def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet):
+    copyMarkColor(rcjkGlyph, glyph)
     pen = glyph.getPointPen()
     rcjkGlyph.drawPoints(pen)
     compoVarInfo = []
