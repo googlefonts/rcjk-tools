@@ -116,12 +116,12 @@ def calcNumIntBitsForScale(dicts):
 def _calcNumIntBits(minValue, maxValue, maxIntBits=7):
     # TODO: there must be a better way, but at least this is correct
     assert minValue <= maxValue
-    for i in range(maxIntBits + 1):
+    for i in range(maxIntBits):
         precisionBits = 16 - i
         minIntVal = floatToFixed(minValue, precisionBits)
         maxIntVal = floatToFixed(maxValue, precisionBits)
         if -32768 <= minIntVal and maxIntVal <= 32767:
-            return i
+            return i + 1  # use one more: deltas may be bigger! (this is rather fuzzy)
     raise ValueError("value does not fit in maxBits")
 
 
