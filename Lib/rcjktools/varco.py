@@ -2,7 +2,7 @@ from fontTools.designspaceLib import DesignSpaceDocument
 from fontTools.pens.pointPen import PointToSegmentPen
 from fontTools.varLib.models import VariationModel, allEqual, normalizeLocation
 from ufoLib2 import Font as UFont
-from .objects import Component, Glyph, MathDict, MathOutline
+from .objects import Component, Glyph, MathDict
 from .utils import makeTransformVarCo
 
 
