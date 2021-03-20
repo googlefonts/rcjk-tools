@@ -21,14 +21,16 @@ def precompileAllComponents(vcData, allLocations, axisTags):
     storeBuilder = OnlineVarStoreBuilder(axisTags)
     for gn in vcData.keys():
         components, locations = vcData[gn]
-        items = [None] * len(allLocations)
-        for loc in locations:
-            index = allLocations.index(loc)
-            items[index] = True  # anything not None
-        subModel, subItems = masterModel.getSubModel(items)
+        sparseMapping = [None] * len(allLocations)
+        for locIndex, loc in enumerate(locations):
+            allIndex = allLocations.index(loc)
+            sparseMapping[allIndex] = locIndex
+        subModel, mapping = masterModel.getSubModel(sparseMapping)
         storeBuilder.setModel(subModel)
-        components = [[c[i] for i in subModel.mapping] for c in components]
-        # We will have to offer the master values in the model order to the store builder
+
+        # reorder master values according to allLocations
+        components = [[c[i] for i in mapping] for c in components]
+
         precompiledGlyph = precompileVarComponents(
             gn, components, storeBuilder, axisTags
         )
