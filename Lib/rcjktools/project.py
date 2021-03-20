@@ -8,7 +8,11 @@ from fontTools.pens.roundingPen import RoundingPointPen
 from fontTools.pens.pointPen import PointToSegmentPen
 from fontTools.ufoLib.filenames import userNameToFileName
 from fontTools.varLib.models import VariationModel
-from ufo2ft.constants import FILTERS_KEY
+try:
+    from ufo2ft.constants import FILTERS_KEY
+except ImportError:
+    # older ufo2ft
+    from ufo2ft.filters import UFO2FT_FILTERS_KEY as FILTERS_KEY
 from ufoLib2.objects import Font as UFont, Glyph as UGlyph
 
 from .objects import (
