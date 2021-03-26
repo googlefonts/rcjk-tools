@@ -152,18 +152,26 @@ class RoboCJKProject:
         styleName,
         numDecimalsRounding=0,
         characterSet=None,
+        glyphSet=None,
     ):
         ufo = setupFont(familyName, styleName)
-        self.addFlattenedGlyphsToUFO(ufo, location, numDecimalsRounding, characterSet)
+        self.addFlattenedGlyphsToUFO(
+            ufo, location, numDecimalsRounding, characterSet, glyphSet
+        )
         ufo.save(ufoPath, overwrite=True)
 
     def addFlattenedGlyphsToUFO(
-        self, ufo, location, numDecimalsRounding=0, characterSet=None
+        self, ufo, location, numDecimalsRounding=0, characterSet=None, glyphSet=None
     ):
+        if characterSet is not None and glyphSet is not None:
+            raise TypeError("can't pass both characterSet and glyphSet")
         revCmap = self.getGlyphNamesAndUnicodes()
         glyphNames = filterGlyphNames(sorted(revCmap))
         for glyphName in glyphNames:
-            if characterSet is not None:
+            if glyphSet is not None:
+                if glyphName not in glyphSet:
+                    continue
+            elif characterSet is not None:
                 codePoints = set(revCmap[glyphName])
                 if not codePoints & characterSet:
                     continue
