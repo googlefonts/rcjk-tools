@@ -67,6 +67,7 @@ def makeProof(
     labelSize=9,
     lineGap=4,
     statusColorSize=4,
+    showLocalizations=False,
 ):
 
     if rcjkProject is not None:
@@ -85,6 +86,16 @@ def makeProof(
             nonEmptyGlyphs = set(iterNonEmptyGlyphs(font))
             # Filter out empty characters
             characters = [char for char in characters if cmap[char] in nonEmptyGlyphs]
+        if showLocalizations:
+            localizations = extractLocalizations(font.getGlyphOrder())
+        else:
+            localizations = {}
+
+    characters = [
+        (uni, langTag, langStr)
+        for uni in characters
+        for langTag, langStr in [(None, "")] + [(_languageMapping[langStr[0]], langStr) for langStr in localizations.get(uni, ())]
+    ]
 
     areaWidth = pageWidth - 2 * margin
     areaHeight = pageHeight - 2 * margin
@@ -116,15 +127,19 @@ def makeProof(
         for y in range(numVerCells):
             y = areaHeight - cellHeight * (y + 1) - lineGap * y
             for x in range(numHorCells):
-                char = next(charIter, None)
+                char, langTag, langStr = next(charIter, (None, None, None))
                 if char is None:
-                    continue
+                    break
                 glyphName = cmap.get(char)
                 x = x * cellSize
-                db.fill(0)
+                if langStr:
+                    langStr = " " + langStr
+                    db.fill(0.8, 0, 0)
+                else:
+                    db.fill(0)
                 db.font("Helvetica")
                 db.fontSize(labelSize * 0.85)
-                db.text(f"U+{char:04X}", (x, y + cellHeight - labelSize * 0.95))
+                db.text(f"U+{char:04X}{langStr}", (x, y + cellHeight - labelSize * 0.95))
                 glyphColor = (0,)
                 if rcjkProject is not None and glyphName is not None:
                     hasOutline, hasComponents, statusColor = getGlyphInfo(
@@ -143,6 +158,7 @@ def makeProof(
                 for fontIndex, fontPath in enumerate(fontPaths):
                     db.fontSize(cellSize * 0.9)
                     db.font(fontPath)
+                    db.language(langTag)
                     db.text(
                         chr(char),
                         (
@@ -196,6 +212,33 @@ def addStatusPage(pageWidth, pageHeight, colorCount, deepComponentsCharacterCoun
         f"({deepComponentsCharacterCount} of {characterCount} characters total)",
         (0, 0),
     )
+
+
+_languageMapping = {
+    "s": "ZHS",  # simplified chinese
+    "t": "ZHT",  # traditional chinese
+    "h": "ZHH",  # hong kong
+    "j": "JAN",  # japan
+    "k": "KOR",  # korea
+}
+
+
+def extractLocalizations(glyphNames):
+    allowedExtChars = set("xthjk")
+    localizations = defaultdict(list)
+    for glyphName in glyphNames:
+        if not glyphName.startswith("uni") or not "." in glyphName:
+            continue
+        baseGlyphName, *_, ext = glyphName.split(".")
+        languages = set(ext)
+        if len(ext) != 4 or not languages < allowedExtChars:
+            continue
+        if "x" in languages:
+            languages.remove("x")
+        languages = "".join(sorted(languages))
+        uni = int(baseGlyphName[3:], 16)
+        localizations[uni].append(languages)
+    return dict(localizations)
 
 
 def main():
