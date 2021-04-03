@@ -215,11 +215,11 @@ def addStatusPage(pageWidth, pageHeight, colorCount, deepComponentsCharacterCoun
 
 
 _languageMapping = {
-    "s": "ZHS",  # simplified chinese
-    "t": "ZHT",  # traditional chinese
-    "h": "ZHH",  # hong kong
-    "j": "JAN",  # japan
-    "k": "KOR",  # korea
+    "s": "zh-Hans",  # simplified chinese
+    "t": "zh-Hant",  # traditional chinese
+    "h": "zh-HK",  # hong kong
+    "j": "ja-JP",  # japan
+    "k": "ko-KR",  # korea
 }
 
 
