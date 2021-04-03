@@ -134,7 +134,7 @@ def makeProof(
                 x = x * cellSize
                 if langStr:
                     langStr = " " + langStr
-                    db.fill(0.8, 0, 0)
+                    db.fill(0.9, 0, 0)
                 else:
                     db.fill(0)
                 db.font("Helvetica")
