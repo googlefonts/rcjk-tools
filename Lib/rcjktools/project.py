@@ -37,6 +37,10 @@ class LocationOutOfBoundsError(Exception):
     pass
 
 
+class GlyphNotFoundError(KeyError):
+    pass
+
+
 STATUS_COLORS = {
     (1.0, 0.0, 0.0, 1.0): "red",
     (1.0, 0.5, 0.0, 1.0): "orange",
@@ -595,7 +599,10 @@ class GlyphSet:
 
     def getGlyphRaw(self, glyphName):
         fileName = userNameToFileName(glyphName, suffix=".glif")
-        return RCJKGlyph.loadFromGLIF(self._path / fileName)
+        glifPath = self._path / fileName
+        if not glifPath.exists():
+            raise GlyphNotFoundError(f"{glyphName}")
+        return RCJKGlyph.loadFromGLIF(glifPath)
 
     def getLibKeyForGlyph(self, glyphName, libKey, default=None):
         glyph = self._glyphs.get(glyphName)
