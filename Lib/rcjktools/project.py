@@ -597,17 +597,17 @@ class GlyphSet:
         glyph._postParse(self)
         return glyph
 
-    def getGlyphRaw(self, glyphName):
+    def getGlyphRaw(self, glyphName, noOutline=False):
         fileName = userNameToFileName(glyphName, suffix=".glif")
         glifPath = self._path / fileName
         if not glifPath.exists():
             raise GlyphNotFoundError(f"{glyphName}")
-        return RCJKGlyph.loadFromGLIF(glifPath)
+        return RCJKGlyph.loadFromGLIF(glifPath, noOutline)
 
     def getLibKeyForGlyph(self, glyphName, libKey, default=None):
         glyph = self._glyphs.get(glyphName)
         if glyph is None:
-            glyph = self.getGlyphRaw(glyphName)
+            glyph = self.getGlyphRaw(glyphName, True)
         return glyph.lib.get(libKey, default)
 
     def getLayer(self, layerName):
