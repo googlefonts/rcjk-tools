@@ -31,16 +31,12 @@ class _MathMixin:
 
 class Glyph(_MathMixin):
     @classmethod
-    def loadFromGLIF(cls, glifPath, noOutline=False):
+    def loadFromGLIF(cls, glifPath):
         with open(glifPath) as f:
             data = f.read()
         self = cls()
-        if noOutline:
-            pen = None
-        else:
-            pen = self.getPointPen()
         try:
-            readGlyphFromString(data, self, pen)
+            readGlyphFromString(data, self, self.getPointPen())
         except Exception:
             logger.error(f"failed to load .glif file: {glifPath}")
             raise

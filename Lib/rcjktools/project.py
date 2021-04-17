@@ -41,15 +41,6 @@ class GlyphNotFoundError(KeyError):
     pass
 
 
-STATUS_COLORS = {
-    (1.0, 0.0, 0.0, 1.0): "red",
-    (1.0, 0.5, 0.0, 1.0): "orange",
-    (1.0, 1.0, 0.0, 1.0): "yellow",
-    (0.0, 0.5, 1.0, 1.0): "blue",
-    (0.0, 1.0, 0.5, 1.0): "green",
-}
-
-
 class RoboCJKProject:
     def __init__(self, path, decomposeClassicComponents=False):
         self._path = pathlib.Path(path).resolve()
@@ -156,15 +147,6 @@ class RoboCJKProject:
         glyph = self.atomicElementGlyphSet.getGlyph(glyphName)
         glyph = glyph.instantiate(location)
         return glyph.outline.transform(transform)
-
-    def getCharacterGlyphStatus(self, glyphName, default="red"):
-        colorString = self.characterGlyphGlyphSet.getLibKeyForGlyph(glyphName, "public.markColor")
-        status = default
-        if colorString:
-            rgba = tuple(float(ch) for ch in colorString.split(","))
-            assert len(rgba) == 4
-            status = STATUS_COLORS.get(rgba, default)
-        return status
 
     def saveFlattenedUFO(
         self,
@@ -597,18 +579,12 @@ class GlyphSet:
         glyph._postParse(self)
         return glyph
 
-    def getGlyphRaw(self, glyphName, noOutline=False):
+    def getGlyphRaw(self, glyphName):
         fileName = userNameToFileName(glyphName, suffix=".glif")
         glifPath = self._path / fileName
         if not glifPath.exists():
             raise GlyphNotFoundError(f"{glyphName}")
-        return RCJKGlyph.loadFromGLIF(glifPath, noOutline)
-
-    def getLibKeyForGlyph(self, glyphName, libKey, default=None):
-        glyph = self._glyphs.get(glyphName)
-        if glyph is None:
-            glyph = self.getGlyphRaw(glyphName, True)
-        return glyph.lib.get(libKey, default)
+        return RCJKGlyph.loadFromGLIF(glifPath)
 
     def getLayer(self, layerName):
         layer = self._layers.get(layerName)
