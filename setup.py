@@ -8,7 +8,7 @@ setup(
     package_dir={"": "Lib"},
     packages=find_packages("Lib"),
     install_requires=[
-        "fonttools[ufo,lxml,unicode] >= 4.17.0",
+        "fonttools[ufo,unicode] >= 4.17.0",
         "ufoLib2",
     ],
     setup_requires=["setuptools_scm"],
