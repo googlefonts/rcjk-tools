@@ -8,6 +8,7 @@ from fontTools.pens.roundingPen import RoundingPointPen
 from fontTools.pens.pointPen import PointToSegmentPen
 from fontTools.ufoLib.filenames import userNameToFileName
 from fontTools.varLib.models import VariationModel
+
 try:
     from ufo2ft.constants import FILTERS_KEY
 except ImportError:
@@ -601,9 +602,7 @@ _unicodePat = re.compile(rb'<unicode\s+hex\s*=\s*"([^"]+)"')
 def extractGlyphNameAndUnicodes(data, fileName=None):
     m = _glyphNamePat.search(data)
     if m is None:
-        raise ValueError(
-            f"invalid .glif file, glyph name not found ({fileName})"
-        )
+        raise ValueError(f"invalid .glif file, glyph name not found ({fileName})")
     glyphName = m.group(1).decode("utf-8")
     if fileName is not None:
         refFileName = userNameToFileName(glyphName, suffix=".glif")
