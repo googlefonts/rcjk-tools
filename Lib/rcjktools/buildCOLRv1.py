@@ -227,6 +227,8 @@ def buildCOLRv1(designspacePath, ttfPath, outTTFPath, saveWoff2):
 
     ttf["COLR"] = buildCOLR(colrGlyphs, varStore=varStore)
 
+    # TODO: fix glyf+gvar to contain bounding boxes for color glyphs
+
     ttf.save(outTTFPath)
 
     ttf = TTFont(outTTFPath, lazy=True)  # Load from scratch
