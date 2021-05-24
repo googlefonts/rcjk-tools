@@ -27,7 +27,7 @@ def prepareVariableComponentData(vcFont, axisTags, globalAxisNames):
             assert allEqual([m.components[i].name for m in masters])
             baseName = masters[0].components[i].name
 
-            coords = [m.components[i].coord for m in masters]
+            coords = [dict(m.components[i].coord) for m in masters]
             fillMissingFromNeutral(coords)
             for c in coords[1:]:
                 # TODO: if this happens, perhaps remove all keys from variations
