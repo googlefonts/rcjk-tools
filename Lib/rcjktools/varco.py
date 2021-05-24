@@ -170,7 +170,7 @@ class VarCoFont:
             for i in range(len(glyph.components)):
                 assert allEqual([m.components[i].name for m in masters])
                 coords = [m.components[i].coord for m in masters]
-                _fillMissingFromNeutral(coords)
+                fillMissingFromNeutral(coords)
                 transforms = [
                     # Filter out x and y, as they'll be in glyf and gvar
                     {
@@ -187,7 +187,7 @@ class VarCoFont:
         return vcData, allLocations
 
 
-def _fillMissingFromNeutral(coords):
+def fillMissingFromNeutral(coords):
     # This ensures that all variation coord dicts contain all the
     # keys from the neutral coord dict. If missing, the value from
     # the neutral coord is used. This is crucial for the variation
