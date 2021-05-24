@@ -96,7 +96,6 @@ def buildCOLRGlyphs(vcData, axisTagToIndex):
 
 def buildCOLRGlyph(glyphName, components, colrGlyphNames, axisTagToIndex):
     assert len(components) > 0
-    glyphPaint = {}
     layers = []
 
     for baseName, coord, transform in components:
