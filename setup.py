@@ -15,6 +15,7 @@ setup(
     entry_points={
         "console_scripts": [
             "buildvarc=rcjktools.buildVarC:main",
+            "buildcolrv1=rcjktools.buildCOLRv1:main",
             "rcjk2ufo=rcjktools.project:rcjk2ufo",
             "rcjkproofer=rcjktools.proofer:main",
             "ttf2woff2=rcjktools.ttf2woff2:main",
