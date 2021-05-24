@@ -202,12 +202,12 @@ def _unvarValue(value):
 
 
 def _haveTransformItem(transform, attrDefaultValues):
-    hasValue = any(
+    haveItem = any(
         transform[n][0] != v or transform[n][1] != 0xFFFFFFFF
         for n, v in attrDefaultValues
     )
-    hasVariations = any(transform[n][1] != 0xFFFFFFFF for n, v in attrDefaultValues)
-    return hasValue, hasVariations
+    haveVariations = any(transform[n][1] != 0xFFFFFFFF for n, v in attrDefaultValues)
+    return haveItem, haveVariations
 
 
 def buildCOLRv1(designspacePath, ttfPath, outTTFPath, saveWoff2):
