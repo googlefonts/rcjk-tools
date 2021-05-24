@@ -687,7 +687,11 @@ class RCJKGlyph(Glyph):
                 )
             for dc, dcName in zip(deepComponents, dcNames):
                 varGlyph.components.append(_unpackDeepComponent(dc, dcName))
-            assert len(varGlyph.components) == len(self.components)
+            assert len(varGlyph.components) == len(self.components), (
+                self.name,
+                [c.name for c in varGlyph.components],
+                [c.name for c in self.components],
+            )
 
             self.variations.append(varGlyph)
 
