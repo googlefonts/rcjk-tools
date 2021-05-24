@@ -37,6 +37,7 @@ def prepareVariableComponentData(vcFont, axisTags, globalAxisNames):
             transforms = [m.components[i].transform for m in masters]
             for t in transforms[1:]:
                 assert t.keys() == transforms[0].keys()
+
             coordMasterValues = {
                 k: [coord[k] for coord in coords] for k in coords[0].keys()
             }
