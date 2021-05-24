@@ -61,13 +61,13 @@ def prepareVariableComponentData(vcFont, axisTags, globalAxisNames):
     mapping[0xFFFFFFFF] = 0xFFFFFFFF
     for glyphName, components in vcData.items():
         for baseName, coord, transform in components:
-            remapValuesDict(mapping, coord)
-            remapValuesDict(mapping, transform)
+            remapValuesDict(coord, mapping)
+            remapValuesDict(transform, mapping)
 
     return vcData, varStore
 
 
-def remapValuesDict(mapping, valuesDict):
+def remapValuesDict(valuesDict, mapping):
     for k, (v, varIdx) in valuesDict.items():
         valuesDict[k] = (v, mapping[varIdx])
 
