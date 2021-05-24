@@ -95,8 +95,10 @@ def buildCOLRGlyphs(vcData, axisTagToIndex):
 
 
 def buildCOLRGlyph(glyphName, components, colrGlyphNames, axisTagToIndex):
+    assert len(components) > 0
     glyphPaint = {}
     layers = []
+
     for baseName, coord, transform in components:
         isColrGlyph = baseName in colrGlyphNames
 
@@ -185,11 +187,12 @@ def buildCOLRGlyph(glyphName, components, colrGlyphNames, axisTagToIndex):
             )
 
         layers.append(paint)
-    assert len(layers) > 0
+
     if len(layers) == 1:
         glyphPaint = layers[0]
     else:
         glyphPaint = dict(Format=ot.PaintFormat.PaintColrLayers, Layers=layers)
+
     return glyphPaint
 
 
