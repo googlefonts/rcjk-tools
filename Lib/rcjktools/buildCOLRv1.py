@@ -99,12 +99,10 @@ def buildCOLRGlyph(glyphName, components, vcData, axisTagToIndex):
     layers = []
 
     for baseName, coord, transform in components:
-        isColrGlyph = baseName in vcData
-
         # We're building the color glyph from leaf to root
 
         # Final leaf paint
-        if isColrGlyph:
+        if baseName in vcData:
             paint = dict(Format=ot.PaintFormat.PaintColrGlyph, Glyph=baseName)
         else:
             paint = dict(
