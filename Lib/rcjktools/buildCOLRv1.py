@@ -87,20 +87,19 @@ def compileMasterValuesDict(storeBuilder, masterValuesDict, precisionBits):
 
 def buildCOLRGlyphs(vcData, axisTagToIndex):
     colrGlyphs = {}
-    colrGlyphNames = set(vcData)
     for glyphName, components in vcData.items():
         colrGlyphs[glyphName] = buildCOLRGlyph(
-            glyphName, components, colrGlyphNames, axisTagToIndex
+            glyphName, components, vcData, axisTagToIndex
         )
     return colrGlyphs
 
 
-def buildCOLRGlyph(glyphName, components, colrGlyphNames, axisTagToIndex):
+def buildCOLRGlyph(glyphName, components, vcData, axisTagToIndex):
     assert len(components) > 0
     layers = []
 
     for baseName, coord, transform in components:
-        isColrGlyph = baseName in colrGlyphNames
+        isColrGlyph = baseName in vcData
 
         # We're building the color glyph from leaf to root
 
