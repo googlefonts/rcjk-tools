@@ -29,10 +29,12 @@ def prepareVariableComponentData(vcFont, axisTags, globalAxisNames):
 
             coords = [dict(m.components[i].coord) for m in masters]
             fillMissingFromNeutral(coords)
+            allCoordKeys = {k for c in coords for k in c}
+            for k in allCoordKeys:
+                for c in coords:
+                    c.setdefault(k, 0.0)
             for c in coords[1:]:
-                # TODO: if this happens, perhaps remove all keys from variations
-                # that do not occur in the neutral
-                assert c.keys() == coords[0].keys()
+                assert c.keys() == coords[0].keys(), (glyphName, coords[0], c)
 
             transforms = [m.components[i].transform for m in masters]
             for t in transforms[1:]:
