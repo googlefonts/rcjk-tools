@@ -111,6 +111,25 @@ def buildCOLRGlyph(glyphName, components, vcData, axisTagToIndex):
             )
             paint = dict(Format=ot.PaintFormat.PaintGlyph, Glyph=baseName, Paint=paint)
 
+        if coord:
+            haveVariations = any(v[1] != 0xFFFFFFFF for v in coord.values())
+            fmt = (
+                ot.PaintFormat.PaintVarLocation
+                if haveVariations
+                else ot.PaintFormat.PaintLocation
+            )
+            paint = dict(
+                Format=fmt,
+                Paint=paint,
+                Coordinate=[
+                    dict(
+                        AxisIndex=axisTagToIndex[tag],
+                        AxisValue=value if value[1] != 0xFFFFFFFF else value[0],
+                    )
+                    for tag, value in coord.items()
+                ],
+            )
+
         haveTranslate, haveTranslateVar = _haveTransformItem(
             transform, [("x", 0), ("y", 0)]
         )
@@ -162,25 +181,6 @@ def buildCOLRGlyph(glyphName, components, vcData, axisTagToIndex):
                 Paint=paint,
                 dx=_unvarValue(transform["x"]),
                 dy=_unvarValue(transform["y"]),
-            )
-
-        if coord:
-            haveVariations = any(v[1] != 0xFFFFFFFF for v in coord.values())
-            fmt = (
-                ot.PaintFormat.PaintVarLocation
-                if haveVariations
-                else ot.PaintFormat.PaintLocation
-            )
-            paint = dict(
-                Format=fmt,
-                Paint=paint,
-                Coordinate=[
-                    dict(
-                        AxisIndex=axisTagToIndex[tag],
-                        AxisValue=value if value[1] != 0xFFFFFFFF else value[0],
-                    )
-                    for tag, value in coord.items()
-                ],
             )
 
         layers.append(paint)
