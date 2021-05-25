@@ -28,14 +28,7 @@ def prepareVariableComponentData(vcFont, axisTags, globalAxisNames):
             baseName = masters[0].components[i].name
 
             coords = [dict(m.components[i].coord) for m in masters]
-            fillMissingFromNeutral(coords)
-            allCoordKeys = {k for c in coords for k in c}
-            for k in allCoordKeys:
-                for c in coords:
-                    c.setdefault(k, 0.0)
-            for c in coords[1:]:
-                assert c.keys() == coords[0].keys(), (glyphName, coords[0], c)
-
+            sanitizeCoords(coords, vcFont[baseName])
             transforms = [m.components[i].transform for m in masters]
             for t in transforms[1:]:
                 assert t.keys() == transforms[0].keys()
@@ -67,6 +60,25 @@ def prepareVariableComponentData(vcFont, axisTags, globalAxisNames):
             remapValuesDict(transform, mapping)
 
     return vcData, varStore
+
+
+def sanitizeCoords(coords, baseGlyph):
+    # - Ensure that all axes used in the neutral are also used in all variations;
+    #   take value from neutral if missing. (fillMissingFromNeutral)
+    # - Ensure that all axis tags that are defined for the base glyph are set
+    # - Ensure that *only* axis tags that are defined for the base glyph are set
+    fillMissingFromNeutral(coords)
+    baseAxisTags = {
+        axisTag
+        for baseVar in [baseGlyph] + baseGlyph.variations
+        for axisTag in baseVar.location
+    }
+    for c in coords:
+        coordAxisTags = set(c)
+        for axisTag in baseAxisTags - coordAxisTags:
+            c[axisTag] = 0.0
+        for nonExistentTag in coordAxisTags - baseAxisTags:
+            del c[nonExistentTag]
 
 
 def remapValuesDict(valuesDict, mapping):
