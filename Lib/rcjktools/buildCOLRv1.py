@@ -86,12 +86,10 @@ def compileMasterValuesDict(storeBuilder, masterValuesDict, precisionBits):
 
 
 def buildCOLRGlyphs(vcData, axisTagToIndex):
-    colrGlyphs = {}
-    for glyphName, components in vcData.items():
-        colrGlyphs[glyphName] = buildCOLRGlyph(
-            glyphName, components, vcData, axisTagToIndex
-        )
-    return colrGlyphs
+    return {
+        glyphName: buildCOLRGlyph(glyphName, components, vcData, axisTagToIndex)
+        for glyphName, components in vcData.items()
+    }
 
 
 def buildCOLRGlyph(glyphName, components, vcData, axisTagToIndex):
