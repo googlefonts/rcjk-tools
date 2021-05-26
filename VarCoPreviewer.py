@@ -5,7 +5,7 @@ import objc
 from AppKit import NSFormatter
 from vanilla import *
 
-from fontTools.ttLib import registerCustomTableClass
+from fontTools.ttLib import TTFont, registerCustomTableClass
 import drawBot as db
 from drawBot.ui.drawView import DrawView
 from drawBot.drawBotDrawingTools import _drawBotDrawingTool
@@ -56,14 +56,14 @@ class VarCoPreviewer:
                 ) in self.varcoFont.axes.items()
             ]
         elif ext == ".ttf":
-            from rcjktools.ttVarCFont import TTVarCFont
+            if fontFileHasTable(fontPath, "COLR"):
+                self.varcoFont = COLRFont(fontPath)
+                axisInfo = self.varcoFont.getAxisInfo()
+            else:
+                from rcjktools.ttVarCFont import TTVarCFont
 
-            self.varcoFont = TTVarCFont(fontPath)
-            axisInfo = [
-                (axis.axisTag, axis.minValue, axis.defaultValue, axis.maxValue)
-                for axis in self.varcoFont.ttFont["fvar"].axes
-                if not axis.flags & 0x0001
-            ]
+                self.varcoFont = TTVarCFont(fontPath)
+                axisInfo = getAxisInfo(self.varcoFont.ttFont)
         elif ext == ".rcjk":
             from rcjktools.project import RoboCJKProject
 
@@ -195,6 +195,48 @@ def getWeightRange(ttFont):
             maxWeight = axis.maxValue
             break
     return minWeight, maxWeight
+
+
+def fontFileHasTable(path, tableTag):
+    with TTFont(path, lazy=True) as font:
+        return tableTag in font
+
+
+def getAxisInfo(ttFont):
+    return [
+        (axis.axisTag, axis.minValue, axis.defaultValue, axis.maxValue)
+        for axis in ttFont["fvar"].axes
+        if not axis.flags & 0x0001
+    ]
+
+
+class COLRFont:
+    def __init__(self, fontPath):
+        from blackrenderer.font import BlackRendererFont
+
+        self.font = BlackRendererFont(fontPath)
+
+    def getAxisInfo(self):
+        return getAxisInfo(self.font.ttFont)
+
+    def keys(self):
+        return self.font.glyphNames
+
+    def __contains__(self, glyphName):
+        try:
+            self.font.ttFont.getGlyphID(glyphName, requireReal=True)
+        except KeyError:
+            return False
+        return True
+
+    def drawGlyph(self, pen, glyphName, location):
+        from blackrenderer.backends.pathCollector import PathCollectorCanvas
+
+        self.font.setLocation(location)
+        canv = PathCollectorCanvas()
+        self.font.drawGlyph(glyphName, canv)
+        for path in canv.paths:
+            path.replay(pen)
 
 
 if __name__ == "__main__":
