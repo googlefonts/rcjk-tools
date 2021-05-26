@@ -1,4 +1,5 @@
 from fontTools.colorLib.builder import buildCOLR
+from fontTools.misc.arrayTools import intRect
 from fontTools.misc.fixedTools import floatToFixed
 from fontTools.ttLib import TTFont
 from fontTools.ttLib.tables import otTables as ot
@@ -239,9 +240,10 @@ def buildCOLRv1(designspacePath, ttfPath, outTTFPath, saveWoff2):
 
     ttf["COLR"] = buildCOLR(colrGlyphs, varStore=varStore)
 
-    # TODO: fix glyf+gvar to contain bounding boxes for color glyphs
-
     ttf.save(outTTFPath)
+
+    # fix glyf+gvar to contain bounding boxes for color glyphs
+    estimateCOLRv1BoundingBoxes(outTTFPath, outTTFPath)
 
     ttf = TTFont(outTTFPath, lazy=True)  # Load from scratch
 
@@ -249,6 +251,55 @@ def buildCOLRv1(designspacePath, ttfPath, outTTFPath, saveWoff2):
         outWoff2Path = outTTFPath.parent / (outTTFPath.stem + ".woff2")
         ttf.flavor = "woff2"
         ttf.save(outWoff2Path)
+
+
+def estimateCOLRv1BoundingBoxes(sourcFontPath, destFontPath, locations=None):
+    from fontTools.pens.ttGlyphPen import TTGlyphPointPen
+    from blackrenderer.font import BlackRendererFont
+    from blackrenderer.backends.pathCollector import BoundsCanvas
+
+    brFont = BlackRendererFont(sourcFontPath, lazy=False)
+    ttFont = brFont.ttFont
+    if locations is None:
+        locations = [{}]
+        for axis in ttFont["fvar"].axes:
+            if axis.flags & 0x0001:
+                # hidden axis
+                continue
+            values = {axis.minValue, axis.defaultValue, axis.maxValue}
+            locations = [
+                dictUpdate(loc, axis.axisTag, v)
+                for loc in locations
+                for v in sorted(values)
+            ]
+    glyfTable = ttFont["glyf"]
+    gvarTable = ttFont["gvar"]
+    hmtxTable = ttFont["hmtx"]
+    # TODO: fix tsb if we have "vmtx"
+    for glyphName in brFont.colrV1GlyphNames:
+        # calculate the bounding box that would fit on all locations
+        canv = BoundsCanvas()
+        for loc in locations:
+            brFont.setLocation(loc)
+            brFont.drawGlyph(glyphName, canv)
+        bounds = intRect(canv.bounds)
+        gvarTable.variations.pop(glyphName, None)
+        pen = TTGlyphPointPen(None)
+        for pt in [bounds[:2], bounds[2:]]:
+            pen.beginPath()
+            pen.addPoint(pt, segmentType="line")
+            pen.endPath()
+        glyfTable[glyphName] = pen.glyph()
+        adv, lsb = hmtxTable.metrics[glyphName]
+        hmtxTable.metrics[glyphName] = adv, bounds[0]
+
+    ttFont.save(destFontPath)
+
+
+def dictUpdate(d1, axisTag, axisValue):
+    d = dict(d1)
+    d[axisTag] = axisValue
+    return d
 
 
 def main():
