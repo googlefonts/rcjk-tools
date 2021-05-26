@@ -242,7 +242,7 @@ def buildCOLRv1(designspacePath, ttfPath, outTTFPath, saveWoff2):
 
     ttf.save(outTTFPath)
 
-    # fix glyf+gvar to contain bounding boxes for color glyphs
+    # Update the glyf table to contain bounding boxes for color glyphs
     estimateCOLRv1BoundingBoxes(outTTFPath, outTTFPath)
 
     ttf = TTFont(outTTFPath, lazy=True)  # Load from scratch
