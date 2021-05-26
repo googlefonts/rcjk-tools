@@ -11,6 +11,9 @@ setup(
         "fonttools[ufo,unicode] >= 4.17.0",
         "ufoLib2",
     ],
+    extras_require={
+        "colrv1": ["blackrenderer"],
+    },
     setup_requires=["setuptools_scm"],
     entry_points={
         "console_scripts": [
