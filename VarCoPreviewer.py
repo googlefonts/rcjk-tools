@@ -203,6 +203,8 @@ def fontFileHasTable(path, tableTag):
 
 
 def getAxisInfo(ttFont):
+    if "fvar" not in ttFont:
+        return []
     return [
         (axis.axisTag, axis.minValue, axis.defaultValue, axis.maxValue)
         for axis in ttFont["fvar"].axes
