@@ -1,4 +1,5 @@
 from ast import literal_eval
+from collections import UserDict
 import functools
 import struct
 from typing import NamedTuple
@@ -148,6 +149,23 @@ def _getSubWriter(writer):
     return subWriter
 
 
+class _LazyGlyphData(UserDict):
+    def __init__(self, reader, glyfTable, axisTags):
+        super().__init__()
+        self.reader = reader
+        self.glyfTable = glyfTable
+        self.axisTags = axisTags
+
+    def __getitem__(self, glyphName):
+        item = super().__getitem__(glyphName)
+        if isinstance(item, int):
+            glyphOffset = item
+            glyfGlyph = self.glyfTable[glyphName]
+            sub = self.reader.getSubReader(glyphOffset)
+            item = self[glyphName] = decompileGlyph(sub, glyfGlyph, self.axisTags)
+        return item
+
+
 class table_VarC(DefaultTable):
     def decompile(self, data, ttFont):
         from fontTools.ttLib.tables.otConverters import OTTableReader
@@ -160,17 +178,15 @@ class table_VarC(DefaultTable):
         if self.Version != 0x00010000:
             raise ValueError(f"unknown VarC.Version: {self.Version:08X}")
 
-        self.GlyphData = {}
+        self.GlyphData = _LazyGlyphData(reader, glyfTable, axisTags)
         glyphOrder = ttFont.getGlyphOrder()
 
         numGlyphs = reader.readUShort()
         for glyphID in range(numGlyphs):
             glyphOffset = reader.readULong()
             if glyphOffset:
-                sub = reader.getSubReader(glyphOffset)
                 glyphName = glyphOrder[glyphID]
-                glyfGlyph = glyfTable[glyphName]
-                self.GlyphData[glyphName] = decompileGlyph(sub, glyfGlyph, axisTags)
+                self.GlyphData[glyphName] = glyphOffset
 
         varStoreOffset = reader.readULong()
         if varStoreOffset:
