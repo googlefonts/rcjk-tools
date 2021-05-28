@@ -17,7 +17,7 @@ class TTVarCFont:
             self.ttFont = ttFont
         else:
             assert hbFont is None
-            self.ttFont = TTFont(path)
+            self.ttFont = TTFont(path, lazy=True)
         self.axes = {
             axis.axisTag: (axis.minValue, axis.defaultValue, axis.maxValue)
             for axis in self.ttFont["fvar"].axes
