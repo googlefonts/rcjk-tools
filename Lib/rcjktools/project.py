@@ -380,6 +380,8 @@ _internedIntegers = {}
 
 
 def interningRound(value):
+    # Python only interns ints between -5 and 256. Let's intern a bigger range,
+    # for coordinates at 1000 UPM. This may reduce memory usage somewhat.
     value = otRound(value)
     if -250 < value < 1250:
         internedInt = _internedIntegers.get(value)
