@@ -170,6 +170,12 @@ class RoboCJKProject:
     ):
         if characterSet is not None and glyphSet is not None:
             raise TypeError("can't pass both characterSet and glyphSet")
+        if numDecimalsRounding == 1:
+            roundFunc = roundFuncOneDecimal
+        elif numDecimalsRounding != 0:
+            assert 0, numDecimalsRounding
+        else:
+            roundFunc = interningRound
         revCmap = self.getGlyphNamesAndUnicodes()
         glyphNames = filterGlyphNames(sorted(revCmap))
         for glyphName in glyphNames:
@@ -183,12 +189,6 @@ class RoboCJKProject:
             glyph = UGlyph(glyphName)
             glyph.unicodes = revCmap[glyphName]
             copyMarkColor(self.characterGlyphGlyphSet.getGlyph(glyphName), glyph)
-            if numDecimalsRounding == 1:
-                roundFunc = roundFuncOneDecimal
-            elif numDecimalsRounding != 0:
-                assert 0, numDecimalsRounding
-            else:
-                roundFunc = otRound
             pen = RoundingPointPen(glyph.getPointPen(), roundFunc)
             try:
                 width = self.drawPointsCharacterGlyph(glyphName, location, pen)
@@ -374,6 +374,20 @@ def roundFuncOneDecimal(value):
         return i
     else:
         return value
+
+
+_internedIntegers = {}
+
+
+def interningRound(value):
+    value = otRound(value)
+    if -250 < value < 1250:
+        internedInt = _internedIntegers.get(value)
+        if internedInt is None:
+            _internedIntegers[value] = value
+        else:
+            value = internedInt
+    return value
 
 
 def getComponentNames(glyphSet, glyphNames, componentGlyphSet=None):
