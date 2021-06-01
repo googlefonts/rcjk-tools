@@ -175,7 +175,7 @@ class RoboCJKProject:
         elif numDecimalsRounding != 0:
             assert 0, numDecimalsRounding
         else:
-            roundFunc = interningRound
+            roundFunc = otRound
         revCmap = self.getGlyphNamesAndUnicodes()
         glyphNames = filterGlyphNames(sorted(revCmap))
         for glyphName in glyphNames:
@@ -374,22 +374,6 @@ def roundFuncOneDecimal(value):
         return i
     else:
         return value
-
-
-_internedIntegers = {}
-
-
-def interningRound(value):
-    # Python only interns ints between -5 and 256. Let's intern a bigger range,
-    # for coordinates at 1000 UPM. This may reduce memory usage somewhat.
-    value = otRound(value)
-    if -250 < value < 1250:
-        internedInt = _internedIntegers.get(value)
-        if internedInt is None:
-            _internedIntegers[value] = value
-        else:
-            value = internedInt
-    return value
 
 
 def getComponentNames(glyphSet, glyphNames, componentGlyphSet=None):
