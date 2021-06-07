@@ -160,7 +160,7 @@ def buildVarCTable(ttf, vcData, allLocations):
     varc_table.VarStore = store
 
 
-def buildVarC(designspacePath, ttfPath, outTTFPath, doTTX, saveWoff2):
+def buildVarC(designspacePath, ttfPath, outTTFPath, doTTX, saveWoff2, neutralOnly=False):
     import pathlib
 
     registerCustomTableClass("VarC", "rcjktools.table_VarC", "table_VarC")
@@ -174,7 +174,11 @@ def buildVarC(designspacePath, ttfPath, outTTFPath, doTTX, saveWoff2):
     axisTags = [axis.axisTag for axis in ttf["fvar"].axes]
     globalAxisNames = {axisTag for axisTag in axisTags if axisTag[0] != "V"}
     vcFont = VarCoFont(designspacePath)
-    vcData, allLocations = vcFont.extractVarCoData(globalAxisNames)
+    vcData, allLocations, neutralGlyphNames = vcFont.extractVarCoData(globalAxisNames, neutralOnly)
+    if neutralGlyphNames:
+        gvarTable = ttf["gvar"]
+        for glyphName in neutralGlyphNames:
+            del gvarTable.variations[glyphName]
 
     buildVarCTable(ttf, vcData, allLocations)
 
@@ -207,8 +211,21 @@ def main():
         "--ttx", action="store_true", help="write TTX dumps for the VarC table."
     )
     parser.add_argument("--no-woff2", action="store_true")
+    parser.add_argument(
+        "--neutral-only",
+        action="store_true",
+        help="hack: build a pseudo static COLRv1 table, that won't respond to the "
+        "non-hidden axes",
+    )
     args = parser.parse_args()
-    buildVarC(args.designspace, args.ttf, args.output, args.ttx, not args.no_woff2)
+    buildVarC(
+        args.designspace,
+        args.ttf,
+        args.output,
+        args.ttx,
+        not args.no_woff2,
+        args.neutral_only,
+    )
 
 
 if __name__ == "__main__":

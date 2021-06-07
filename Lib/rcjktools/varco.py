@@ -137,12 +137,18 @@ class VarCoFont:
             glyph = default
         return glyph
 
-    def extractVarCoData(self, globalAxisNames):
+    def extractVarCoData(self, globalAxisNames, neutralOnly=False):
         allLocations = set()
         vcData = {}
+        neutralGlyphNames = []
         for glyphName in sorted(self.keys()):
             glyph = self[glyphName]
-            masters = [glyph] + glyph.variations
+            axisTags = {axisTag for v in glyph.variations for axisTag in v.location}
+            if neutralOnly and not axisTags - globalAxisNames:
+                masters = [glyph]
+                neutralGlyphNames.append(glyphName)
+            else:
+                masters = [glyph] + glyph.variations
 
             if not glyph.outline.isEmpty() and glyph.components:
                 assert not any(
@@ -184,7 +190,7 @@ class VarCoFont:
             if components:
                 vcData[glyphName] = components, locations
         allLocations = [dict(items) for items in sorted(allLocations)]
-        return vcData, allLocations
+        return vcData, allLocations, neutralGlyphNames
 
 
 def fillMissingFromNeutral(coords):
