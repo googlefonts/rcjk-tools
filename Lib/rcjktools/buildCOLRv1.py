@@ -243,7 +243,7 @@ def buildCOLRv1(designspacePath, ttfPath, outTTFPath, saveWoff2, neutralOnly=Fal
     vcFont = VarCoFont(designspacePath)
 
     # Update the glyf table to contain bounding boxes for color glyphs
-    estimateCOLRv1BoundingBoxes(vcFont, ttf)
+    estimateCOLRv1BoundingBoxes(vcFont, ttf, neutralOnly)
 
     vcData, varStore = prepareVariableComponentData(
         vcFont, axisTags, globalAxisNames, neutralOnly
@@ -261,26 +261,27 @@ def buildCOLRv1(designspacePath, ttfPath, outTTFPath, saveWoff2, neutralOnly=Fal
         ttf.save(outWoff2Path)
 
 
-def estimateCOLRv1BoundingBoxes(vcFont, ttFont):
+def estimateCOLRv1BoundingBoxes(vcFont, ttFont, neutralOnly):
     from fontTools.pens.ttGlyphPen import TTGlyphPointPen
     from fontTools.pens.boundsPen import ControlBoundsPen
 
     locations = [{}]
-    for axis in ttFont["fvar"].axes:
-        if axis.flags & 0x0001:
-            # hidden axis
-            continue
+    if not neutralOnly:
+        for axis in ttFont["fvar"].axes:
+            if axis.flags & 0x0001:
+                # hidden axis
+                continue
 
-        values = {0}
-        if axis.minValue < axis.defaultValue:
-            values.add(-1)
-        if axis.defaultValue < axis.maxValue:
-            values.add(1)
-        locations = [
-            dictUpdate(loc, axis.axisTag, v)
-            for loc in locations
-            for v in sorted(values)
-        ]
+            values = {0}
+            if axis.minValue < axis.defaultValue:
+                values.add(-1)
+            if axis.defaultValue < axis.maxValue:
+                values.add(1)
+            locations = [
+                dictUpdate(loc, axis.axisTag, v)
+                for loc in locations
+                for v in sorted(values)
+            ]
     glyfTable = ttFont["glyf"]
     gvarTable = ttFont["gvar"]
     hmtxTable = ttFont["hmtx"]
