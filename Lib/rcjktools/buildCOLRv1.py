@@ -237,7 +237,8 @@ def buildCOLRv1(designspacePath, ttfPath, outTTFPath, saveWoff2, neutralOnly=Fal
 
     axisTags = [axis.axisTag for axis in ttf["fvar"].axes]
     axisTagToIndex = {tag: index for index, tag in enumerate(axisTags)}
-    globalAxisNames = {axisTag for axisTag in axisTags if axisTag[0] != "V"}
+    globalAxisNames = {axis.axisTag for axis in ttf["fvar"].axes if not axis.flags & 0x0001}
+    assert globalAxisNames == {axisTag for axisTag in axisTags if axisTag[0] != "V"}
 
     vcFont = VarCoFont(designspacePath)
 
