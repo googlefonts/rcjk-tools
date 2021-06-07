@@ -172,7 +172,7 @@ def buildCOLRGlyph(glyphName, components, vcData, axisTagToIndex):
         if haveRotate:
             fmt = (
                 ot.PaintFormat.PaintVarRotate
-                if haveRotateVar
+                if haveRotateVar or haveTCenterVar
                 else ot.PaintFormat.PaintRotate
             )
             paint = dict(
@@ -234,16 +234,17 @@ def buildCOLRv1(designspacePath, ttfPath, outTTFPath, saveWoff2):
     axisTags = [axis.axisTag for axis in ttf["fvar"].axes]
     axisTagToIndex = {tag: index for index, tag in enumerate(axisTags)}
     globalAxisNames = {axisTag for axisTag in axisTags if axisTag[0] != "V"}
+
     vcFont = VarCoFont(designspacePath)
+
+    # Update the glyf table to contain bounding boxes for color glyphs
+    estimateCOLRv1BoundingBoxes(vcFont, ttf)
+
     vcData, varStore = prepareVariableComponentData(vcFont, axisTags, globalAxisNames)
     colrGlyphs = buildCOLRGlyphs(vcData, axisTagToIndex)
-
     ttf["COLR"] = buildCOLR(colrGlyphs, varStore=varStore)
 
     ttf.save(outTTFPath)
-
-    # Update the glyf table to contain bounding boxes for color glyphs
-    estimateCOLRv1BoundingBoxes(outTTFPath, outTTFPath)
 
     ttf = TTFont(outTTFPath, lazy=True)  # Load from scratch
 
@@ -253,47 +254,50 @@ def buildCOLRv1(designspacePath, ttfPath, outTTFPath, saveWoff2):
         ttf.save(outWoff2Path)
 
 
-def estimateCOLRv1BoundingBoxes(sourcFontPath, destFontPath, locations=None):
+def estimateCOLRv1BoundingBoxes(vcFont, ttFont):
     from fontTools.pens.ttGlyphPen import TTGlyphPointPen
-    from blackrenderer.font import BlackRendererFont
-    from blackrenderer.backends.pathCollector import BoundsCanvas
+    from fontTools.pens.boundsPen import ControlBoundsPen
 
-    brFont = BlackRendererFont(sourcFontPath, lazy=False)
-    ttFont = brFont.ttFont
-    if locations is None:
-        locations = [{}]
-        for axis in ttFont["fvar"].axes:
-            if axis.flags & 0x0001:
-                # hidden axis
-                continue
-            values = {axis.minValue, axis.defaultValue, axis.maxValue}
-            locations = [
-                dictUpdate(loc, axis.axisTag, v)
-                for loc in locations
-                for v in sorted(values)
-            ]
+    locations = [{}]
+    for axis in ttFont["fvar"].axes:
+        if axis.flags & 0x0001:
+            # hidden axis
+            continue
+
+        values = {0}
+        if axis.minValue < axis.defaultValue:
+            values.add(-1)
+        if axis.defaultValue < axis.maxValue:
+            values.add(1)
+        locations = [
+            dictUpdate(loc, axis.axisTag, v)
+            for loc in locations
+            for v in sorted(values)
+        ]
     glyfTable = ttFont["glyf"]
     gvarTable = ttFont["gvar"]
     hmtxTable = ttFont["hmtx"]
     # TODO: fix tsb if we have "vmtx"
-    for glyphName in brFont.colrV1GlyphNames:
+    for glyphName in sorted(vcFont.keys()):
+        glyph = vcFont[glyphName]
+        if not glyph.components or not glyph.outline.isEmpty():
+            continue
+
         # calculate the bounding box that would fit on all locations
-        canv = BoundsCanvas()
+        bpen = ControlBoundsPen(None)
         for loc in locations:
-            brFont.setLocation(loc)
-            brFont.drawGlyph(glyphName, canv)
-        bounds = intRect(canv.bounds)
+            vcFont.drawGlyph(bpen, glyphName, loc)
         gvarTable.variations.pop(glyphName, None)
         pen = TTGlyphPointPen(None)
-        for pt in [bounds[:2], bounds[2:]]:
-            pen.beginPath()
-            pen.addPoint(pt, segmentType="line")
-            pen.endPath()
+        if bpen.bounds is not None:
+            bounds = intRect(bpen.bounds)
+            for pt in [bounds[:2], bounds[2:]]:
+                pen.beginPath()
+                pen.addPoint(pt, segmentType="line")
+                pen.endPath()
         glyfTable[glyphName] = pen.glyph()
         adv, lsb = hmtxTable.metrics[glyphName]
         hmtxTable.metrics[glyphName] = adv, bounds[0]
-
-    ttFont.save(destFontPath)
 
 
 def dictUpdate(d1, axisTag, axisValue):
