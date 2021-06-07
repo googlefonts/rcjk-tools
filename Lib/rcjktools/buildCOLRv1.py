@@ -8,13 +8,17 @@ from fontTools.varLib.varStore import OnlineVarStoreBuilder
 from rcjktools.varco import VarCoFont, fillMissingFromNeutral
 
 
-def prepareVariableComponentData(vcFont, axisTags, globalAxisNames):
+def prepareVariableComponentData(vcFont, axisTags, globalAxisNames, neutralOnly=False):
     storeBuilder = OnlineVarStoreBuilder(axisTags)
 
     vcData = {}
     for glyphName in sorted(vcFont.keys()):
         glyph = vcFont[glyphName]
-        masters = [glyph] + glyph.variations
+        axisTags = {axisTag for v in glyph.variations for axisTag in v.location}
+        if neutralOnly and not axisTags - globalAxisNames:
+            masters = [glyph]
+        else:
+            masters = [glyph] + glyph.variations
 
         if not glyph.outline.isEmpty() and glyph.components:
             # This glyph mixes outlines and classic components, it will have been
@@ -221,7 +225,7 @@ def _haveTransformItem(transform, attrDefaultValues):
     return haveItem, haveVariations
 
 
-def buildCOLRv1(designspacePath, ttfPath, outTTFPath, saveWoff2):
+def buildCOLRv1(designspacePath, ttfPath, outTTFPath, saveWoff2, neutralOnly=False):
     import pathlib
 
     ttfPath = pathlib.Path(ttfPath)
@@ -240,7 +244,9 @@ def buildCOLRv1(designspacePath, ttfPath, outTTFPath, saveWoff2):
     # Update the glyf table to contain bounding boxes for color glyphs
     estimateCOLRv1BoundingBoxes(vcFont, ttf)
 
-    vcData, varStore = prepareVariableComponentData(vcFont, axisTags, globalAxisNames)
+    vcData, varStore = prepareVariableComponentData(
+        vcFont, axisTags, globalAxisNames, neutralOnly
+    )
     colrGlyphs = buildCOLRGlyphs(vcData, axisTagToIndex)
     ttf["COLR"] = buildCOLR(colrGlyphs, varStore=varStore)
 
@@ -314,8 +320,14 @@ def main():
     parser.add_argument("ttf", help="The input Variable Font")
     parser.add_argument("--output", help="The output Variable Font")
     parser.add_argument("--no-woff2", action="store_true")
+    parser.add_argument(
+        "--neutral-only",
+        action="store_true",
+        help="hack: build a pseudo static COLRv1 table, that won't respond to the "
+        "non-hidden axes",
+    )
     args = parser.parse_args()
-    buildCOLRv1(args.designspace, args.ttf, args.output, not args.no_woff2)
+    buildCOLRv1(args.designspace, args.ttf, args.output, not args.no_woff2, args.neutral_only)
 
 
 if __name__ == "__main__":
