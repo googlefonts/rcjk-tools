@@ -54,6 +54,15 @@ def checkInterpolation(project):
                 yield f"interpolation error '{glyphName}', {e} (in {glyphSetName})"
 
 
+@lintcheck("layer")
+def checkGlyphExistsInLayer(project):
+    for glyphSetName, glyphSet in iterGlyphSets(project):
+        for glyphName in glyphSet.getGlyphNamesAndUnicodes():
+            glyph = glyphSet.getGlyph(glyphName)
+            for layerName in getattr(glyph, "glyphNotInLayer", ()):
+                yield f"'{glyphName}' does not exist in layer '{layerName}'"
+
+
 # - does glyph interpolate?
 # - mix of outlines and components
 # - does unicode match uni1234?

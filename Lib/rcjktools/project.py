@@ -650,6 +650,8 @@ class RCJKGlyph(Glyph):
         if variationGlyphs is None:
             return
 
+        self.glyphNotInLayer = []
+
         for varDict in variationGlyphs:
             if not varDict.get("on", True):
                 # This source is "off", and should not be used.
@@ -663,6 +665,7 @@ class RCJKGlyph(Glyph):
                 else:
                     # Layer glyph does not exist, make one up by copying
                     # self.width and self.outline
+                    self.glyphNotInLayer.append(layerName)
                     logger.warning(f"glyph {self.name} not found in layer {layerName}")
                     varGlyph = self.__class__()
                     varGlyph.width = self.width
