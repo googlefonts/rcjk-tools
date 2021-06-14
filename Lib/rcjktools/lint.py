@@ -25,7 +25,7 @@ glyphNamePat = re.compile(r"[a-zA-Z0-9_.\\*-]+$")
 
 
 @lintcheck("glyphname")
-def glyphname_check(project):
+def checkGlyphNames(project):
     for glyphSetName in glyphSetNames:
         glyphSet = getattr(project, glyphSetName)
         for glyphName in glyphSet.getGlyphNamesAndUnicodes():
