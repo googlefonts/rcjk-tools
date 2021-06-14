@@ -66,7 +66,7 @@ def checkGlyphExistsInLayer(project):
             yield f"'{glyphName}' does not exist in layer '{layerName}'"
 
 
-@lintcheck("variations")
+@lintcheck("nested_variations")
 def checkGlyphVariations(project):
     for glyphSetName, glyphName, glyph in iterGlyphs(project):
         for vg in glyph.variations:
