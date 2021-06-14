@@ -31,8 +31,20 @@ def iterGlyphSets(project):
 def iterGlyphs(project):
     for glyphSetName, glyphSet in iterGlyphSets(project):
         for glyphName in glyphSet.getGlyphNamesAndUnicodes():
-            glyph = glyphSet.getGlyph(glyphName)
-            yield glyphSetName, glyphName, glyph
+            glyph, _ = getGlyphWithError(glyphSet, glyphName)
+            if glyph is not None:
+                yield glyphSetName, glyphName, glyph
+            # error is handled in checkLoadGlyph()
+
+
+def getGlyphWithError(glyphSet, glyphName):
+    glyph = None
+    error = None
+    try:
+        glyph = glyphSet.getGlyph(glyphName)
+    except Exception as e:
+        error = f"error loading '{glyphName}' {e!r}"
+    return glyph, error
 
 
 glyphNamePat = re.compile(r"[a-zA-Z0-9_.\\*-]+$")
@@ -45,6 +57,15 @@ def checkGlyphNames(project):
             m = glyphNamePat.match(glyphName)
             if m is None:
                 yield f"invalid glyph name '{glyphName}' (in {glyphSetName})"
+
+
+@lintcheck("load_glyph")
+def checkLoadGlyph(project):
+    for glyphSetName, glyphSet in iterGlyphSets(project):
+        for glyphName in glyphSet.getGlyphNamesAndUnicodes():
+            _, error = getGlyphWithError(glyphSet, glyphName)
+            if error is not None:
+                yield error
 
 
 @lintcheck("interpolate")
@@ -124,7 +145,9 @@ def checkUnusedDeepComponents(project):
 def _checkUnusedComponents(glyphSet, compoGlyphSet):
     usedComponents = set()
     for glyphName in glyphSet.getGlyphNamesAndUnicodes():
-        glyph = glyphSet.getGlyph(glyphName)
+        glyph, error = getGlyphWithError(glyphSet, glyphName)
+        if error:
+            continue
         for compo in glyph.components:
             if compo.name not in glyphSet:
                 usedComponents.add(compo.name)
@@ -150,13 +173,15 @@ def checkUnusedAtomicElementAxes(project):
 def _checkUnusedAxes(glyphSet, compoGlyphSet):
     availableAxes = {}
     for glyphName in compoGlyphSet.getGlyphNamesAndUnicodes():
-        glyph = compoGlyphSet.getGlyph(glyphName)
-        if glyph.axes:
+        glyph, error = getGlyphWithError(compoGlyphSet, glyphName)
+        if not error and glyph.axes:
             availableAxes[glyphName] = set(glyph.axes)
 
     usedComponentGlyphs = set()
     for glyphName in glyphSet.getGlyphNamesAndUnicodes():
-        glyph = glyphSet.getGlyph(glyphName)
+        glyph, error = getGlyphWithError(glyphSet, glyphName)
+        if error:
+            continue
         for compo in glyph.components:
             usedComponentGlyphs.add(compo.name)
             for axisName in compo.coord:
@@ -211,7 +236,9 @@ def checkAdvance(project):
         for glyphName in project.keys():
             if glyphName.startswith("_"):
                 continue
-            glyph = glyphSet.getGlyph(glyphName)
+            glyph, error = getGlyphWithError(glyphSet, glyphName)
+            if error:
+                continue
             for g in [glyph] + glyph.variations:
                 if g.width != defaultAdvanceWidth:
                     if not g.location:
