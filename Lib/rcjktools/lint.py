@@ -127,7 +127,44 @@ def _checkUnusedComponents(glyphSet, compoGlyphSet):
                 usedComponents.add(compo.name)
     for name in sorted(compoGlyphSet.getGlyphNamesAndUnicodes()):
         if name not in usedComponents:
-            yield f"component '{name}' is not used"
+            yield f"component glyph '{name}' is not used"
+
+
+@lintcheck("unused_dc_axes")
+def checkUnusedDeepComponentAxes(project):
+    glyphSet = project.characterGlyphGlyphSet
+    compoGlyphSet = project.deepComponentGlyphSet
+    yield from _checkUnusedAxes(glyphSet, compoGlyphSet)
+
+
+@lintcheck("unused_ae_axes")
+def checkUnusedAtomicElementAxes(project):
+    glyphSet = project.deepComponentGlyphSet
+    compoGlyphSet = project.atomicElementGlyphSet
+    yield from _checkUnusedAxes(glyphSet, compoGlyphSet)
+
+
+def _checkUnusedAxes(glyphSet, compoGlyphSet):
+    availableAxes = {}
+    for glyphName in compoGlyphSet.getGlyphNamesAndUnicodes():
+        glyph = compoGlyphSet.getGlyph(glyphName)
+        if glyph.axes:
+            availableAxes[glyphName] = set(glyph.axes)
+
+    usedComponentGlyphs = set()
+    for glyphName in glyphSet.getGlyphNamesAndUnicodes():
+        glyph = glyphSet.getGlyph(glyphName)
+        for compo in glyph.components:
+            usedComponentGlyphs.add(compo.name)
+            for axisName in compo.coord:
+                availableAxes[compo.name].discard(axisName)
+
+    for glyphName, axisNames in availableAxes.items():
+        if glyphName not in usedComponentGlyphs:
+            # this is reported separately, see _checkUnusedComponents
+            continue
+        for axisName in axisNames:
+            yield f"Axis {axisName} of glyph '{glyphName} is not used"
 
 
 @lintcheck("contour")
