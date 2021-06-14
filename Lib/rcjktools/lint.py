@@ -10,6 +10,7 @@ def lintcheck(checkName):
     def wrap(checkFunc):
         checks[checkName] = checkFunc
         return checkFunc
+
     return wrap
 
 
@@ -58,7 +59,6 @@ def main():
         for checkname, checkFunc in checks.items():
             for msg in checkFunc(project):
                 print(f"{projectPath}:{checkname}: {msg}")
-
 
 
 if __name__ == "__main__":
