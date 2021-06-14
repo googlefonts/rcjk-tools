@@ -306,8 +306,11 @@ def main():
                 continue
             if checkName in args.exclude:
                 continue
-            for msg in checkFunc(project):
-                print(f"{projectPath}:{checkName}: {msg}")
+            try:
+                for msg in checkFunc(project):
+                    print(f"{projectPath}:{checkName}: {msg}")
+            except Exception as e:
+                print(f"{projectPath}:{checkName}: ERROR {e!r}")
 
 
 if __name__ == "__main__":
