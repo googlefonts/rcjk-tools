@@ -1,8 +1,12 @@
 import argparse
 import logging
 import re
+import traceback
 from .project import RoboCJKProject
 from .objects import InterpolationError
+
+
+VERBOSE = False  # can be overridden by command line
 
 
 checks = {}
@@ -44,6 +48,8 @@ def getGlyphWithError(glyphSet, glyphName):
         glyph = glyphSet.getGlyph(glyphName)
     except Exception as e:
         error = f"error loading '{glyphName}' {e!r}"
+        if VERBOSE:
+            traceback.print_exc()
     return glyph, error
 
 
@@ -284,6 +290,11 @@ def main():
     )
     parser.add_argument("rcjkproject", nargs="+")
     parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print a full traceback when an exception occurs",
+    )
+    parser.add_argument(
         "--include",
         type=commaSeparatedList,
         default=set(),
@@ -298,6 +309,9 @@ def main():
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.ERROR)
+    if args.verbose:
+        global VERBOSE
+        VERBOSE = True
 
     for projectPath in args.rcjkproject:
         project = RoboCJKProject(projectPath)
