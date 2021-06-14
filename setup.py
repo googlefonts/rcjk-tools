@@ -20,6 +20,7 @@ setup(
             "buildvarc=rcjktools.buildVarC:main",
             "buildcolrv1=rcjktools.buildCOLRv1:main",
             "rcjk2ufo=rcjktools.project:rcjk2ufo",
+            "rcjklint=rcjktools.lint:main",
             "rcjkproofer=rcjktools.proofer:main",
             "ttf2woff2=rcjktools.ttf2woff2:main",
             "ttxv=rcjktools.ttxv:main",
