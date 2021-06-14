@@ -147,10 +147,12 @@ def buildCOLRGlyph(glyphName, components, vcData, axisTagToIndex):
                 Paint=paint,
             )
             if True:
+                # Offset to coord list
                 paint["Location"] = dict(
                     Coordinate=coordinateArray,
                 )
             else:
+                # Inline to coord list
                 paint["Coordinate"] = coordinateArray
 
         haveTranslate, haveTranslateVar = _haveTransformItem(
