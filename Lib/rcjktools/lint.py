@@ -54,7 +54,7 @@ def checkInterpolation(project):
         try:
             inst = glyph.instantiate(location)
         except InterpolationError as e:
-            yield f"interpolation error '{glyphName}', {e} (in {glyphSetName})"
+            yield f"'{glyphName}' {e} (in {glyphSetName})"
 
 
 @lintcheck("layer")
