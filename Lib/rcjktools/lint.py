@@ -130,16 +130,43 @@ def _checkUnusedComponents(glyphSet, compoGlyphSet):
             yield f"component '{name}' is not used"
 
 
+@lintcheck("contour")
+def checkContours(project):
+    for glyphSetName, glyphName, glyph in iterGlyphs(project):
+        pen = ContourCheckerPointPen()
+        glyph.drawPoints(pen)
+        if pen.hasOpenContours:
+            yield f"'{glyphName} has one or more open contours (in {glyphSetName})"
+        if pen.hasShortContours:
+            yield f"'{glyphName} has one or more contours that have fewer than three points (in {glyphSetName})"
+
+
+class ContourCheckerPointPen:
+    hasOpenContours = False
+    hasShortContours = False
+
+    def beginPath(self):
+        self.numPoints = 0
+
+    def addPoint(self, pt, segmentType, *args, **kwargs):
+        if segmentType == "move":
+            hasOpenContours = True
+        self.numPoints += 1
+
+    def endPath(self):
+        if self.numPoints <= 2:
+            self.hasShortContours = True
+
+    def addComponent(self, *args, **kwargs):
+        pass
+
+
 # - are glyph unicodes unique? (maybe)
 # - is glyph advance 1000/XXXX? check variations, too
 # - are var compo axis values within min/max range?
 # - are all axes used?
 # - are the axes used within the axes defined? (no "stray" axis tags)
 # - are all variations locations unique?
-# - are there any unused atomic elements?
-# - are there any unused deep components?
-# - are outlines closed?
-# - outline consist of more than two points?
 
 
 def commaSeparatedList(arg):
