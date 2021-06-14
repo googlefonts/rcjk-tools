@@ -1,6 +1,7 @@
-from .project import RoboCJKProject
 import argparse
 import re
+from .project import RoboCJKProject
+from .objects import InterpolationError
 
 
 checks = {}
@@ -36,6 +37,18 @@ def checkGlyphNames(project):
             m = glyphNamePat.match(glyphName)
             if m is None:
                 yield f"invalid glyph name '{glyphName}' (in {glyphSetName})"
+
+
+@lintcheck("interpolate")
+def checkInterpolation(project):
+    glyphSet = project.characterGlyphGlyphSet
+    for glyphName in glyphSet.getGlyphNamesAndUnicodes():
+        glyph = glyphSet.getGlyph(glyphName)
+        location = {axisTag: (v1 + v2) / 2 for axisTag, (v1, v2) in glyph.axes.items()}
+        try:
+            inst = glyph.instantiate(location)
+        except InterpolationError as e:
+            yield f"interpolation error '{glyphName}', {e}"
 
 
 # - does glyph interpolate?
