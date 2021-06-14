@@ -72,7 +72,13 @@ def checkGlyphVariations(project):
                 yield f"'{glyphName}' variation glyph for {vg.location} has variations"
 
 
-# - does glyph interpolate?
+@lintcheck("mix_outlines_components")
+def checkGlyphMixOutlinesAndComponents(project):
+    for glyphSetName, glyphName, glyph in iterGlyphs(project):
+        if not glyph.outline.isEmpty() and glyph.components:
+            yield f"'{glyphName}' mixes outlines and components (in {glyphSetName})"
+
+
 # - mix of outlines and components
 # - does unicode match uni1234?
 # - are glyph unicodes unique? (maybe)
