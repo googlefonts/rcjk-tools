@@ -48,6 +48,7 @@ class RoboCJKProject:
         self._decomposeClassicComponents = decomposeClassicComponents
         assert self._path.is_dir(), f"No .rcjk project found: {path}"
         self._loadDesignSpace(self._path / "designspace.json")
+        self._loadLib(self._path / "fontLib.json")
 
         self.characterGlyphGlyphSet = GlyphSet(self._path / "characterGlyph")
         self.deepComponentGlyphSet = GlyphSet(self._path / "deepComponent")
@@ -67,6 +68,10 @@ class RoboCJKProject:
                     axis["maxValue"],
                 )
                 self.axisNames[axis["tag"]] = axis["name"]
+
+    def _loadLib(self, path):
+        with open(path) as f:
+            self.lib = json.load(f)
 
     @property
     def features(self):
