@@ -66,6 +66,14 @@ def checkGlyphExistsInLayer(project):
             yield f"'{glyphName}' does not exist in layer '{layerName}'"
 
 
+@lintcheck("variations")
+def checkGlyphVariations(project):
+    for glyphSetName, glyphName, glyph in iterGlyphs(project):
+        for vg in glyph.variations:
+            if vg.variations:
+                yield f"'{glyphName}' variation glyph for {vg.location} has variations"
+
+
 # - does glyph interpolate?
 # - mix of outlines and components
 # - does unicode match uni1234?
