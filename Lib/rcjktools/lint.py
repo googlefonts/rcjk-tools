@@ -69,7 +69,10 @@ def checkGlyphVariations(project):
     for glyphSetName, glyphName, glyph in iterGlyphs(project):
         for vg in glyph.variations:
             if vg.variations:
-                yield f"'{glyphName}' variation glyph for {formatLocation(vg.location)} has variations"
+                yield (
+                    f"'{glyphName}' variation glyph for "
+                    f"{formatLocation(vg.location)} has variations"
+                )
 
 
 @lintcheck("mix_outlines_components")
