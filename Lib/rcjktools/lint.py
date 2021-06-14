@@ -50,9 +50,7 @@ def checkGlyphNames(project):
 @lintcheck("interpolate")
 def checkInterpolation(project):
     for glyphSetName, glyphName, glyph in iterGlyphs(project):
-        location = {
-            axisTag: (v1 + v2) / 2 for axisTag, (v1, v2) in glyph.axes.items()
-        }
+        location = {axisTag: (v1 + v2) / 2 for axisTag, (v1, v2) in glyph.axes.items()}
         try:
             inst = glyph.instantiate(location)
         except InterpolationError as e:
@@ -96,7 +94,8 @@ def commaSeparatedList(arg):
 def main():
     checkNames = ", ".join(checks)
     parser = argparse.ArgumentParser(
-        description=f"Perform lint checks on one or more rcjk projects: {checkNames}")
+        description=f"Perform lint checks on one or more rcjk projects: {checkNames}"
+    )
     parser.add_argument("rcjkproject", nargs="+")
     parser.add_argument(
         "--include",
