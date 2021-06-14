@@ -1,4 +1,5 @@
 import argparse
+import logging
 import re
 from .project import RoboCJKProject
 from .objects import InterpolationError
@@ -90,6 +91,8 @@ def main():
         help="Comma separated list of checks to exclude",
     )
     args = parser.parse_args()
+
+    logging.basicConfig(level=logging.ERROR)
 
     for projectPath in args.rcjkproject:
         project = RoboCJKProject(projectPath)
