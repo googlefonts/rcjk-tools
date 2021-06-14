@@ -160,7 +160,9 @@ def buildVarCTable(ttf, vcData, allLocations):
     varc_table.VarStore = store
 
 
-def buildVarC(designspacePath, ttfPath, outTTFPath, doTTX, saveWoff2, neutralOnly=False):
+def buildVarC(
+    designspacePath, ttfPath, outTTFPath, doTTX, saveWoff2, neutralOnly=False
+):
     import pathlib
 
     registerCustomTableClass("VarC", "rcjktools.table_VarC", "table_VarC")
@@ -174,7 +176,9 @@ def buildVarC(designspacePath, ttfPath, outTTFPath, doTTX, saveWoff2, neutralOnl
     axisTags = [axis.axisTag for axis in ttf["fvar"].axes]
     globalAxisNames = {axisTag for axisTag in axisTags if axisTag[0] != "V"}
     vcFont = VarCoFont(designspacePath)
-    vcData, allLocations, neutralGlyphNames = vcFont.extractVarCoData(globalAxisNames, neutralOnly)
+    vcData, allLocations, neutralGlyphNames = vcFont.extractVarCoData(
+        globalAxisNames, neutralOnly
+    )
     if neutralGlyphNames:
         gvarTable = ttf["gvar"]
         for glyphName in neutralGlyphNames:
