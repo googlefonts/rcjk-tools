@@ -629,8 +629,8 @@ class RCJKGlyph(Glyph):
         self.outline, classicComponents = self.outline.splitComponents()
         for baseGlyphName, affineTransform in classicComponents:
             xx, xy, yx, yy, dx, dy = affineTransform
-            assert xy == 0, "rotation and skewing is not implemented"
-            assert yx == 0, "rotation and skewing is not implemented"
+            assert xy == 0, f"rotation and skewing is not implemented ({self.name})"
+            assert yx == 0, f"rotation and skewing is not implemented ({self.name})"
             transform = MathDict(
                 x=dx,
                 y=dy,
