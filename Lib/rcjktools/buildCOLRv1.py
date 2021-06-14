@@ -243,7 +243,9 @@ def buildCOLRv1(designspacePath, ttfPath, outTTFPath, saveWoff2, neutralOnly=Fal
 
     axisTags = [axis.axisTag for axis in ttf["fvar"].axes]
     axisTagToIndex = {tag: index for index, tag in enumerate(axisTags)}
-    globalAxisNames = {axis.axisTag for axis in ttf["fvar"].axes if not axis.flags & 0x0001}
+    globalAxisNames = {
+        axis.axisTag for axis in ttf["fvar"].axes if not axis.flags & 0x0001
+    }
     assert globalAxisNames == {axisTag for axisTag in axisTags if axisTag[0] != "V"}
 
     vcFont = VarCoFont(designspacePath)
@@ -335,7 +337,9 @@ def main():
         "non-hidden axes",
     )
     args = parser.parse_args()
-    buildCOLRv1(args.designspace, args.ttf, args.output, not args.no_woff2, args.neutral_only)
+    buildCOLRv1(
+        args.designspace, args.ttf, args.output, not args.no_woff2, args.neutral_only
+    )
 
 
 if __name__ == "__main__":
