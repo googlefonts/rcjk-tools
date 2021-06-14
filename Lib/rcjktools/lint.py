@@ -104,14 +104,14 @@ def checkGlyphUnicodeNameVsUnicodes(project):
                 yield f"'{glyphName}' unicode in glyph name does not occur in glyph.unicodes ({unis})"
 
 
-@lintcheck("unused_deep_components")
+@lintcheck("unused_deep_component")
 def checkUnusedDeepComponents(project):
     glyphSet = project.characterGlyphGlyphSet
     compoGlyphSet = project.deepComponentGlyphSet
     yield from _checkUnusedComponents(glyphSet, compoGlyphSet)
 
 
-@lintcheck("unused_atomic_elements")
+@lintcheck("unused_atomic_element")
 def checkUnusedDeepComponents(project):
     glyphSet = project.deepComponentGlyphSet
     compoGlyphSet = project.atomicElementGlyphSet
@@ -130,14 +130,14 @@ def _checkUnusedComponents(glyphSet, compoGlyphSet):
             yield f"component glyph '{name}' is not used"
 
 
-@lintcheck("unused_dc_axes")
+@lintcheck("unused_deep_component_axis")
 def checkUnusedDeepComponentAxes(project):
     glyphSet = project.characterGlyphGlyphSet
     compoGlyphSet = project.deepComponentGlyphSet
     yield from _checkUnusedAxes(glyphSet, compoGlyphSet)
 
 
-@lintcheck("unused_ae_axes")
+@lintcheck("unused_atomic_element_axis")
 def checkUnusedAtomicElementAxes(project):
     glyphSet = project.deepComponentGlyphSet
     compoGlyphSet = project.atomicElementGlyphSet
@@ -164,7 +164,7 @@ def _checkUnusedAxes(glyphSet, compoGlyphSet):
             # this is reported separately, see _checkUnusedComponents
             continue
         for axisName in axisNames:
-            yield f"Axis {axisName} of glyph '{glyphName} is not used"
+            yield f"Axis {axisName} of glyph '{glyphName}' is not used"
 
 
 @lintcheck("contour")
