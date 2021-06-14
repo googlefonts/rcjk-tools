@@ -44,7 +44,9 @@ def checkInterpolation(project):
     for glyphSetName, glyphSet in iterGlyphSets(project):
         for glyphName in glyphSet.getGlyphNamesAndUnicodes():
             glyph = glyphSet.getGlyph(glyphName)
-            location = {axisTag: (v1 + v2) / 2 for axisTag, (v1, v2) in glyph.axes.items()}
+            location = {
+                axisTag: (v1 + v2) / 2 for axisTag, (v1, v2) in glyph.axes.items()
+            }
             try:
                 inst = glyph.instantiate(location)
             except InterpolationError as e:
@@ -66,16 +68,36 @@ def checkInterpolation(project):
 # - outline consist of more than two points?
 
 
+def commaSeparatedList(arg):
+    return set(arg.split(","))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("rcjkproject", nargs="+")
+    parser.add_argument(
+        "--include",
+        type=commaSeparatedList,
+        default=set(),
+        help="Comma separated list of tables to include",
+    )
+    parser.add_argument(
+        "--exclude",
+        type=commaSeparatedList,
+        default=set(),
+        help="Comma separated list of tables to exclude",
+    )
     args = parser.parse_args()
 
     for projectPath in args.rcjkproject:
         project = RoboCJKProject(projectPath)
-        for checkname, checkFunc in checks.items():
+        for checkName, checkFunc in checks.items():
+            if args.include and not checkName in args.include:
+                continue
+            if checkName in args.exclude:
+                continue
             for msg in checkFunc(project):
-                print(f"{projectPath}:{checkname}: {msg}")
+                print(f"{projectPath}:{checkName}: {msg}")
 
 
 if __name__ == "__main__":
