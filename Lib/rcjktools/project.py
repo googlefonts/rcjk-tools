@@ -1,5 +1,6 @@
 import logging
 import json
+import math
 import re
 import pathlib
 
@@ -24,7 +25,7 @@ from .objects import (
     MathOutline,
     normalizeLocation,
 )
-from .utils import makeTransform
+from .utils import decomposeTwoByTwo, makeTransform
 
 
 logger = logging.getLogger(__name__)
@@ -629,14 +630,15 @@ class RCJKGlyph(Glyph):
         self.outline, classicComponents = self.outline.splitComponents()
         for baseGlyphName, affineTransform in classicComponents:
             xx, xy, yx, yy, dx, dy = affineTransform
-            assert xy == 0, f"rotation and skewing is not implemented ({self.name})"
-            assert yx == 0, f"rotation and skewing is not implemented ({self.name})"
+            rotation, scalex, scaley, skewx, skewy = decomposeTwoByTwo((xx, xy, yx, yy))
+            assert skewx == 0, f"skew is not supported ({self.name})"
+            assert skewy == 0, f"skew is not supported ({self.name})"
             transform = MathDict(
                 x=dx,
                 y=dy,
-                scalex=xx,
-                scaley=yy,
-                rotation=0,
+                scalex=scalex,
+                scaley=scaley,
+                rotation=math.degrees(rotation),
                 tcenterx=0,
                 tcentery=0,
             )
