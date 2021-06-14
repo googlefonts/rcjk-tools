@@ -135,17 +135,23 @@ def buildCOLRGlyph(glyphName, components, vcData, axisTagToIndex):
                 if haveVariations
                 else ot.PaintFormat.PaintLocation
             )
+            coordinateArray = [
+                dict(
+                    AxisIndex=axisTagToIndex[tag],
+                    AxisValue=value if value[1] != 0xFFFFFFFF else value[0],
+                )
+                for tag, value in coord.items()
+            ]
             paint = dict(
                 Format=fmt,
                 Paint=paint,
-                Coordinate=[
-                    dict(
-                        AxisIndex=axisTagToIndex[tag],
-                        AxisValue=value if value[1] != 0xFFFFFFFF else value[0],
-                    )
-                    for tag, value in coord.items()
-                ],
             )
+            if True:
+                paint["Location"] = dict(
+                    Coordinate=coordinateArray,
+                )
+            else:
+                paint["Coordinate"] = coordinateArray
 
         haveTranslate, haveTranslateVar = _haveTransformItem(
             transform, [("x", 0), ("y", 0)]
