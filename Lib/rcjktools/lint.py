@@ -104,6 +104,32 @@ def checkGlyphUnicodeNameVsUnicodes(project):
                 yield f"'{glyphName}' unicode in glyph name does not occur in glyph.unicodes ({unis})"
 
 
+@lintcheck("unused_deep_components")
+def checkUnusedDeepComponents(project):
+    glyphSet = project.characterGlyphGlyphSet
+    compoGlyphSet = project.deepComponentGlyphSet
+    yield from _checkUnusedComponents(glyphSet, compoGlyphSet)
+
+
+@lintcheck("unused_atomic_elements")
+def checkUnusedDeepComponents(project):
+    glyphSet = project.deepComponentGlyphSet
+    compoGlyphSet = project.atomicElementGlyphSet
+    yield from _checkUnusedComponents(glyphSet, compoGlyphSet)
+
+
+def _checkUnusedComponents(glyphSet, compoGlyphSet):
+    usedComponents = set()
+    for glyphName in glyphSet.getGlyphNamesAndUnicodes():
+        glyph = glyphSet.getGlyph(glyphName)
+        for compo in glyph.components:
+            if compo.name not in glyphSet:
+                usedComponents.add(compo.name)
+    for name in sorted(compoGlyphSet.getGlyphNamesAndUnicodes()):
+        if name not in usedComponents:
+            yield f"component '{name}' is not used"
+
+
 # - are glyph unicodes unique? (maybe)
 # - is glyph advance 1000/XXXX? check variations, too
 # - are var compo axis values within min/max range?
