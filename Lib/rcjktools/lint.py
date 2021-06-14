@@ -41,14 +41,14 @@ def checkGlyphNames(project):
 
 @lintcheck("interpolate")
 def checkInterpolation(project):
-    glyphSet = project.characterGlyphGlyphSet
-    for glyphName in glyphSet.getGlyphNamesAndUnicodes():
-        glyph = glyphSet.getGlyph(glyphName)
-        location = {axisTag: (v1 + v2) / 2 for axisTag, (v1, v2) in glyph.axes.items()}
-        try:
-            inst = glyph.instantiate(location)
-        except InterpolationError as e:
-            yield f"interpolation error '{glyphName}', {e}"
+    for glyphSetName, glyphSet in iterGlyphSets(project):
+        for glyphName in glyphSet.getGlyphNamesAndUnicodes():
+            glyph = glyphSet.getGlyph(glyphName)
+            location = {axisTag: (v1 + v2) / 2 for axisTag, (v1, v2) in glyph.axes.items()}
+            try:
+                inst = glyph.instantiate(location)
+            except InterpolationError as e:
+                yield f"interpolation error '{glyphName}', {e} (in {glyphSetName})"
 
 
 # - does glyph interpolate?
