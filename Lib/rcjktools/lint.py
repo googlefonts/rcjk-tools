@@ -79,6 +79,31 @@ def checkGlyphMixOutlinesAndComponents(project):
             yield f"'{glyphName}' mixes outlines and components (in {glyphSetName})"
 
 
+hexAllCaps = re.compile("[0-9A-F]+$")
+
+
+@lintcheck("uni_name")
+def checkGlyphUnicodeName(project):
+    for glyphSetName, glyphName, glyph in iterGlyphs(project):
+        if glyphName.startswith("uni"):
+            base = glyphName.split(".")[0]
+            if len(base[3:]) < 4:
+                yield f"'{glyphName}' unicode value in glyph name should be at least 4 hex digits"
+            m = hexAllCaps.match(base[3:])
+            if m is None:
+                yield f"'{glyphName}' unicode value in glyph name must be uppercase hexadecimal"
+
+
+@lintcheck("uni_name_vs_unicodes")
+def checkGlyphUnicodeName(project):
+    for glyphSetName, glyphName, glyph in iterGlyphs(project):
+        if glyphName.startswith("uni") and "." not in glyphName:
+            uni = int(glyphName[3:], 16)
+            if uni not in glyph.unicodes:
+                unis = ",".join(f"U+{u:04X}" for u in glyph.unicodes)
+                yield f"'{glyphName}' unicode in glyph name does not occur in glyph.unicodes ({unis})"
+
+
 # - mix of outlines and components
 # - does unicode match uni1234?
 # - are glyph unicodes unique? (maybe)
