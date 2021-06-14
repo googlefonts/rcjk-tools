@@ -198,6 +198,43 @@ class ContourCheckerPointPen:
         pass
 
 
+@lintcheck("advance")
+def checkAdvance(project):
+    defaultAdvanceWidth = project.lib.get("robocjk.defaultGlyphWidth")
+    if defaultAdvanceWidth is None:
+        yield f"robocjk.defaultGlyphWidth has not been set in *.rcjk/fontLib.json"
+    else:
+        glyphSet = project.characterGlyphGlyphSet
+        for glyphName in project.keys():
+            if glyphName.startswith("_"):
+                continue
+            glyph = glyphSet.getGlyph(glyphName)
+            for g in [glyph] + glyph.variations:
+                if g.width != defaultAdvanceWidth:
+                    if not g.location:
+                        locStr = ""
+                    else:
+                        locStr = f"at {formatLocation(g.location)} "
+                    yield (
+                        f"'{glyphName}' {locStr}does not have the default advance "
+                        f"width, {g.width} instead of {defaultAdvanceWidth}"
+                    )
+
+
+def formatLocation(location):
+    return ",".join(
+        f"{axisName}={formatAxisValue(axisValue)}"
+        for axisName, axisValue in sorted(location.items())
+    )
+
+
+def formatAxisValue(value):
+    i = int(value)
+    if i == value:
+        return i
+    return value
+
+
 # - are glyph unicodes unique? (maybe)
 # - is glyph advance 1000/XXXX? check variations, too
 # - are var compo axis values within min/max range?
