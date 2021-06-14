@@ -73,19 +73,21 @@ def commaSeparatedList(arg):
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    checkNames = ", ".join(checks)
+    parser = argparse.ArgumentParser(
+        description=f"Perform lint checks on one or more rcjk projects: {checkNames}")
     parser.add_argument("rcjkproject", nargs="+")
     parser.add_argument(
         "--include",
         type=commaSeparatedList,
         default=set(),
-        help="Comma separated list of tables to include",
+        help="Comma separated list of checks to include",
     )
     parser.add_argument(
         "--exclude",
         type=commaSeparatedList,
         default=set(),
-        help="Comma separated list of tables to exclude",
+        help="Comma separated list of checks to exclude",
     )
     args = parser.parse_args()
 
