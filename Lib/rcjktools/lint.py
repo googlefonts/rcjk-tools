@@ -21,13 +21,17 @@ glyphSetNames = [
 ]
 
 
+def iterGlyphSets(project):
+    for glyphSetName in glyphSetNames:
+        yield glyphSetName, getattr(project, glyphSetName)
+
+
 glyphNamePat = re.compile(r"[a-zA-Z0-9_.\\*-]+$")
 
 
 @lintcheck("glyphname")
 def checkGlyphNames(project):
-    for glyphSetName in glyphSetNames:
-        glyphSet = getattr(project, glyphSetName)
+    for glyphSetName, glyphSet in iterGlyphSets(project):
         for glyphName in glyphSet.getGlyphNamesAndUnicodes():
             m = glyphNamePat.match(glyphName)
             if m is None:
