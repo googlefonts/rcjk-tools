@@ -95,7 +95,7 @@ def checkGlyphUnicodeName(project):
 
 
 @lintcheck("uni_name_vs_unicodes")
-def checkGlyphUnicodeName(project):
+def checkGlyphUnicodeNameVsUnicodes(project):
     for glyphSetName, glyphName, glyph in iterGlyphs(project):
         if glyphName.startswith("uni") and "." not in glyphName:
             uni = int(glyphName[3:], 16)
@@ -104,8 +104,6 @@ def checkGlyphUnicodeName(project):
                 yield f"'{glyphName}' unicode in glyph name does not occur in glyph.unicodes ({unis})"
 
 
-# - mix of outlines and components
-# - does unicode match uni1234?
 # - are glyph unicodes unique? (maybe)
 # - is glyph advance 1000/XXXX? check variations, too
 # - are var compo axis values within min/max range?
