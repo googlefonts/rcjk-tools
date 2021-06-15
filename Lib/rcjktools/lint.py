@@ -162,14 +162,14 @@ def _checkUnusedComponents(glyphSet, compoGlyphSet):
             yield f"component glyph '{name}' is not used"
 
 
-@lintcheck("unused_deep_component_axis")
+@lintcheck("deep_component_axis")
 def checkUnusedDeepComponentAxes(project):
     glyphSet = project.characterGlyphGlyphSet
     compoGlyphSet = project.deepComponentGlyphSet
     yield from _checkUnusedAxes(glyphSet, compoGlyphSet)
 
 
-@lintcheck("unused_atomic_element_axis")
+@lintcheck("atomic_element_axis")
 def checkUnusedAtomicElementAxes(project):
     glyphSet = project.deepComponentGlyphSet
     compoGlyphSet = project.atomicElementGlyphSet
@@ -177,11 +177,15 @@ def checkUnusedAtomicElementAxes(project):
 
 
 def _checkUnusedAxes(glyphSet, compoGlyphSet):
-    availableAxes = {}
+    axisRanges = {}
     for glyphName in compoGlyphSet.getGlyphNamesAndUnicodes():
         glyph, error = getGlyphWithError(compoGlyphSet, glyphName)
         if not error and glyph.axes:
-            availableAxes[glyphName] = set(glyph.axes)
+            axisRanges[glyphName] = glyph.axes
+
+    unusedAxes = {
+        glyphName: set(axisNames) for glyphName, axisNames in axisRanges.items()
+    }
 
     usedComponentGlyphs = set()
     for glyphName in glyphSet.getGlyphNamesAndUnicodes():
@@ -190,15 +194,25 @@ def _checkUnusedAxes(glyphSet, compoGlyphSet):
             continue
         for compo in glyph.components:
             usedComponentGlyphs.add(compo.name)
-            for axisName in compo.coord:
-                availableAxes[compo.name].discard(axisName)
+            for axisName, axisValue in compo.coord.items():
+                axisRange = axisRanges.get(compo.name, {}).get(axisName)
+                if axisRange is None:
+                    yield f"Axis '{axisName}' used by '{glyphName}' is not defined for '{compo.name}'"
+                else:
+                    minValue, maxValue = sorted(axisRange)
+                    if not (minValue <= axisValue <= maxValue):
+                        yield (
+                            f"Axis value {axisValue} for '{axisName}' as used by '{glyphName}' for "
+                            f"'{compo.name}' is not between {minValue} and {maxValue}"
+                        )
+                unusedAxes.get(compo.name, set()).discard(axisName)
 
-    for glyphName, axisNames in availableAxes.items():
+    for glyphName, axisNames in unusedAxes.items():
         if glyphName not in usedComponentGlyphs:
             # this is reported separately, see _checkUnusedComponents
             continue
         for axisName in axisNames:
-            yield f"Axis {axisName} of glyph '{glyphName}' is not used"
+            yield f"Axis '{axisName}' of '{glyphName}' is not used"
 
 
 @lintcheck("contour")
@@ -272,9 +286,7 @@ def formatAxisValue(value):
 
 
 # - are glyph unicodes unique? (maybe)
-# - is glyph advance 1000/XXXX? check variations, too
 # - are var compo axis values within min/max range?
-# - are all axes used?
 # - are the axes used within the axes defined? (no "stray" axis tags)
 # - are all variations locations unique?
 
