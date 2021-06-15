@@ -631,8 +631,8 @@ class RCJKGlyph(Glyph):
         for baseGlyphName, affineTransform in classicComponents:
             xx, xy, yx, yy, dx, dy = affineTransform
             rotation, scalex, scaley, skewx, skewy = decomposeTwoByTwo((xx, xy, yx, yy))
-            assert skewx == 0, f"skew is not supported ({self.name})"
-            assert skewy == 0, f"skew is not supported ({self.name})"
+            assert abs(skewx) < 0.00001, f"x skew is not supported ({self.name})"
+            assert abs(skewy) < 0.00001, f"y skew is not supported ({self.name})"
             transform = MathDict(
                 x=dx,
                 y=dy,
