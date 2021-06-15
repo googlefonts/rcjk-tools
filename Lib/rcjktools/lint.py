@@ -102,6 +102,18 @@ def checkGlyphVariations(project):
                 )
 
 
+@lintcheck("orphan_glyph")
+def checkGlyphIsOrphan(project):
+    for glyphSetName, glyphSet in iterGlyphSets(project):
+        glyphNames = set(glyphSet.getGlyphNamesAndUnicodes())
+        for layerName in glyphSet.getLayerNames():
+            layer = glyphSet.getLayer(layerName)
+            layerGlyphNames = set(layer.getGlyphNamesAndUnicodes())
+            unreachableGlyphNames = layerGlyphNames - glyphNames
+            for glyphName in sorted(unreachableGlyphNames):
+                yield f"'{glyphName}' of layer '{layerName}' has no parent (in {glyphSetName})"
+
+
 @lintcheck("mix_outlines_components")
 def checkGlyphMixOutlinesAndComponents(project):
     for glyphSetName, glyphName, glyph in iterGlyphs(project):
@@ -342,6 +354,8 @@ def main():
                     print(f"{projectPath}:{checkName}: {msg}")
             except Exception as e:
                 print(f"{projectPath}:{checkName}: ERROR {e!r}")
+                if args.verbose:
+                    traceback.print_exc()
 
 
 if __name__ == "__main__":
