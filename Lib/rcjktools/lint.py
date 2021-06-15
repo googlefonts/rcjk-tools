@@ -34,7 +34,7 @@ def iterGlyphSets(project):
 
 def iterGlyphs(project):
     for glyphSetName, glyphSet in iterGlyphSets(project):
-        for glyphName in glyphSet.getGlyphNamesAndUnicodes():
+        for glyphName in sorted(glyphSet.getGlyphNamesAndUnicodes()):
             glyph, _ = getGlyphWithError(glyphSet, glyphName)
             if glyph is not None:
                 yield glyphSetName, glyphName, glyph
