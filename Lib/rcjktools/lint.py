@@ -302,10 +302,6 @@ def formatAxisValue(value):
     return value
 
 
-# - are glyph unicodes unique? (maybe)
-# - are all variations locations unique?
-
-
 def commaSeparatedList(arg):
     return set(arg.split(","))
 
