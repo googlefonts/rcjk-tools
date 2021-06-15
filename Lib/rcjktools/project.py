@@ -593,6 +593,11 @@ class GlyphSet:
             raise GlyphNotFoundError(f"{glyphName}")
         return RCJKGlyph.loadFromGLIF(glifPath)
 
+    def getLayerNames(self):
+        if not self._path.is_dir():
+            return []
+        return sorted(p.name for p in self._path.iterdir() if p.is_dir())
+
     def getLayer(self, layerName):
         layer = self._layers.get(layerName)
         if layer is None:
