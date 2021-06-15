@@ -79,7 +79,7 @@ def checkInterpolation(project):
     for glyphSetName, glyphName, glyph in iterGlyphs(project):
         location = {axisTag: (v1 + v2) / 2 for axisTag, (v1, v2) in glyph.axes.items()}
         try:
-            inst = glyph.instantiate(location)
+            _ = glyph.instantiate(location)
         except InterpolationError as e:
             yield f"'{glyphName}' {e} (in {glyphSetName})"
 
@@ -142,7 +142,7 @@ def checkUnusedDeepComponents(project):
 
 
 @lintcheck("unused_atomic_element")
-def checkUnusedDeepComponents(project):
+def checkUnusedAtomicElements(project):
     glyphSet = project.deepComponentGlyphSet
     compoGlyphSet = project.atomicElementGlyphSet
     yield from _checkUnusedComponents(glyphSet, compoGlyphSet)
@@ -163,20 +163,20 @@ def _checkUnusedComponents(glyphSet, compoGlyphSet):
 
 
 @lintcheck("deep_component_axis")
-def checkUnusedDeepComponentAxes(project):
+def checkDeepComponentAxes(project):
     glyphSet = project.characterGlyphGlyphSet
     compoGlyphSet = project.deepComponentGlyphSet
-    yield from _checkUnusedAxes(glyphSet, compoGlyphSet)
+    yield from _checkComponentAxes(glyphSet, compoGlyphSet)
 
 
 @lintcheck("atomic_element_axis")
-def checkUnusedAtomicElementAxes(project):
+def checkAtomicElementAxes(project):
     glyphSet = project.deepComponentGlyphSet
     compoGlyphSet = project.atomicElementGlyphSet
-    yield from _checkUnusedAxes(glyphSet, compoGlyphSet)
+    yield from _checkComponentAxes(glyphSet, compoGlyphSet)
 
 
-def _checkUnusedAxes(glyphSet, compoGlyphSet):
+def _checkComponentAxes(glyphSet, compoGlyphSet):
     axisRanges = {}
     for glyphName in compoGlyphSet.getGlyphNamesAndUnicodes():
         glyph, error = getGlyphWithError(compoGlyphSet, glyphName)
@@ -240,7 +240,7 @@ class ContourCheckerPointPen:
 
     def addPoint(self, pt, segmentType, *args, **kwargs):
         if segmentType == "move":
-            hasOpenContours = True
+            self.hasOpenContours = True
         self.numPoints += 1
 
     def endPath(self):
@@ -333,7 +333,7 @@ def main():
     for projectPath in args.rcjkproject:
         project = RoboCJKProject(projectPath)
         for checkName, checkFunc in checks.items():
-            if args.include and not checkName in args.include:
+            if args.include and checkName not in args.include:
                 continue
             if checkName in args.exclude:
                 continue
