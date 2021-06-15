@@ -303,8 +303,6 @@ def formatAxisValue(value):
 
 
 # - are glyph unicodes unique? (maybe)
-# - are var compo axis values within min/max range?
-# - are the axes used within the axes defined? (no "stray" axis tags)
 # - are all variations locations unique?
 
 
