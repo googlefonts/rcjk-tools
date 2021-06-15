@@ -194,10 +194,15 @@ def _checkUnusedAxes(glyphSet, compoGlyphSet):
             continue
         for compo in glyph.components:
             usedComponentGlyphs.add(compo.name)
+            coordAxisRanges = axisRanges.get(compo.name, {})
+            # The following is very common and perhaps not worth a warning, as the behavior
+            # is well defined:
+            # for axisName in sorted(set(coordAxisRanges) - set(compo.coord)):
+            #     yield f"Axis '{axisName}' not set by '{glyphName}' but is defined for '{compo.name}'"
             for axisName, axisValue in compo.coord.items():
-                axisRange = axisRanges.get(compo.name, {}).get(axisName)
+                axisRange = coordAxisRanges.get(axisName)
                 if axisRange is None:
-                    yield f"Axis '{axisName}' used by '{glyphName}' is not defined for '{compo.name}'"
+                    yield f"Axis '{axisName}' set by '{glyphName}' but is not defined for '{compo.name}'"
                 else:
                     minValue, maxValue = sorted(axisRange)
                     if not (minValue <= axisValue <= maxValue):
