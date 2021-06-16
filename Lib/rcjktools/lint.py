@@ -62,7 +62,7 @@ glyphNamePat = re.compile(r"[a-zA-Z0-9_.\\*-]+$")
 def checkGlyphNames(project):
     """Check whether glyph names are well formed."""
     for glyphSetName, glyphSet in iterGlyphSets(project):
-        for glyphName in glyphSet.getGlyphNamesAndUnicodes():
+        for glyphName in sorted(glyphSet.getGlyphNamesAndUnicodes()):
             m = glyphNamePat.match(glyphName)
             if m is None:
                 yield f"invalid glyph name '{glyphName}' (in {glyphSetName})"
@@ -72,7 +72,7 @@ def checkGlyphNames(project):
 def checkLoadGlyph(project):
     """Check whether a glyph can be successfully loaded."""
     for glyphSetName, glyphSet in iterGlyphSets(project):
-        for glyphName in glyphSet.getGlyphNamesAndUnicodes():
+        for glyphName in sorted(glyphSet.getGlyphNamesAndUnicodes()):
             _, error = getGlyphWithError(glyphSet, glyphName)
             if error is not None:
                 yield error
@@ -225,7 +225,7 @@ def _checkComponentAxes(glyphSet, compoGlyphSet):
     }
 
     usedComponentGlyphs = set()
-    for glyphName in glyphSet.getGlyphNamesAndUnicodes():
+    for glyphName in sorted(glyphSet.getGlyphNamesAndUnicodes()):
         glyph, error = getGlyphWithError(glyphSet, glyphName)
         if error:
             continue
