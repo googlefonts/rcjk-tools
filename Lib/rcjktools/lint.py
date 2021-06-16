@@ -58,6 +58,7 @@ glyphNamePat = re.compile(r"[a-zA-Z0-9_.\\*-]+$")
 
 @lintcheck("glyphname")
 def checkGlyphNames(project):
+    """Check whether glyph names are well formed."""
     for glyphSetName, glyphSet in iterGlyphSets(project):
         for glyphName in glyphSet.getGlyphNamesAndUnicodes():
             m = glyphNamePat.match(glyphName)
@@ -67,6 +68,7 @@ def checkGlyphNames(project):
 
 @lintcheck("load_glyph")
 def checkLoadGlyph(project):
+    """Check whether a glyph can be successfully loaded."""
     for glyphSetName, glyphSet in iterGlyphSets(project):
         for glyphName in glyphSet.getGlyphNamesAndUnicodes():
             _, error = getGlyphWithError(glyphSet, glyphName)
@@ -76,6 +78,7 @@ def checkLoadGlyph(project):
 
 @lintcheck("interpolate")
 def checkInterpolation(project):
+    """Check whether a variable glyph can interpolate."""
     for glyphSetName, glyphName, glyph in iterGlyphs(project):
         location = {axisTag: (v1 + v2) / 2 for axisTag, (v1, v2) in glyph.axes.items()}
         try:
@@ -86,6 +89,9 @@ def checkInterpolation(project):
 
 @lintcheck("layer")
 def checkGlyphExistsInLayer(project):
+    """Check whether a glyph in a layer exists, if the parent glyph specifies a
+    layerName for a variation.
+    """
     for glyphSetName, glyphName, glyph in iterGlyphs(project):
         for layerName in getattr(glyph, "glyphNotInLayer", ()):
             yield f"'{glyphName}' does not exist in layer '{layerName}'"
@@ -93,6 +99,7 @@ def checkGlyphExistsInLayer(project):
 
 @lintcheck("nested_variations")
 def checkGlyphVariations(project):
+    """Check whether variation glyphs have variations themselves."""
     for glyphSetName, glyphName, glyph in iterGlyphs(project):
         for vg in glyph.variations:
             if vg.variations:
@@ -104,6 +111,7 @@ def checkGlyphVariations(project):
 
 @lintcheck("orphan_glyph")
 def checkGlyphIsOrphan(project):
+    """Check whether glyphs in layers have a corresponding glyph in the default layer."""
     for glyphSetName, glyphSet in iterGlyphSets(project):
         glyphNames = set(glyphSet.getGlyphNamesAndUnicodes())
         for layerName in glyphSet.getLayerNames():
@@ -116,6 +124,7 @@ def checkGlyphIsOrphan(project):
 
 @lintcheck("mix_outlines_components")
 def checkGlyphMixOutlinesAndComponents(project):
+    """Check whether a glyph uses a mix of outlines and components."""
     for glyphSetName, glyphName, glyph in iterGlyphs(project):
         if not glyph.outline.isEmpty() and glyph.components:
             yield f"'{glyphName}' mixes outlines and components (in {glyphSetName})"
@@ -126,6 +135,7 @@ hexAllCaps = re.compile("[0-9A-F]+$")
 
 @lintcheck("uni_name")
 def checkGlyphUnicodeName(project):
+    """Check validity of uniXXXX glyph names."""
     for glyphSetName, glyphName, glyph in iterGlyphs(project):
         if glyphName.startswith("uni"):
             base = glyphName.split(".")[0]
@@ -138,6 +148,7 @@ def checkGlyphUnicodeName(project):
 
 @lintcheck("uni_name_vs_unicodes")
 def checkGlyphUnicodeNameVsUnicodes(project):
+    """Check uniXXXX glyph names against glyph.unicodes."""
     for glyphSetName, glyphName, glyph in iterGlyphs(project):
         if glyphName.startswith("uni") and "." not in glyphName:
             uni = int(glyphName[3:], 16)
@@ -148,6 +159,7 @@ def checkGlyphUnicodeNameVsUnicodes(project):
 
 @lintcheck("unused_deep_component")
 def checkUnusedDeepComponents(project):
+    """Check for unused Deep Components."""
     glyphSet = project.characterGlyphGlyphSet
     compoGlyphSet = project.deepComponentGlyphSet
     yield from _checkUnusedComponents(glyphSet, compoGlyphSet)
@@ -155,6 +167,7 @@ def checkUnusedDeepComponents(project):
 
 @lintcheck("unused_atomic_element")
 def checkUnusedAtomicElements(project):
+    """Check for unused Atomic Elements."""
     glyphSet = project.deepComponentGlyphSet
     compoGlyphSet = project.atomicElementGlyphSet
     yield from _checkUnusedComponents(glyphSet, compoGlyphSet)
@@ -176,6 +189,11 @@ def _checkUnusedComponents(glyphSet, compoGlyphSet):
 
 @lintcheck("deep_component_axis")
 def checkDeepComponentAxes(project):
+    """Check Deep Component axes:
+    - Are all defined axes used?
+    - Are all used axes defined?
+    - Are all axis values within the defined range?
+    """
     glyphSet = project.characterGlyphGlyphSet
     compoGlyphSet = project.deepComponentGlyphSet
     yield from _checkComponentAxes(glyphSet, compoGlyphSet)
@@ -183,6 +201,11 @@ def checkDeepComponentAxes(project):
 
 @lintcheck("atomic_element_axis")
 def checkAtomicElementAxes(project):
+    """Check Atomic Element axes:
+    - Are all defined axes used?
+    - Are all used axes defined?
+    - Are all axis values within the defined range?
+    """
     glyphSet = project.deepComponentGlyphSet
     compoGlyphSet = project.atomicElementGlyphSet
     yield from _checkComponentAxes(glyphSet, compoGlyphSet)
@@ -234,6 +257,7 @@ def _checkComponentAxes(glyphSet, compoGlyphSet):
 
 @lintcheck("contour")
 def checkContours(project):
+    """Check for open contours, and contours that are made of less than three points."""
     for glyphSetName, glyphName, glyph in iterGlyphs(project):
         pen = ContourCheckerPointPen()
         glyph.drawPoints(pen)
@@ -265,6 +289,10 @@ class ContourCheckerPointPen:
 
 @lintcheck("advance")
 def checkAdvance(project):
+    """Check the advance width of character glyphs against the value of
+    "robocjk.defaultGlyphWidth" in fontLib.json.
+    Skip glyphs that have a name starting with "_".
+    """
     defaultAdvanceWidth = project.lib.get("robocjk.defaultGlyphWidth")
     if defaultAdvanceWidth is None:
         yield f"robocjk.defaultGlyphWidth has not been set in *.rcjk/fontLib.json"
