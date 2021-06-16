@@ -80,9 +80,9 @@ def checkLoadGlyph(project):
 def checkInterpolation(project):
     """Check whether a variable glyph can interpolate."""
     for glyphSetName, glyphName, glyph in iterGlyphs(project):
-        location = {axisTag: (v1 + v2) / 2 for axisTag, (v1, v2) in glyph.axes.items()}
         try:
-            _ = glyph.instantiate(location)
+            for varGlyph in glyph.variations:
+                _ = glyph + varGlyph
         except InterpolationError as e:
             yield f"'{glyphName}' {e} (in {glyphSetName})"
 
