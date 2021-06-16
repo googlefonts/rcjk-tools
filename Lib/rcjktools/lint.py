@@ -300,7 +300,7 @@ def checkAdvance(project):
         yield f"robocjk.defaultGlyphWidth has not been set in *.rcjk/fontLib.json"
     else:
         glyphSet = project.characterGlyphGlyphSet
-        for glyphName in project.keys():
+        for glyphName in sorted(project.keys()):
             if glyphName.startswith("_"):
                 continue
             glyph, error = getGlyphWithError(glyphSet, glyphName)
