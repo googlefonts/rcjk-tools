@@ -121,7 +121,10 @@ def checkGlyphIsOrphan(project):
             layerGlyphNames = set(layer.getGlyphNamesAndUnicodes())
             unreachableGlyphNames = layerGlyphNames - glyphNames
             for glyphName in sorted(unreachableGlyphNames):
-                yield f"'{glyphName}' of layer '{layerName}' has no parent (in {glyphSetName})"
+                yield (
+                    f"'{glyphName}' of layer '{layerName}' has no parent "
+                    f"(in {glyphSetName})"
+                )
 
 
 @lintcheck("mix_outlines_components")
@@ -142,10 +145,16 @@ def checkGlyphUnicodeName(project):
         if glyphName.startswith("uni"):
             base = glyphName.split(".")[0]
             if len(base[3:]) < 4:
-                yield f"'{glyphName}' unicode value in glyph name should be at least 4 hex digits"
+                yield (
+                    f"'{glyphName}' unicode value in glyph name should be at least 4 "
+                    f"hex digits"
+                )
             m = hexAllCaps.match(base[3:])
             if m is None:
-                yield f"'{glyphName}' unicode value in glyph name must be uppercase hexadecimal"
+                yield (
+                    f"'{glyphName}' unicode value in glyph name must be uppercase "
+                    f"hexadecimal"
+                )
 
 
 @lintcheck("uni_name_vs_unicodes")
@@ -156,7 +165,10 @@ def checkGlyphUnicodeNameVsUnicodes(project):
             uni = int(glyphName[3:], 16)
             if uni not in glyph.unicodes:
                 unis = ",".join(f"U+{u:04X}" for u in glyph.unicodes)
-                yield f"'{glyphName}' unicode in glyph name does not occur in glyph.unicodes ({unis})"
+                yield (
+                    f"'{glyphName}' unicode in glyph name does not occur in "
+                    f"glyph.unicodes ({unis})"
+                )
 
 
 @lintcheck("unused_deep_component")
@@ -232,20 +244,27 @@ def _checkComponentAxes(glyphSet, compoGlyphSet):
         for compo in glyph.components:
             usedComponentGlyphs.add(compo.name)
             coordAxisRanges = axisRanges.get(compo.name, {})
-            # The following is very common and perhaps not worth a warning, as the behavior
-            # is well defined:
+            # The following is very common and perhaps not worth a warning, as the
+            # behavior is well defined:
             # for axisName in sorted(set(coordAxisRanges) - set(compo.coord)):
-            #     yield f"Axis '{axisName}' not set by '{glyphName}' but is defined for '{compo.name}'"
+            #     yield (
+            #         f"Axis '{axisName}' not set by '{glyphName}' but is defined for "
+            #         f"'{compo.name}'"
+            #     )
             for axisName, axisValue in compo.coord.items():
                 axisRange = coordAxisRanges.get(axisName)
                 if axisRange is None:
-                    yield f"Axis '{axisName}' set by '{glyphName}' but is not defined for '{compo.name}'"
+                    yield (
+                        f"Axis '{axisName}' set by '{glyphName}' but is not defined "
+                        f"for '{compo.name}'"
+                    )
                 else:
                     minValue, maxValue = sorted(axisRange)
                     if not (minValue <= axisValue <= maxValue):
                         yield (
-                            f"Axis value {axisValue} for '{axisName}' as used by '{glyphName}' for "
-                            f"'{compo.name}' is not between {minValue} and {maxValue}"
+                            f"Axis value {axisValue} for '{axisName}' as used by "
+                            f"'{glyphName}' for '{compo.name}' is not between "
+                            f"{minValue} and {maxValue}"
                         )
                 unusedAxes.get(compo.name, set()).discard(axisName)
 
@@ -266,7 +285,10 @@ def checkContours(project):
         if pen.hasOpenContours:
             yield f"'{glyphName} has one or more open contours (in {glyphSetName})"
         if pen.hasShortContours:
-            yield f"'{glyphName} has one or more contours that have fewer than three points (in {glyphSetName})"
+            yield (
+                f"'{glyphName} has one or more contours that have fewer than three "
+                f"points (in {glyphSetName})"
+            )
 
 
 class ContourCheckerPointPen:
@@ -297,7 +319,7 @@ def checkAdvance(project):
     """
     defaultAdvanceWidth = project.lib.get("robocjk.defaultGlyphWidth")
     if defaultAdvanceWidth is None:
-        yield f"robocjk.defaultGlyphWidth has not been set in *.rcjk/fontLib.json"
+        yield "robocjk.defaultGlyphWidth has not been set in *.rcjk/fontLib.json"
     else:
         glyphSet = project.characterGlyphGlyphSet
         for glyphName in sorted(project.keys()):
@@ -343,7 +365,10 @@ def checkGlyphAlternates(project):
             project.drawPointsCharacterGlyph(glyphName, loc, rpen1)
             project.drawPointsCharacterGlyph(baseGlyphName, loc, rpen2)
             if rpen1.value == rpen2.value:
-                yield f"Glyph '{glyphName}' is identical to '{baseGlyphName}' at location {formatLocation(loc)}"
+                yield (
+                    f"Glyph '{glyphName}' is identical to '{baseGlyphName}' at "
+                    f"location {formatLocation(loc)}"
+                )
 
 
 def formatLocation(location):
