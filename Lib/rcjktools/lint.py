@@ -2,8 +2,10 @@ import argparse
 import logging
 import re
 import traceback
+from fontTools.pens.recordingPen import RecordingPointPen
 from .project import RoboCJKProject
 from .objects import InterpolationError
+from .utils import tuplifyLocation
 
 
 VERBOSE = False  # can be overridden by command line
@@ -314,6 +316,31 @@ def checkAdvance(project):
                         f"'{glyphName}' {locStr}does not have the default advance "
                         f"width, {g.width} instead of {defaultAdvanceWidth}"
                     )
+
+
+@lintcheck("alt_glyph")
+def checkGlyphAlternates(project):
+    glyphSet = project.characterGlyphGlyphSet
+    for glyphName in glyphSet.getGlyphNamesAndUnicodes():
+        glyph = glyphSet.getGlyph(glyphName)
+        if "." not in glyphName or glyphName.startswith("_"):
+            continue
+        baseGlyphName, _ = glyphName.split(".", 1)
+        if baseGlyphName not in glyphSet:
+            yield f"Alternate glyph '{glyphName}' has no base glyph '{baseGlyphName}'"
+            continue
+        baseGlyph = glyphSet.getGlyph(baseGlyphName)
+        locations = {tuplifyLocation(vg.location) for vg in glyph.variations}
+        locations &= {tuplifyLocation(vg.location) for vg in baseGlyph.variations}
+        locations = [dict(loc) for loc in sorted(locations)]
+        locations.insert(0, {})
+        for loc in locations:
+            rpen1 = RecordingPointPen()
+            rpen2 = RecordingPointPen()
+            project.drawPointsCharacterGlyph(glyphName, loc, rpen1)
+            project.drawPointsCharacterGlyph(baseGlyphName, loc, rpen2)
+            if rpen1.value == rpen2.value:
+                yield f"Glyph '{glyphName}' is identical to '{baseGlyphName}'"
 
 
 def formatLocation(location):
