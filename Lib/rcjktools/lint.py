@@ -320,6 +320,9 @@ def checkAdvance(project):
 
 @lintcheck("alt_glyph")
 def checkGlyphAlternates(project):
+    """Check whether alternate glyphs have base glyphs, and whether they are
+    different from the base glyph.
+    """
     glyphSet = project.characterGlyphGlyphSet
     for glyphName in sorted(glyphSet.getGlyphNamesAndUnicodes()):
         glyph = glyphSet.getGlyph(glyphName)
