@@ -340,10 +340,12 @@ def checkGlyphAlternates(project):
             project.drawPointsCharacterGlyph(glyphName, loc, rpen1)
             project.drawPointsCharacterGlyph(baseGlyphName, loc, rpen2)
             if rpen1.value == rpen2.value:
-                yield f"Glyph '{glyphName}' is identical to '{baseGlyphName}'"
+                yield f"Glyph '{glyphName}' is identical to '{baseGlyphName}' at location {formatLocation(loc)}"
 
 
 def formatLocation(location):
+    if not location:
+        return "<default>"
     return ",".join(
         f"{axisName}={formatAxisValue(axisValue)}"
         for axisName, axisValue in sorted(location.items())
