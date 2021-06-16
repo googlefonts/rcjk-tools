@@ -94,3 +94,7 @@ def decomposeTwoByTwo(twoByTwo):
         pass
 
     return rotation, scalex, scaley, skewx, skewy
+
+
+def tuplifyLocation(loc):
+    return tuple(sorted(loc.items()))

@@ -3,7 +3,7 @@ from fontTools.pens.pointPen import PointToSegmentPen
 from fontTools.varLib.models import VariationModel, allEqual, normalizeLocation
 from ufoLib2 import Font as UFont
 from .objects import Component, Glyph, MathDict
-from .utils import makeTransformVarCo
+from .utils import makeTransformVarCo, tuplifyLocation
 
 
 class VarCoGlyph(Glyph):
@@ -254,10 +254,6 @@ _transformFieldMapping = {
     "tcenterx": "TCenterX",
     "tcentery": "TCenterY",
 }
-
-
-def tuplifyLocation(loc):
-    return tuple(sorted(loc.items()))
 
 
 if __name__ == "__main__":
