@@ -37,7 +37,7 @@ def iterGlyphs(project):
         for glyphName in sorted(glyphSet.getGlyphNamesAndUnicodes()):
             glyph, _ = getGlyphWithError(glyphSet, glyphName)
             if glyph is not None:
-                yield glyphSetName, glyphName, glyph
+                yield glyphSetName, glyphSet, glyphName, glyph
             # error is handled in checkLoadGlyph()
 
 
@@ -79,7 +79,7 @@ def checkLoadGlyph(project):
 @lintcheck("interpolate")
 def checkInterpolation(project):
     """Check whether a variable glyph can interpolate."""
-    for glyphSetName, glyphName, glyph in iterGlyphs(project):
+    for glyphSetName, glyphSet, glyphName, glyph in iterGlyphs(project):
         try:
             for varGlyph in glyph.variations:
                 _ = glyph + varGlyph
@@ -92,7 +92,7 @@ def checkGlyphExistsInLayer(project):
     """Check whether a glyph in a layer exists, if the parent glyph specifies a
     layerName for a variation.
     """
-    for glyphSetName, glyphName, glyph in iterGlyphs(project):
+    for glyphSetName, glyphSet, glyphName, glyph in iterGlyphs(project):
         for layerName in getattr(glyph, "glyphNotInLayer", ()):
             yield f"'{glyphName}' does not exist in layer '{layerName}'"
 
@@ -100,7 +100,7 @@ def checkGlyphExistsInLayer(project):
 @lintcheck("nested_variations")
 def checkGlyphVariations(project):
     """Check whether variation glyphs have variations themselves."""
-    for glyphSetName, glyphName, glyph in iterGlyphs(project):
+    for glyphSetName, glyphSet, glyphName, glyph in iterGlyphs(project):
         for vg in glyph.variations:
             if vg.variations:
                 yield (
@@ -125,7 +125,7 @@ def checkGlyphIsOrphan(project):
 @lintcheck("mix_outlines_components")
 def checkGlyphMixOutlinesAndComponents(project):
     """Check whether a glyph uses a mix of outlines and components."""
-    for glyphSetName, glyphName, glyph in iterGlyphs(project):
+    for glyphSetName, glyphSet, glyphName, glyph in iterGlyphs(project):
         if not glyph.outline.isEmpty() and glyph.components:
             yield f"'{glyphName}' mixes outlines and components (in {glyphSetName})"
 
@@ -136,7 +136,7 @@ hexAllCaps = re.compile("[0-9A-F]+$")
 @lintcheck("uni_name")
 def checkGlyphUnicodeName(project):
     """Check the validity of uniXXXX glyph names."""
-    for glyphSetName, glyphName, glyph in iterGlyphs(project):
+    for glyphSetName, glyphSet, glyphName, glyph in iterGlyphs(project):
         if glyphName.startswith("uni"):
             base = glyphName.split(".")[0]
             if len(base[3:]) < 4:
@@ -149,7 +149,7 @@ def checkGlyphUnicodeName(project):
 @lintcheck("uni_name_vs_unicodes")
 def checkGlyphUnicodeNameVsUnicodes(project):
     """Check uniXXXX glyph names against glyph.unicodes."""
-    for glyphSetName, glyphName, glyph in iterGlyphs(project):
+    for glyphSetName, glyphSet, glyphName, glyph in iterGlyphs(project):
         if glyphName.startswith("uni") and "." not in glyphName:
             uni = int(glyphName[3:], 16)
             if uni not in glyph.unicodes:
@@ -258,7 +258,7 @@ def _checkComponentAxes(glyphSet, compoGlyphSet):
 @lintcheck("contour")
 def checkContours(project):
     """Check for open contours, and contours that are made of less than three points."""
-    for glyphSetName, glyphName, glyph in iterGlyphs(project):
+    for glyphSetName, glyphSet, glyphName, glyph in iterGlyphs(project):
         pen = ContourCheckerPointPen()
         glyph.drawPoints(pen)
         if pen.hasOpenContours:
