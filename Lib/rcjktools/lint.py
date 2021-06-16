@@ -321,7 +321,7 @@ def checkAdvance(project):
 @lintcheck("alt_glyph")
 def checkGlyphAlternates(project):
     glyphSet = project.characterGlyphGlyphSet
-    for glyphName in glyphSet.getGlyphNamesAndUnicodes():
+    for glyphName in sorted(glyphSet.getGlyphNamesAndUnicodes()):
         glyph = glyphSet.getGlyph(glyphName)
         if "." not in glyphName or glyphName.startswith("_"):
             continue
