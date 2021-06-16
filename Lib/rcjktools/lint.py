@@ -135,7 +135,7 @@ hexAllCaps = re.compile("[0-9A-F]+$")
 
 @lintcheck("uni_name")
 def checkGlyphUnicodeName(project):
-    """Check validity of uniXXXX glyph names."""
+    """Check the validity of uniXXXX glyph names."""
     for glyphSetName, glyphName, glyph in iterGlyphs(project):
         if glyphName.startswith("uni"):
             base = glyphName.split(".")[0]
