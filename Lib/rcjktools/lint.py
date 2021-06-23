@@ -34,8 +34,10 @@ def iterGlyphSets(project):
         yield glyphSetName, getattr(project, glyphSetName)
 
 
-def iterGlyphs(project):
+def iterGlyphs(project, onlyGlyphSetName=None):
     for glyphSetName, glyphSet in iterGlyphSets(project):
+        if onlyGlyphSetName is not None and onlyGlyphSetName != glyphSetName:
+            continue
         for glyphName in sorted(glyphSet.getGlyphNamesAndUnicodes()):
             glyph, _ = getGlyphWithError(glyphSet, glyphName)
             if glyph is not None:
@@ -369,6 +371,20 @@ def checkGlyphAlternates(project):
                     f"Glyph '{glyphName}' is identical to '{baseGlyphName}' at "
                     f"location {formatLocation(loc)}"
                 )
+
+
+@lintcheck("glyph_wght")
+def checkGlyphHasWghtVariation(project):
+    for glyphSetName, glyphSet, glyphName, glyph in iterGlyphs(
+        project, "characterGlyphGlyphSet"
+    ):
+        if glyphName.startswith("_"):
+            continue
+        for varGlyph in glyph.variations:
+            if list(varGlyph.location) == ["wght"]:
+                break
+        else:
+            yield f"Glyph '{glyphName}' has no variation for 'wght'"
 
 
 def formatLocation(location):
