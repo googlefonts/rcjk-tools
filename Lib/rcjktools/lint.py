@@ -375,6 +375,7 @@ def checkGlyphAlternates(project):
 
 @lintcheck("glyph_wght")
 def checkGlyphHasWghtVariation(project):
+    """Check whether all character glyphs participate in the 'wght' axis."""
     for glyphSetName, glyphSet, glyphName, glyph in iterGlyphs(
         project, "characterGlyphGlyphSet"
     ):
