@@ -381,7 +381,7 @@ def checkGlyphHasWghtVariation(project):
         if glyphName.startswith("_"):
             continue
         for varGlyph in glyph.variations:
-            if list(varGlyph.location) == ["wght"]:
+            if varGlyph.location.get("wght") != 0:
                 break
         else:
             yield f"Glyph '{glyphName}' has no variation for 'wght'"
