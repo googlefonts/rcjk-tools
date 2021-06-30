@@ -102,6 +102,24 @@ def checkGlyphExistsInLayer(project):
             yield f"'{glyphName}' does not exist in layer '{layerName}'"
 
 
+@lintcheck("layer_name")
+def checkGlyphWithOutlineHasLayerNames(project):
+    """For glyphs with outlines, check whether all variation glyphs have
+    their 'layerName' set.
+    """
+    for glyphSetName, glyphSet, glyphName, glyph in iterGlyphs(project):
+        if glyph.outline.isEmpty():
+            continue
+        for varDict in glyph.lib.get("robocjk.variationGlyphs"):
+            if not varDict.get("layerName"):
+                sourceName = varDict.get("sourceName", "")
+                location = formatLocation(varDict.get("location"))
+                yield (
+                    f"Glyph '{glyphName}' has outline but does not set 'layerName' "
+                    f"field; sourceName='{sourceName}', location={location}"
+                )
+
+
 @lintcheck("nested_variations")
 def checkGlyphVariations(project):
     """Check whether variation glyphs have variations themselves."""
