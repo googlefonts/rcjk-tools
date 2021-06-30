@@ -374,37 +374,6 @@ def checkGlyphAlternates(project):
                 )
 
 
-@lintcheck("glyph_wght")
-def checkGlyphHasWghtVariation(project):
-    """Check whether all character glyphs participate in the 'wght' axis."""
-    for glyphSetName, glyphSet, glyphName, glyph in iterGlyphs(
-        project, "characterGlyphGlyphSet"
-    ):
-        if glyphName.startswith("_"):
-            continue
-        for varGlyph in glyph.variations:
-            if varGlyph.location.get("wght") != 0:
-                break
-        else:
-            yield f"Glyph '{glyphName}' has no variation for 'wght'"
-
-
-@lintcheck("disabled_layer")
-def checkGlyphHasDisabledLayer(project):
-    """Check whether a glyph has variation glyphs that are disabled."""
-    for glyphSetName, glyphSet, glyphName, glyph in iterGlyphs(project):
-        for varDict in glyph.lib.get("robocjk.variationGlyphs", ()):
-            if varDict.get("on") == 0:
-                sourceName = varDict.get("sourceName", "")
-                layerName = varDict.get("layerName", "")
-                location = formatLocation(varDict.get("location"))
-                yield (
-                    f"Glyph '{glyphName}' has a disabled layer: "
-                    f"sourceName='{sourceName}', layerName='{layerName}', "
-                    f"location={location}"
-                )
-
-
 def formatLocation(location):
     if not location:
         return "<default>"
