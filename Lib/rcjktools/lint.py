@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import re
 import traceback
 from fontTools.pens.recordingPen import RecordingPointPen
@@ -447,12 +448,22 @@ def main():
         default=set(),
         help="Comma separated list of checks to exclude",
     )
+    parser.add_argument(
+        "--custom-checks",
+        type=existingPythonSource,
+        action="append",
+        default=[],
+        help="A custom Python file containing custom lint checks",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.ERROR)
     if args.verbose:
         global VERBOSE
         VERBOSE = True
+
+    for customChecksSource in args.custom_checks:
+        execFile(customChecksSource)
 
     for projectPath in args.rcjkproject:
         project = RoboCJKProject(projectPath)
@@ -468,6 +479,20 @@ def main():
                 print(f"{projectPath}:{checkName}: ERROR {e!r}")
                 if args.verbose:
                     traceback.print_exc()
+
+
+def existingPythonSource(path):
+    if not os.path.isfile(path):
+        raise argparse.ArgumentTypeError(f"not an existing file: '{path}'")
+    if os.path.splitext(path)[1].lower() != ".py":
+        raise argparse.ArgumentTypeError(f"not a Python source file: '{path}'")
+    return path
+
+
+def execFile(path):
+    with open(path) as f:
+        code = compile(f.read(), path, 'exec')
+        exec(code)
 
 
 if __name__ == "__main__":
