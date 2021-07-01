@@ -479,7 +479,7 @@ def existingPythonSource(path):
 def execFile(path):
     with open(path) as f:
         code = compile(f.read(), path, "exec")
-        exec(code)
+        exec(code, {})
 
 
 if __name__ == "__main__":
