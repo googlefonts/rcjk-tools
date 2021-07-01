@@ -17,6 +17,7 @@ checks = {}
 
 def lintcheck(checkName):
     def wrap(checkFunc):
+        assert checkName not in checks, f"Check '{checkName}' already exists"
         checks[checkName] = checkFunc
         return checkFunc
 
