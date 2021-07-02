@@ -1,4 +1,6 @@
 import argparse
+from collections import defaultdict
+from itertools import groupby
 import logging
 import os
 import re
@@ -368,29 +370,38 @@ def checkGlyphAlternates(project):
     different from the base glyph.
     """
     glyphSet = project.characterGlyphGlyphSet
-    for glyphName in sorted(glyphSet.getGlyphNamesAndUnicodes()):
-        glyph = glyphSet.getGlyph(glyphName)
-        if "." not in glyphName or glyphName.startswith("_"):
+    glyphNames = sorted(glyphSet.getGlyphNamesAndUnicodes())
+    for baseName, altNames in groupby(glyphNames, key=lambda gn: gn.split(".")[0]):
+        altNames = list(altNames)
+        if len(altNames) == 1:
             continue
-        baseGlyphName, _ = glyphName.split(".", 1)
-        if baseGlyphName not in glyphSet:
-            yield f"Alternate glyph '{glyphName}' has no base glyph '{baseGlyphName}'"
-            continue
-        baseGlyph = glyphSet.getGlyph(baseGlyphName)
-        locations = {tuplifyLocation(vg.location) for vg in glyph.variations}
-        locations &= {tuplifyLocation(vg.location) for vg in baseGlyph.variations}
+        glyphs = [glyphSet.getGlyph(glyphName) for glyphName in altNames]
+        locations = set()
+        for g in glyphs:
+            locations.update(tuplifyLocation(vg.location) for vg in g.variations)
         locations = [dict(loc) for loc in sorted(locations)]
         locations.insert(0, {})
+
         for loc in locations:
-            rpen1 = RecordingPointPen()
-            rpen2 = RecordingPointPen()
-            project.drawPointsCharacterGlyph(glyphName, loc, rpen1)
-            project.drawPointsCharacterGlyph(baseGlyphName, loc, rpen2)
-            if rpen1.value == rpen2.value:
-                yield (
-                    f"Glyph '{glyphName}' is identical to '{baseGlyphName}' at "
-                    f"location {formatLocation(loc)}"
-                )
+            outlines = defaultdict(list)
+            for g in glyphs:
+                rpen = RecordingPointPen()
+                project.drawPointsCharacterGlyph(g.name, loc, rpen)
+                outlines[tuplifyOutline(rpen.value)].append(g.name)
+            for sameNames in outlines.values():
+                if len(sameNames) > 1:
+                    sameNames = [f"'{n}'" for n in sameNames]
+                    sameNames = ", ".join(sameNames[:-1]) + " and " + sameNames[-1]
+                    yield (
+                        f"Glyphs {sameNames} are identical "
+                        f"location {formatLocation(loc)}"
+                    )
+
+
+def tuplifyOutline(valueList):
+    return tuple(
+        (m, args, tuple(sorted(kwargs.items()))) for m, args, kwargs in valueList
+    )
 
 
 def formatLocation(location):
