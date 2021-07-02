@@ -394,7 +394,7 @@ def checkGlyphAlternates(project):
                     sameNames = ", ".join(sameNames[:-1]) + " and " + sameNames[-1]
                     yield (
                         f"Glyphs {sameNames} are identical "
-                        f"location {formatLocation(loc)}"
+                        f"at location {formatLocation(loc)}"
                     )
 
 
