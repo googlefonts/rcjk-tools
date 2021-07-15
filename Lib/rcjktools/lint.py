@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import traceback
+import unicodedata
 from fontTools.pens.recordingPen import RecordingPointPen
 from .project import RoboCJKProject
 from .objects import InterpolationError
@@ -346,21 +347,38 @@ def checkAdvance(project):
         yield "robocjk.defaultGlyphWidth has not been set in *.rcjk/fontLib.json"
     else:
         glyphSet = project.characterGlyphGlyphSet
+        revMap = project.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
         for glyphName in sorted(project.keys()):
             if glyphName.startswith("_"):
                 continue
             glyph, error = getGlyphWithError(glyphSet, glyphName)
             if error:
                 continue
+            unicodes = revMap[glyphName]
+            if not unicodes:
+                if glyphName.startswith("uni"):
+                    uni = int(glyphName[3:].split(".")[0], 16)
+                else:
+                    continue
+            else:
+                uni = unicodes[0]
+            eastAsianWidth = unicodedata.east_asian_width(chr(uni))
+            if eastAsianWidth == "H":
+                targetWidth = defaultAdvanceWidth / 2
+            elif eastAsianWidth in {"W", "F"}:
+                targetWidth = defaultAdvanceWidth
+            else:
+                continue
+
             for g in [glyph] + glyph.variations:
-                if g.width != defaultAdvanceWidth:
+                if g.width != targetWidth:
                     if not g.location:
                         locStr = ""
                     else:
                         locStr = f"at {formatLocation(g.location)} "
                     yield (
-                        f"'{glyphName}' {locStr}does not have the default advance "
-                        f"width, {g.width} instead of {defaultAdvanceWidth}"
+                        f"'{glyphName}' {locStr}does not have the expected advance "
+                        f"width, {g.width} instead of {targetWidth}"
                     )
 
 
