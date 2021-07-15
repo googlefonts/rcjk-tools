@@ -368,17 +368,24 @@ def checkAdvance(project):
             elif eastAsianWidth in {"W", "F"}:
                 targetWidth = defaultAdvanceWidth
             else:
-                continue
+                category = unicodedata.category(chr(uni))
+                if category in {"Mn"}:
+                    targetWidth = 0
+                else:
+                    targetWidth = None
 
             for g in [glyph] + glyph.variations:
-                if g.width != targetWidth:
+                if (targetWidth is None and g.width <= 100) or (
+                    targetWidth is not None and g.width != targetWidth
+                ):
                     if not g.location:
                         locStr = ""
                     else:
                         locStr = f"at {formatLocation(g.location)} "
                     yield (
                         f"'{glyphName}' {locStr}does not have the expected advance "
-                        f"width, {g.width} instead of {targetWidth}"
+                        f"width, {g.width} instead of "
+                        f"{'greater than 0' if targetWidth is None else targetWidth}"
                     )
 
 
