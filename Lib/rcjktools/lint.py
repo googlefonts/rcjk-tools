@@ -465,7 +465,7 @@ def main():
         execFile(customChecksSource)
 
     for projectPath in args.rcjkproject:
-        project = RoboCJKProject(projectPath)
+        project = RoboCJKProject(projectPath, decomposeClassicComponents=True)
         for checkName, checkFunc in checks.items():
             if args.include and checkName not in args.include:
                 continue
