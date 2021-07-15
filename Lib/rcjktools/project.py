@@ -119,8 +119,7 @@ class RoboCJKProject:
                     compoOutline, cdc, ccc, cw = self.instantiateCharacterGlyph(
                         component.name, location
                     )
-                    assert not cdc
-                    assert not ccc
+                    assert not ccc, ccc
                     compoOutline = compoOutline.transform(transform)
                     deepItems.append(
                         (component.name, [("<classic component>", compoOutline)])
