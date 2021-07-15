@@ -370,6 +370,7 @@ def checkAdvance(project):
             else:
                 category = unicodedata.category(chr(uni))
                 if category in {"Mn"}:
+                    # Non-spacing marks
                     targetWidth = 0
                 else:
                     targetWidth = None  # advance must be greater than 0
