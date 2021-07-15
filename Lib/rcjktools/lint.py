@@ -372,10 +372,10 @@ def checkAdvance(project):
                 if category in {"Mn"}:
                     targetWidth = 0
                 else:
-                    targetWidth = None
+                    targetWidth = None  # advance must be greater than 0
 
             for g in [glyph] + glyph.variations:
-                if (targetWidth is None and g.width <= 100) or (
+                if (targetWidth is None and g.width <= 10) or (
                     targetWidth is not None and g.width != targetWidth
                 ):
                     if not g.location:
