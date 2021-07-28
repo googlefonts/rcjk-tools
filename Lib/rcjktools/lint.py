@@ -490,6 +490,7 @@ def main():
     for customChecksSource in args.custom_checks:
         execFile(customChecksSource)
 
+    previousMsgGroup = None
     for projectPath in args.rcjkproject:
         project = RoboCJKProject(projectPath, decomposeClassicComponents=True)
         for checkName, checkFunc in checks.items():
@@ -499,6 +500,10 @@ def main():
                 continue
             try:
                 for msg in checkFunc(project):
+                    msgGroup = (projectPath, checkName)
+                    if previousMsgGroup is not None and msgGroup != previousMsgGroup:
+                        print()
+                    previousMsgGroup = msgGroup
                     print(f"{projectPath}:{checkName}: {msg}")
             except Exception as e:
                 print(f"{projectPath}:{checkName}: ERROR {e!r}")
