@@ -87,10 +87,6 @@ class VarCoFont:
     def __init__(self, designSpacePath):
         doc = DesignSpaceDocument.fromfile(designSpacePath)
         self.axes, self.ufos, self.locations = unpackDesignSpace(doc)
-        self.glyphAxes = {}
-        for axisName, (minValue, defaultValue, maxValue) in self.axes.items():
-            assert minValue == defaultValue
-            self.glyphAxes[axisName] = minValue, maxValue
         self.varcoGlyphs = {}
 
     def drawGlyph(self, pen, glyphName, location):
@@ -125,7 +121,7 @@ class VarCoFont:
         varcoGlyph = self.varcoGlyphs.get(glyphName)
         if varcoGlyph is None:
             varcoGlyph = VarCoGlyph.loadFromUFOs(
-                self.ufos, self.locations, glyphName, self.glyphAxes
+                self.ufos, self.locations, glyphName, self.axes
             )
             self.varcoGlyphs[glyphName] = varcoGlyph
         return varcoGlyph
