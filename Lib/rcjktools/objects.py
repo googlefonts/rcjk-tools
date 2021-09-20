@@ -6,6 +6,7 @@ from fontTools.pens.filterPen import FilterPointPen
 from fontTools.pens.pointPen import PointToSegmentPen, SegmentToPointPen
 from fontTools.pens.recordingPen import RecordingPointPen
 from fontTools.ufoLib.glifLib import readGlyphFromString
+from fontTools.varLib.models import normalizeLocation
 
 
 logger = logging.getLogger(__name__)
@@ -108,25 +109,6 @@ class Glyph(_MathMixin):
             for compo1, compo2 in zip(self.components, other.components)
         ]
         return result
-
-
-def normalizeLocation(location, axes):
-    location = {
-        axisName: normalizeValue(v, *axes.get(axisName, (0, 1)))
-        for axisName, v in location.items()
-    }
-    return _clampLocation(location)
-
-
-def normalizeValue(value, minValue, maxValue):
-    # minValue and maxValue are effectively initialValue and finalValue,
-    # so maxValue may be less than minValue
-    # assert minValue < maxValue
-    return (value - minValue) / (maxValue - minValue)
-
-
-def _clampLocation(d):
-    return {k: min(1, max(0, v)) for k, v in d.items()}
 
 
 class Component(NamedTuple):

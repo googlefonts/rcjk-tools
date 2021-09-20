@@ -8,7 +8,7 @@ from fontTools.misc.fixedTools import otRound
 from fontTools.pens.roundingPen import RoundingPointPen
 from fontTools.pens.pointPen import PointToSegmentPen
 from fontTools.ufoLib.filenames import userNameToFileName
-from fontTools.varLib.models import VariationModel
+from fontTools.varLib.models import VariationModel, normalizeLocation
 
 try:
     from ufo2ft.constants import FILTERS_KEY
@@ -23,7 +23,6 @@ from .objects import (
     InterpolationError,
     MathDict,
     MathOutline,
-    normalizeLocation,
 )
 from .utils import decomposeTwoByTwo, makeTransform
 
@@ -652,10 +651,14 @@ class RCJKGlyph(Glyph):
             dcNames.append(dc["name"])
             self.components.append(_unpackDeepComponent(dc))
 
-        self.axes = {
-            axisDict["name"]: (axisDict["minValue"], axisDict["maxValue"])
-            for axisDict in self.lib.get("robocjk.axes", [])
-        }
+        axes = {}
+        for axisDict in self.lib.get("robocjk.axes", []):
+            minValue = axisDict["minValue"]
+            maxValue = axisDict["maxValue"]
+            defaultValue = axisDict.get("defaultValue", minValue)
+            minValue, maxValue = sorted([minValue, maxValue])
+            axes[axisDict["name"]] = minValue, defaultValue, maxValue
+        self.axes = axes
 
         variationGlyphs = self.lib.get("robocjk.variationGlyphs")
         if variationGlyphs is None:
@@ -727,9 +730,7 @@ def _unpackDeepComponent(dc, name=None):
 
 def _isLocationOutOfBounds(location, axes):
     for axisName, axisValue in location.items():
-        minValue, maxValue = axes.get(axisName, (0, 1))
-        # These values should be seen as "initialValue" and "finalValue"
-        minValue, maxValue = sorted([minValue, maxValue])
+        minValue, defaultValue, maxValue = axes.get(axisName, (0, 0, 1))
         if not (minValue <= axisValue <= maxValue):
             return True
     return False
@@ -794,10 +795,7 @@ def rcjk2ufo():
     styleName = args.stylename if args.stylename else styleNameDefault
     if location:
         axes = {}
-        for axisName, (minValue, defaultValue, maxValue) in project.axes.items():
-            assert minValue == defaultValue
-            axes[axisName] = minValue, maxValue
-        location = normalizeLocation(location, axes)
+        location = normalizeLocation(location, project.axes)
         print("normalized location:", location)
         project.saveFlattenedUFO(
             args.ufo, location, familyName, styleName, characterSet=characterSet
