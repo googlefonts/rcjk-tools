@@ -660,6 +660,8 @@ class RCJKGlyph(Glyph):
             axes[axisDict["name"]] = minValue, defaultValue, maxValue
         self.axes = axes
 
+        self.status = self.lib.get("robocjk.status", 0)
+
         variationGlyphs = self.lib.get("robocjk.variationGlyphs")
         if variationGlyphs is None:
             return
@@ -687,6 +689,8 @@ class RCJKGlyph(Glyph):
             else:
                 varGlyph = self.__class__()
                 varGlyph.width = self.width
+
+            varGlyph.status = varDict.get("status", 0)
 
             varGlyph.location = varDict["location"]
             if _isLocationOutOfBounds(varGlyph.location, self.axes):
