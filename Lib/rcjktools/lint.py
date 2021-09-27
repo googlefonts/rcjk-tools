@@ -284,7 +284,8 @@ def _checkComponentAxes(glyphSet, compoGlyphSet):
                         f"for '{compo.name}'"
                     )
                 else:
-                    minValue, maxValue = sorted(axisRange)
+                    minValue, defaultValue, maxValue = axisRange
+                    assert minValue <= defaultValue <= maxValue
                     if not (minValue <= axisValue <= maxValue):
                         yield (
                             f"Axis value {axisValue} for '{axisName}' as used by "
