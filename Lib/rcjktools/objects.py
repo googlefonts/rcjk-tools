@@ -66,6 +66,30 @@ class Glyph(_MathMixin):
         self.variations = []
         self.model = None
         self.deltas = None
+        self._ensuredComponentCoords = False
+
+    def ensureComponentCoords(self, glyphSet):
+        if self._ensuredComponentCoords:
+            return
+        # This method fills in any gaps in component coords: if an axis
+        # is not specified, insert the default value for that axis.
+        compoNames = [compo.name for compo in self.components]
+        compoAxes = []
+        for compo in self.components:
+            if compo.name not in glyphSet:
+                # classic component
+                compoAxes.append(None)
+            else:
+                compoGlyph = glyphSet.getGlyph(compo.name)
+                compoAxes.append(compoGlyph.axes)
+        assert len(compoAxes) == len(compoNames)
+        for glyph in [self] + self.variations:
+            assert len(compoAxes) == len(glyph.components)
+            for compo, axes in zip(glyph.components, compoAxes):
+                for axisName, (minValue, defaultValue, maxValue) in axes.items():
+                    if axisName not in compo.coord:
+                        compo.coord[axisName] = defaultValue
+        self._ensuredComponentCoords = True
 
     def getPointPen(self):
         return self.outline

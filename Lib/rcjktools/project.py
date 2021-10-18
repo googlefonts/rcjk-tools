@@ -107,6 +107,7 @@ class RoboCJKProject:
 
     def instantiateCharacterGlyph(self, glyphName, location):
         glyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
+        glyph.ensureComponentCoords(self.deepComponentGlyphSet)
         glyph = glyph.instantiate(location)
         deepItems = []
         classicComponents = []
@@ -136,6 +137,7 @@ class RoboCJKProject:
 
     def instantiateDeepComponent(self, glyphName, location, transform):
         glyph = self.deepComponentGlyphSet.getGlyph(glyphName)
+        glyph.ensureComponentCoords(self.atomicElementGlyphSet)
         glyph = glyph.instantiate(location)
         atomicOutlines = []
         for component in glyph.components:
