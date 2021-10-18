@@ -86,6 +86,8 @@ class Glyph(_MathMixin):
         for glyph in [self] + self.variations:
             assert len(compoAxes) == len(glyph.components)
             for compo, axes in zip(glyph.components, compoAxes):
+                if axes is None:
+                    continue
                 for axisName, (minValue, defaultValue, maxValue) in axes.items():
                     if axisName not in compo.coord:
                         compo.coord[axisName] = defaultValue
