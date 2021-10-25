@@ -244,11 +244,18 @@ class RoboCJKProject:
         doc.write(designspacePath)
         ufo.save(ufoPath, overwrite=True)
 
-    def addGlyphsToVarCoUFO(self, ufo, globalAxisNames, characterSet=None):
+    def addGlyphsToVarCoUFO(
+        self, ufo, globalAxisNames, characterSet=None, glyphSet=None
+    ):
+        if characterSet is not None and glyphSet is not None:
+            raise TypeError("can't pass both characterSet and glyphSet")
         revCmap = self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
         characterGlyphNames = []
         for glyphName in filterGlyphNames(sorted(revCmap)):
-            if characterSet is not None:
+            if glyphSet is not None:
+                if glyphName not in glyphSet:
+                    continue
+            elif characterSet is not None:
                 codePoints = set(revCmap[glyphName])
                 if not codePoints & characterSet:
                     continue
