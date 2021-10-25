@@ -17,13 +17,7 @@ except ImportError:
     from ufo2ft.filters import UFO2FT_FILTERS_KEY as FILTERS_KEY
 from ufoLib2.objects import Font as UFont, Glyph as UGlyph
 
-from .objects import (
-    Component,
-    Glyph,
-    InterpolationError,
-    MathDict,
-    MathOutline,
-)
+from .objects import Component, Glyph, InterpolationError, MathDict, MathOutline
 from .utils import decomposeTwoByTwo, makeTransform
 
 
@@ -143,9 +137,7 @@ class RoboCJKProject:
         for component in glyph.components:
             t = transform.transform(makeTransform(**component.transform))
             atomicOutline = self.instantiateAtomicElement(
-                component.name,
-                component.coord,
-                t,
+                component.name, component.coord, t
             )
             atomicOutlines.append((component.name, atomicOutline))
         return atomicOutlines
@@ -237,11 +229,7 @@ class RoboCJKProject:
 
         ufo = setupFont(familyName, styleName)
         ufo.lib[FILTERS_KEY] = [
-            dict(
-                namespace="rcjktools",
-                name="AddBaseGlyphs",
-                pre=False,
-            ),
+            dict(namespace="rcjktools", name="AddBaseGlyphs", pre=False)
         ]
         features = self.features
         if features:
@@ -277,7 +265,8 @@ class RoboCJKProject:
                 characterGlyphNames.append(glyphName)
                 if glyph.components and not glyph.outline.isEmpty():
                     logger.warning(
-                        f"decomposing {glyphName}: it has both an outline and components"
+                        f"decomposing {glyphName}: it has both an outline and"
+                        " components"
                     )
                     self.decomposeCharacterGlyph(glyphName)
 
@@ -366,12 +355,7 @@ def buildDesignSpaceDocument(ufo, ufoPath, globalAxes, globalAxisNames):
         assert axisName.startswith("V")
         assert len(axisName) == 4
         doc.addAxisDescriptor(
-            name=axisName,
-            tag=axisName,
-            minimum=0,
-            default=0,
-            maximum=1,
-            hidden=True,
+            name=axisName, tag=axisName, minimum=0, default=0, maximum=1, hidden=True
         )
     return doc
 
@@ -486,10 +470,7 @@ def rcjkGlyphToVarCoGlyph(rcjkGlyph, glyph, renameTable, componentSourceGlyphSet
             coord = {
                 axisNameMapping[k]: v for k, v in coord.items() if k in axisNameMapping
             }
-        info = dict(
-            coord=coord,
-            transform=varCoTransform,
-        )
+        info = dict(coord=coord, transform=varCoTransform)
         compoVarInfo.append(info)
     if compoVarInfo:
         glyph.lib["varco.components"] = compoVarInfo
@@ -623,7 +604,7 @@ def extractGlyphNameAndUnicodes(data, fileName=None):
         refFileName = userNameToFileName(glyphName, suffix=".glif")
         if refFileName != fileName:
             logger.warning(
-                f"actual file name does not match predicted file name: "
+                "actual file name does not match predicted file name: "
                 f"{refFileName} {fileName} {glyphName}"
             )
     unicodes = [int(u, 16) for u in _unicodePat.findall(data)]
@@ -709,8 +690,8 @@ class RCJKGlyph(Glyph):
             deepComponents = varDict.get("deepComponents", [])
             if len(dcNames) != len(deepComponents):
                 raise ComponentMismatchError(
-                    f"different number of components in variations: "
-                    f"{len(dcNames)} vs {len(deepComponents)}",
+                    "different number of components in variations: "
+                    f"{len(dcNames)} vs {len(deepComponents)}"
                 )
             for dc, dcName in zip(deepComponents, dcNames):
                 varGlyph.components.append(_unpackDeepComponent(dc, dcName))
@@ -764,16 +745,20 @@ def rcjk2ufo():
         metavar="AXIS=LOC",
         nargs="*",
         default=[],
-        help="List of space separated locations. A location consist in "
-        "the name of a variation axis, followed by '=' and a number. E.g.: "
-        " wght=700 wdth=80. If no location is given, a VarCo UFO will be "
-        "written, as well as a .designspace file.",
+        help=(
+            "List of space separated locations. A location consist in "
+            "the name of a variation axis, followed by '=' and a number. E.g.: "
+            " wght=700 wdth=80. If no location is given, a VarCo UFO will be "
+            "written, as well as a .designspace file."
+        ),
     )
     parser.add_argument(
         "--characters",
         type=argparse.FileType("r", encoding="utf-8"),
-        help="A path to a UTF-8 encoded text file containing characters to include "
-        "in the exported UFO. When omitted, all characters will be exported.",
+        help=(
+            "A path to a UTF-8 encoded text file containing characters to include "
+            "in the exported UFO. When omitted, all characters will be exported."
+        ),
     )
     parser.add_argument("rcjk", help="The .rcjk project folder")
     parser.add_argument("ufo", help="The output .ufo")
