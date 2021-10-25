@@ -215,17 +215,6 @@ class RoboCJKProject:
         """Save a UFO with Variable Components glyph.lib extensions."""
         # NOTE: this has quite a few GS-CJK assumptions that may or may
         # not be fair for RoboCJK projects in general.
-        globalAxes = [
-            dict(
-                name=self.axisNames[axisTag],
-                tag=axisTag,
-                minimum=minValue,
-                default=defaultValue,
-                maximum=maxValue,
-            )
-            for axisTag, (minValue, defaultValue, maxValue) in self.axes.items()
-        ]
-        globalAxisNames = set(self.axes.keys())
 
         ufo = setupFont(familyName, styleName)
         ufo.lib[FILTERS_KEY] = [
@@ -235,9 +224,9 @@ class RoboCJKProject:
         if features:
             ufo.features.text = features
 
-        self.addGlyphsToVarCoUFO(ufo, globalAxisNames, characterSet)
+        self.addGlyphsToVarCoUFO(ufo, set(self.axes.keys()), characterSet)
 
-        doc = buildDesignSpaceDocument(ufo, ufoPath, globalAxes, globalAxisNames)
+        doc = buildDesignSpaceDocument(ufo, ufoPath, self.axes, self.axisNames)
 
         ufoPath = pathlib.Path(ufoPath)
         designspacePath = ufoPath.parent / (ufoPath.stem + ".designspace")
@@ -323,8 +312,20 @@ class RoboCJKProject:
             )
 
 
-def buildDesignSpaceDocument(ufo, ufoPath, globalAxes, globalAxisNames):
+def buildDesignSpaceDocument(ufo, ufoPath, axes, axisNames):
     from fontTools.designspaceLib import DesignSpaceDocument
+
+    globalAxisNames = set(axes.keys())
+    globalAxes = [
+        dict(
+            name=axisNames[axisTag],
+            tag=axisTag,
+            minimum=minValue,
+            default=defaultValue,
+            maximum=maxValue,
+        )
+        for axisTag, (minValue, defaultValue, maxValue) in axes.items()
+    ]
 
     globalAxisMapping = {
         axis["tag"]: (axis["name"], axis["minimum"], axis["maximum"])
