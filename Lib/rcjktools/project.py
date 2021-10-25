@@ -247,6 +247,16 @@ class RoboCJKProject:
         if features:
             ufo.features.text = features
 
+        self.addGlyphsToVarCoUFO(ufo, globalAxisNames, characterSet)
+
+        doc = buildDesignSpaceDocument(ufo, ufoPath, globalAxes, globalAxisNames)
+
+        ufoPath = pathlib.Path(ufoPath)
+        designspacePath = ufoPath.parent / (ufoPath.stem + ".designspace")
+        doc.write(designspacePath)
+        ufo.save(ufoPath, overwrite=True)
+
+    def addGlyphsToVarCoUFO(self, ufo, globalAxisNames, characterSet=None):
         revCmap = self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
         characterGlyphNames = []
         for glyphName in filterGlyphNames(sorted(revCmap)):
@@ -315,13 +325,6 @@ class RoboCJKProject:
                 None,
                 None,
             )
-
-        doc = buildDesignSpaceDocument(ufo, ufoPath, globalAxes, globalAxisNames)
-
-        ufoPath = pathlib.Path(ufoPath)
-        designspacePath = ufoPath.parent / (ufoPath.stem + ".designspace")
-        doc.write(designspacePath)
-        ufo.save(ufoPath, overwrite=True)
 
 
 def buildDesignSpaceDocument(ufo, ufoPath, globalAxes, globalAxisNames):
