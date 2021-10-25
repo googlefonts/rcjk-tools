@@ -71,26 +71,30 @@ class Glyph(_MathMixin):
     def ensureComponentCoords(self, glyphSet):
         if self._ensuredComponentCoords:
             return
-        # This method fills in any gaps in component coords: if an axis
-        # is not specified, insert the default value for that axis.
-        compoNames = [compo.name for compo in self.components]
-        compoAxes = []
-        for compo in self.components:
+
+        for compoIndex, compo in enumerate(self.components):
             if compo.name not in glyphSet:
                 # classic component
-                compoAxes.append(None)
-            else:
-                compoGlyph = glyphSet.getGlyph(compo.name)
-                compoAxes.append(compoGlyph.axes)
-        assert len(compoAxes) == len(compoNames)
-        for glyph in [self] + self.variations:
-            assert len(compoAxes) == len(glyph.components)
-            for compo, axes in zip(glyph.components, compoAxes):
-                if axes is None:
-                    continue
-                for axisName, (minValue, defaultValue, maxValue) in axes.items():
-                    if axisName not in compo.coord:
+                continue
+
+            allAxisNames = {
+                axisName
+                for g in [self] + self.variations
+                for axisName in g.components[compoIndex].coord
+            }
+            compoGlyph = glyphSet.getGlyph(compo.name)
+            allAxisNames &= set(compoGlyph.axes)
+            for axisName in sorted(allAxisNames):
+                defaultValue = compoGlyph.axes[axisName][1]
+                axisValues = [g.components[compoIndex].coord.get(axisName) for g in [self] + self.variations]
+                if None in axisValues:
+                    if axisValues[0] is None:
+                        if any(v is not None and v != defaultValue for v in axisValues):
+                            print("---", self.name, compoIndex, compo.name, axisName, axisValues)
+                        # FIX default source only
+                        assert axisName not in compo.coord
                         compo.coord[axisName] = defaultValue
+
         self._ensuredComponentCoords = True
 
     def getPointPen(self):
@@ -147,26 +151,18 @@ class Component(NamedTuple):
         # if self.name != other.name:
         #     raise InterpolationError("incompatible component")
         return Component(
-            self.name,
-            self.coord + other.coord,
-            self.transform + other.transform,
+            self.name, self.coord + other.coord, self.transform + other.transform
         )
 
     def __sub__(self, other):
         # if self.name != other.name:
         #     raise InterpolationError("incompatible component")
         return Component(
-            self.name,
-            self.coord - other.coord,
-            self.transform - other.transform,
+            self.name, self.coord - other.coord, self.transform - other.transform
         )
 
     def __mul__(self, scalar):
-        return Component(
-            self.name,
-            self.coord * scalar,
-            self.transform * scalar,
-        )
+        return Component(self.name, self.coord * scalar, self.transform * scalar)
 
     def __rmul__(self, scalar):
         return self.__mul__(scalar)
