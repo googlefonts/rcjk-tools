@@ -226,7 +226,7 @@ class RoboCJKProject:
 
         self.addGlyphsToVarCoUFO(ufo, set(self.axes.keys()), characterSet)
 
-        doc = buildDesignSpaceDocument(ufo, ufoPath, self.axes, self.axisNames)
+        doc = buildVarCoDesignSpaceDocument(ufo, ufoPath, self.axes, self.axisNames)
 
         ufoPath = pathlib.Path(ufoPath)
         designspacePath = ufoPath.parent / (ufoPath.stem + ".designspace")
@@ -312,7 +312,7 @@ class RoboCJKProject:
             )
 
 
-def buildDesignSpaceDocument(ufo, ufoPath, axes, axisNames):
+def buildVarCoDesignSpaceDocument(ufo, ufoPath, axes, axisNames):
     from fontTools.designspaceLib import DesignSpaceDocument
 
     globalAxisNames = set(axes.keys())
