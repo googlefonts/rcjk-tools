@@ -316,60 +316,61 @@ class RoboCJKProject:
                 None,
             )
 
-        doc = self.buildDesignSpaceDocument(ufo, ufoPath, globalAxes, globalAxisNames)
+        doc = buildDesignSpaceDocument(ufo, ufoPath, globalAxes, globalAxisNames)
 
         ufoPath = pathlib.Path(ufoPath)
         designspacePath = ufoPath.parent / (ufoPath.stem + ".designspace")
         doc.write(designspacePath)
         ufo.save(ufoPath, overwrite=True)
 
-    def buildDesignSpaceDocument(self, ufo, ufoPath, globalAxes, globalAxisNames):
-        from fontTools.designspaceLib import DesignSpaceDocument
 
-        globalAxisMapping = {
-            axis["tag"]: (axis["name"], axis["minimum"], axis["maximum"])
-            for axis in globalAxes
-        }
+def buildDesignSpaceDocument(ufo, ufoPath, globalAxes, globalAxisNames):
+    from fontTools.designspaceLib import DesignSpaceDocument
 
-        doc = DesignSpaceDocument()
+    globalAxisMapping = {
+        axis["tag"]: (axis["name"], axis["minimum"], axis["maximum"])
+        for axis in globalAxes
+    }
 
-        localAxes = set()
-        for layerName in ufo.layers.keys():
-            if layerName == "public.default":
-                location = {}
-                layerName = None
-            else:
-                location = parseLayerName(layerName)
-            for axisName, axisValue in location.items():
-                if axisName not in globalAxisNames:
-                    localAxes.add(axisName)
+    doc = DesignSpaceDocument()
 
-            unnormalizedLocation = {}
-            for axisName, axisValue in location.items():
-                if axisName in globalAxisMapping:
-                    axisName, minimum, maximum = globalAxisMapping[axisName]
-                    axisValue = minimum + (maximum - minimum) * axisValue
-                unnormalizedLocation[axisName] = axisValue
+    localAxes = set()
+    for layerName in ufo.layers.keys():
+        if layerName == "public.default":
+            location = {}
+            layerName = None
+        else:
+            location = parseLayerName(layerName)
+        for axisName, axisValue in location.items():
+            if axisName not in globalAxisNames:
+                localAxes.add(axisName)
 
-            doc.addSourceDescriptor(
-                path=ufoPath, layerName=layerName, location=unnormalizedLocation
-            )
+        unnormalizedLocation = {}
+        for axisName, axisValue in location.items():
+            if axisName in globalAxisMapping:
+                axisName, minimum, maximum = globalAxisMapping[axisName]
+                axisValue = minimum + (maximum - minimum) * axisValue
+            unnormalizedLocation[axisName] = axisValue
 
-        for axisDict in globalAxes:
-            doc.addAxisDescriptor(**axisDict)
+        doc.addSourceDescriptor(
+            path=ufoPath, layerName=layerName, location=unnormalizedLocation
+        )
 
-        for axisName in sorted(localAxes):
-            assert axisName.startswith("V")
-            assert len(axisName) == 4
-            doc.addAxisDescriptor(
-                name=axisName,
-                tag=axisName,
-                minimum=0,
-                default=0,
-                maximum=1,
-                hidden=True,
-            )
-        return doc
+    for axisDict in globalAxes:
+        doc.addAxisDescriptor(**axisDict)
+
+    for axisName in sorted(localAxes):
+        assert axisName.startswith("V")
+        assert len(axisName) == 4
+        doc.addAxisDescriptor(
+            name=axisName,
+            tag=axisName,
+            minimum=0,
+            default=0,
+            maximum=1,
+            hidden=True,
+        )
+    return doc
 
 
 def roundFuncOneDecimal(value):
