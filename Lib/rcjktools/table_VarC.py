@@ -221,7 +221,11 @@ class table_VarC(DefaultTable):
             if components:
                 glyfGlyph = glyfTable[glyphName]
                 assert glyfGlyph.isComposite()
-                assert len(components) == len(glyfGlyph.components)
+                assert len(components) == len(glyfGlyph.components), (
+                    glyphName,
+                    len(components),
+                    len(glyfGlyph.components),
+                )
                 sub = _getSubWriter(writer)
                 compileGlyph(sub, components, axisTags, axisTagToIndex)
             else:
