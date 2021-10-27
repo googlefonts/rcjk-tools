@@ -363,7 +363,7 @@ def buildVarCoDesignSpaceDocument(ufo, ufoPath, axes, axisNames):
         assert axisName.startswith("V")
         assert len(axisName) == 4
         doc.addAxisDescriptor(
-            name=axisName, tag=axisName, minimum=0, default=0, maximum=1, hidden=True
+            name=axisName, tag=axisName, minimum=-1, default=0, maximum=1, hidden=True
         )
     return doc
 

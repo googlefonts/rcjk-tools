@@ -6,7 +6,7 @@ from fontTools.pens.filterPen import FilterPointPen
 from fontTools.pens.pointPen import PointToSegmentPen, SegmentToPointPen
 from fontTools.pens.recordingPen import RecordingPointPen
 from fontTools.ufoLib.glifLib import readGlyphFromString
-from fontTools.varLib.models import normalizeLocation
+from fontTools.varLib.models import normalizeValue
 
 
 logger = logging.getLogger(__name__)
@@ -139,6 +139,17 @@ class Glyph(_MathMixin):
             for compo1, compo2 in zip(self.components, other.components)
         ]
         return result
+
+
+def normalizeLocation(location, axes):
+    """This behaves different from varLib.models.normalizeLocation in that
+    it won't add missing axes values and doesn't filter values that aren't
+    in the axes dict.
+    """
+    return {
+        axisName: normalizeValue(v, axes.get(axisName, (-1, 0, 1)))
+        for axisName, v in location.items()
+    }
 
 
 class Component(NamedTuple):
