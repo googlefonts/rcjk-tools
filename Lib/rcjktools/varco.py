@@ -73,7 +73,7 @@ class VarCoGlyph(Glyph):
                 if self.name not in ufo:
                     continue
                 for axisName, axisValue in location.items():
-                    assert 0 <= axisValue <= 1, (axisName, axisValue)
+                    assert -1 <= axisValue <= 1, (axisName, axisValue)
                 varGlyph = self.__class__.loadFromGlyphObject(ufo[self.name])
                 varGlyph._postParse([], [])
                 varGlyph.location = location
