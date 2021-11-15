@@ -668,7 +668,6 @@ class RCJKGlyph(Glyph):
                 # This source is "off", and should not be used.
                 # They are a bit like background layers.
                 continue
-            varWidth = varDict.get("width")
             layerName = varDict.get("layerName")
             if (not self.outline.isEmpty() or classicComponents) and layerName:
                 layer = glyphSet.getLayer(layerName)
@@ -685,8 +684,8 @@ class RCJKGlyph(Glyph):
             else:
                 varGlyph = self.__class__()
                 varGlyph.width = self.width
-            if varWidth is not None:
-                varGlyph.width = varWidth
+            if "width" in varDict:
+                varGlyph.width = varDict["width"]
 
             varGlyph.status = varDict.get("status", 0)
 
