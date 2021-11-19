@@ -9,6 +9,7 @@ setup(
     packages=find_packages("Lib"),
     install_requires=[
         "fonttools[ufo,unicode] >= 4.17.0",
+        "ufo2ft",
         "ufoLib2",
     ],
     extras_require={

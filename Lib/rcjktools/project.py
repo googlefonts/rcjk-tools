@@ -561,6 +561,8 @@ class GlyphSet:
         return self._revCmap
 
     def __contains__(self, glyphName):
+        if self._revCmap is not None and glyphName in self._revCmap:
+            return True
         if glyphName in self._glyphs:
             return True
         fileName = userNameToFileName(glyphName, suffix=".glif")
