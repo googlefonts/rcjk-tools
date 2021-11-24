@@ -102,6 +102,7 @@ class RoboCJKProject:
     def instantiateCharacterGlyph(self, glyphName, location):
         glyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
         # glyph.ensureComponentCoords(self.deepComponentGlyphSet)
+        componentScalesVary = checkComponentScaleVariation(glyph)
         glyph = glyph.instantiate(location)
         deepItems = []
         classicComponents = []
@@ -109,7 +110,7 @@ class RoboCJKProject:
             if component.name not in self.deepComponentGlyphSet:
                 assert not component.coord, (glyphName, component.name, component.coord)
                 transform = makeTransform(**component.transform)
-                if self._decomposeClassicComponents:
+                if self._decomposeClassicComponents or componentScalesVary:
                     compoOutline, cdc, ccc, cw = self.instantiateCharacterGlyph(
                         component.name, location
                     )
@@ -742,6 +743,16 @@ def _isLocationOutOfBounds(location, axes):
 def _formatDict(d):
     kvPairs = (f"{k}={v}" for k, v in d.items())
     return f"dict({', '.join(kvPairs)})"
+
+
+def checkComponentScaleVariation(glyph):
+    componentIndices = range(len(glyph.components))
+    for varGlyph in [glyph] + glyph.variations:
+        x = {varGlyph.components[i].transform["scalex"] for i in componentIndices}
+        y = {varGlyph.components[i].transform["scaley"] for i in componentIndices}
+        if len(x) != 1 or len(y) != 1:
+            return True
+    return False
 
 
 def rcjk2ufo():
