@@ -820,3 +820,7 @@ def rcjk2ufo():
         )
     else:
         project.saveVarCoUFO(args.ufo, familyName, styleName, characterSet=characterSet)
+
+
+if __name__ == "__main__":
+    rcjk2ufo()
