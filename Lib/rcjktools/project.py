@@ -696,7 +696,7 @@ class RCJKGlyph(Glyph):
             if _isLocationOutOfBounds(varGlyph.location, self.axes):
                 raise LocationOutOfBoundsError(
                     f"location out of bounds for {self.name}; "
-                    f"location: {_formatDict(varGlyph.location)}"
+                    f"location: {_formatDict(varGlyph.location)} "
                     f"axes: {_formatDict(self.axes)}"
                 )
 
