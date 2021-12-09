@@ -352,6 +352,11 @@ def _getDefaultAdvanceWidths(projectLib):
         # Sort defaultAdvanceWidths so the more specific locations come first
         defaultAdvanceWidths.sort(lambda key: len(key[0]), reverse=True)
         if all(defaultLoc for defaultLoc, value in defaultAdvanceWidths):
+            # No {} default location found, let's try to find the defaultest
+            # default (a location with all values at 0), and append that to
+            # the list. This does not take the axis default value into account
+            # so is a rather poor fallback. But is good enough for for GS CJK
+            # wght and opsz.
             defaultDefault = None
             for defaultLoc, value in defaultAdvanceWidths:
                 if all(v == 0 for v in defaultLoc.values()):
