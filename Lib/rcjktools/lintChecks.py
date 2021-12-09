@@ -332,14 +332,44 @@ class ContourCheckerPointPen:
         pass
 
 
+def _getDefaultAdvanceWidth(defaultAdvanceWidths, varLoc):
+    for defaultLoc, value in defaultAdvanceWidths:
+        for axisName, axisValue in defaultLoc.items():
+            if varLoc.get(axisName) != axisValue:
+                break
+        else:
+            return value
+    return None
+
+
+def _getDefaultAdvanceWidths(projectLib):
+    defaultAdvanceWidths = projectLib.get("robocjk.defaultGlyphWidths")
+    if defaultAdvanceWidths is None:
+        defaultAdvanceWidth = projectLib.get("robocjk.defaultGlyphWidth")
+        if defaultAdvanceWidth is not None:
+            defaultAdvanceWidths = [[{}, defaultAdvanceWidth]]
+    else:
+        # Sort defaultAdvanceWidths so the more specific locations come first
+        defaultAdvanceWidths.sort(lambda key: len(key[0]), reverse=True)
+        if all(defaultLoc for defaultLoc, value in defaultAdvanceWidths):
+            defaultDefault = None
+            for defaultLoc, value in defaultAdvanceWidths:
+                if all(v == 0 for v in defaultLoc.values()):
+                    defaultDefault = value
+                    break
+            assert defaultDefault is not None, "can't find defaultAdvanceWidth"
+            defaultAdvanceWidths.append([{}, defaultDefault])
+    return defaultAdvanceWidths
+
+
 @lintcheck("advance")
 def checkAdvance(project):
     """Check the advance width of character glyphs against the value of
     "robocjk.defaultGlyphWidth" in fontLib.json.
     Skip glyphs that have a name starting with "_".
     """
-    defaultAdvanceWidth = project.lib.get("robocjk.defaultGlyphWidth")
-    if defaultAdvanceWidth is None:
+    defaultAdvanceWidths = _getDefaultAdvanceWidths(project.lib)
+    if defaultAdvanceWidths is None:
         yield "robocjk.defaultGlyphWidth has not been set in *.rcjk/fontLib.json"
     else:
         glyphSet = project.characterGlyphGlyphSet
@@ -359,19 +389,23 @@ def checkAdvance(project):
             else:
                 uni = unicodes[0]
             eastAsianWidth = unicodedata.east_asian_width(chr(uni))
-            if eastAsianWidth == "H":
-                targetWidth = defaultAdvanceWidth / 2
-            elif eastAsianWidth in {"W", "F"}:
-                targetWidth = defaultAdvanceWidth
-            else:
-                category = unicodedata.category(chr(uni))
-                if category in {"Mn"}:
-                    # Non-spacing marks
-                    targetWidth = 0
-                else:
-                    targetWidth = None  # advance must be greater than 0
-
             for g in [glyph] + glyph.variations:
+                defaultAdvanceWidth = _getDefaultAdvanceWidth(
+                    defaultAdvanceWidths, g.location
+                )
+                assert defaultAdvanceWidth is not None, (glyphName, g.location)
+                if eastAsianWidth == "H":
+                    targetWidth = defaultAdvanceWidth / 2
+                elif eastAsianWidth in {"W", "F"}:
+                    targetWidth = defaultAdvanceWidth
+                else:
+                    category = unicodedata.category(chr(uni))
+                    if category in {"Mn"}:
+                        # Non-spacing marks
+                        targetWidth = 0
+                    else:
+                        targetWidth = None  # advance must be greater than 0
+
                 if (targetWidth is None and g.width <= 10) or (
                     targetWidth is not None and g.width != targetWidth
                 ):
