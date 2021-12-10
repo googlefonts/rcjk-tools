@@ -177,6 +177,7 @@ class RoboCJKPreviewer:
         )  # Baseline at 120 from the bottom of the Ideographic Em Square
         db.fill(0, 1, 0, 0.3)
         db.stroke(0)
+        db.lineJoin("round")
         dcSelection = set(self.w.deepComponentList.getSelection())
         aeSelection = set(self.w.atomicElementList.getSelection())
         if self._currentGlyphOutline is not None:
