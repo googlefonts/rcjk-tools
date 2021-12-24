@@ -5,6 +5,7 @@ import traceback
 import unicodedata
 from fontTools.pens.recordingPen import RecordingPointPen
 from .utils import tuplifyLocation
+from .objects import InterpolationError
 
 
 VERBOSE = False  # can be overridden by command line
