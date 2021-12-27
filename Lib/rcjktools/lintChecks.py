@@ -448,8 +448,12 @@ def checkGlyphAlternates(project):
             outlines = defaultdict(list)
             for g in glyphs:
                 rpen = RecordingPointPen()
-                project.drawPointsCharacterGlyph(g.name, loc, rpen)
-                outlines[tuplifyOutline(rpen.value)].append(g.name)
+                try:
+                    project.drawPointsCharacterGlyph(g.name, loc, rpen)
+                except InterpolationError as e:
+                    yield f"Skipping '{g.name}' {e}"
+                else:
+                    outlines[tuplifyOutline(rpen.value)].append(g.name)
             for sameNames in outlines.values():
                 if len(sameNames) > 1:
                     sameNames = [f"'{n}'" for n in sameNames]
