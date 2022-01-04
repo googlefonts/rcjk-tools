@@ -687,6 +687,7 @@ class RCJKGlyph(Glyph):
             else:
                 varGlyph = self.__class__()
                 varGlyph.width = self.width
+            varGlyph.layerName = layerName
             varGlyph.sourceName = varDict.get("sourceName")
             if "width" in varDict:
                 varGlyph.width = varDict["width"]
