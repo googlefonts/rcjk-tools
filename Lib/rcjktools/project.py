@@ -28,10 +28,6 @@ class ComponentMismatchError(Exception):
     pass
 
 
-class LocationOutOfBoundsError(Exception):
-    pass
-
-
 class GlyphNotFoundError(KeyError):
     pass
 
@@ -696,7 +692,7 @@ class RCJKGlyph(Glyph):
 
             varGlyph.location = varDict["location"]
             if _isLocationOutOfBounds(varGlyph.location, self.axes):
-                raise LocationOutOfBoundsError(
+                logger.warning(
                     f"location out of bounds for {self.name}; "
                     f"location: {_formatDict(varGlyph.location)} "
                     f"axes: {_formatDict(self.axes)}"
