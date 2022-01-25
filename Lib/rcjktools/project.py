@@ -691,7 +691,7 @@ class RCJKGlyph(Glyph):
             varGlyph.status = varDict.get("status", 0)
 
             varGlyph.location = varDict["location"]
-            if _isLocationOutOfBounds(varGlyph.location, self.axes):
+            if isLocationOutOfBounds(varGlyph.location, self.axes):
                 logger.warning(
                     f"location out of bounds for {self.name}; "
                     f"location: {_formatDict(varGlyph.location)} "
@@ -730,7 +730,7 @@ def _unpackDeepComponent(dc, name=None):
     return Component(name, MathDict(coord), MathDict(transform))
 
 
-def _isLocationOutOfBounds(location, axes):
+def isLocationOutOfBounds(location, axes):
     for axisName, axisValue in location.items():
         minValue, defaultValue, maxValue = axes.get(axisName, (0, 0, 1))
         if not (minValue <= axisValue <= maxValue):
