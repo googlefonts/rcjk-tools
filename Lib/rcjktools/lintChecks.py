@@ -6,6 +6,7 @@ import unicodedata
 from fontTools.pens.recordingPen import RecordingPointPen
 from .utils import tuplifyLocation
 from .objects import InterpolationError
+from .project import isLocationOutOfBounds
 
 
 VERBOSE = False  # can be overridden by command line
@@ -220,6 +221,19 @@ def _checkUnusedComponents(glyphSet, compoGlyphSet):
     for name in sorted(compoGlyphSet.getGlyphNamesAndUnicodes()):
         if name not in usedComponents:
             yield f"component glyph '{name}' is not used"
+
+
+@lintcheck("variation_location_within_bounds")
+def checkVariationLocationsAxisBounds(project):
+    """Check whether the locations of variations are withing the axis ranges."""
+    for glyphSetName, glyphSet, glyphName, glyph in iterGlyphs(project):
+        for i, v in enumerate(glyph.variations):
+            if isLocationOutOfBounds(v.location, glyph.axes):
+                yield (
+                    f"The location of variation at {formatLocation(v.location)} "
+                    f"of {glyphName}' (in {glyphSetName}) is out of bounds. "
+                    f"axes: {glyph.axes}"
+                )
 
 
 @lintcheck("deep_component_axis")
