@@ -669,17 +669,22 @@ class RCJKGlyph(Glyph):
                 continue
             layerName = varDict.get("layerName")
             if (not self.outline.isEmpty() or classicComponents) and layerName:
-                layer = glyphSet.getLayer(layerName)
-                if self.name in layer:
-                    varGlyph = layer.getGlyphNoCache(self.name)
+                if layerName == "foreground":
+                    # Special case for "foreground": it references the default layer
+                    layer = glyphSet
+                    varGlyph = self.copy()
                 else:
-                    # Layer glyph does not exist, make one up by copying
-                    # self.width and self.outline
-                    self.glyphNotInLayer.append(layerName)
-                    logger.warning(f"glyph {self.name} not found in layer {layerName}")
-                    varGlyph = self.__class__()
-                    varGlyph.width = self.width
-                    varGlyph.outline = self.outline
+                    layer = glyphSet.getLayer(layerName)
+                    if self.name in layer:
+                        varGlyph = layer.getGlyphNoCache(self.name)
+                    else:
+                        # Layer glyph does not exist, make one up by copying
+                        # self.width and self.outline
+                        self.glyphNotInLayer.append(layerName)
+                        logger.warning(f"glyph {self.name} not found in layer {layerName}")
+                        varGlyph = self.__class__()
+                        varGlyph.width = self.width
+                        varGlyph.outline = self.outline
             else:
                 varGlyph = self.__class__()
                 varGlyph.width = self.width

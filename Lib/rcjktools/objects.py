@@ -68,6 +68,11 @@ class Glyph(_MathMixin):
         self.deltas = None
         self._ensuredComponentCoords = False
 
+    def copy(self):
+        c = self.__class__()
+        c.__dict__.update(self.__dict__)
+        return c
+
     def ensureComponentCoords(self, glyphSet):
         if self._ensuredComponentCoords:
             return
