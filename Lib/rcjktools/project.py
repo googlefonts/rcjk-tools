@@ -681,7 +681,9 @@ class RCJKGlyph(Glyph):
                         # Layer glyph does not exist, make one up by copying
                         # self.width and self.outline
                         self.glyphNotInLayer.append(layerName)
-                        logger.warning(f"glyph {self.name} not found in layer {layerName}")
+                        logger.warning(
+                            f"glyph {self.name} not found in layer {layerName}"
+                        )
                         varGlyph = self.__class__()
                         varGlyph.width = self.width
                         varGlyph.outline = self.outline
