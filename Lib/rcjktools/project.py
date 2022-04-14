@@ -206,9 +206,13 @@ class RoboCJKProject:
                 codePoints = set(revCmap[glyphName])
                 if not codePoints & characterSet:
                     continue
+            skipGlyph = False
             for excludePat in excludePatterns:
                 if fnmatchcase(glyphName, excludePat):
-                    continue
+                    skipGlyph = True
+                    break
+            if skipGlyph:
+                continue
             glyph = UGlyph(glyphName)
             glyph.unicodes = revCmap[glyphName]
             copyMarkColor(self.characterGlyphGlyphSet.getGlyph(glyphName), glyph)
