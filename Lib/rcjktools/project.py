@@ -1,3 +1,4 @@
+from fnmatch import fnmatchcase
 import logging
 import json
 import math
@@ -83,17 +84,26 @@ class RoboCJKProject:
     def getGlyphNamesAndUnicodes(self):
         return self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
 
-    def drawPointsCharacterGlyph(self, glyphName, location, pen):
-        outline, dcItems, classicComponents, width = self.instantiateCharacterGlyph(
-            glyphName, location
-        )
-        outline.drawPoints(pen)
-        for dcName, atomicElements in dcItems:
-            for aeName, atomicOutline in atomicElements:
-                atomicOutline.drawPoints(pen)
-        for baseGlyphName, transform in classicComponents:
-            pen.addComponent(baseGlyphName, transform)
-        return width
+    def drawPointsCharacterGlyph(self, glyphName, location, pen, transform=None):
+        glyph = self._getGlyphFromAnyGlyphSet(glyphName)
+        glyph = glyph.instantiate(location)
+        glyph.outline.drawPoints(pen)
+        for component in glyph.components:
+            ct = makeTransform(**component.transform)
+            t = ct if transform is None else transform.transform(ct)
+            self.drawPointsCharacterGlyph(component.name, component.coord, pen, t)
+        return glyph.width
+
+    def _getGlyphFromAnyGlyphSet(self, glyphName):
+        sets = [
+            self.characterGlyphGlyphSet,
+            self.deepComponentGlyphSet,
+            self.atomicElementGlyphSet,
+        ]
+        for gs in sets:
+            if glyphName in gs:
+                return gs.getGlyph(glyphName)
+        raise KeyError(f"glyph not found: '{glyphName}'")
 
     def instantiateCharacterGlyph(self, glyphName, location):
         glyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
@@ -153,15 +163,27 @@ class RoboCJKProject:
         numDecimalsRounding=0,
         characterSet=None,
         glyphSet=None,
+        excludePatterns=(),
     ):
         ufo = setupFont(familyName, styleName)
         self.addFlattenedGlyphsToUFO(
-            ufo, location, numDecimalsRounding, characterSet, glyphSet
+            ufo,
+            location,
+            numDecimalsRounding,
+            characterSet,
+            glyphSet,
+            excludePatterns,
         )
         ufo.save(ufoPath, overwrite=True)
 
     def addFlattenedGlyphsToUFO(
-        self, ufo, location, numDecimalsRounding=0, characterSet=None, glyphSet=None
+        self,
+        ufo,
+        location,
+        numDecimalsRounding=0,
+        characterSet=None,
+        glyphSet=None,
+        excludePatterns=(),
     ):
         if characterSet is not None and glyphSet is not None:
             raise TypeError("can't pass both characterSet and glyphSet")
@@ -180,6 +202,9 @@ class RoboCJKProject:
             elif characterSet is not None:
                 codePoints = set(revCmap[glyphName])
                 if not codePoints & characterSet:
+                    continue
+            for excludePat in excludePatterns:
+                if fnmatchcase(glyphName, excludePat):
                     continue
             glyph = UGlyph(glyphName)
             glyph.unicodes = revCmap[glyphName]
@@ -788,6 +813,10 @@ def rcjk2ufo():
             "in the exported UFO. When omitted, all characters will be exported."
         ),
     )
+    parser.add_argument(
+        "--exclude-glyphs",
+        help="A comma-separated list of glyph name patterns to exclude.",
+    )
     parser.add_argument("rcjk", help="The .rcjk project folder")
     parser.add_argument("ufo", help="The output .ufo")
 
@@ -816,14 +845,25 @@ def rcjk2ufo():
         styleNameDefault = "Regular" if location else "VarCo"
     familyName = args.familyname if args.familyname else familyNameDefault
     styleName = args.stylename if args.stylename else styleNameDefault
+    excludePatterns = (
+        [p.strip() for p in args.exclude_glyphs.split(",")]
+        if args.exclude_glyphs
+        else []
+    )
     if location:
         axes = {}
-        location = normalizeLocation(location, project.axes)
-        print("normalized location:", location)
+        # location = normalizeLocation(location, project.axes)
+        # print("normalized location:", location)
         project.saveFlattenedUFO(
-            args.ufo, location, familyName, styleName, characterSet=characterSet
+            args.ufo,
+            location,
+            familyName,
+            styleName,
+            characterSet=characterSet,
+            excludePatterns=excludePatterns,
         )
     else:
+        # TODO: excludePatterns
         project.saveVarCoUFO(args.ufo, familyName, styleName, characterSet=characterSet)
 
 
