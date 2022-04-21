@@ -94,7 +94,9 @@ class RoboCJKProject:
         for component in glyph.components:
             ct = makeTransform(**component.transform)
             t = ct if transform is None else transform.transform(ct)
-            self.drawPointsCharacterGlyph(component.name, component.coord, pen, t)
+            coord = dict(location)
+            coord.update(component.coord)
+            self.drawPointsCharacterGlyph(component.name, coord, pen, t)
         return glyph.width
 
     def _getGlyphFromAnyGlyphSet(self, glyphName):
