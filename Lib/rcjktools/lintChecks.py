@@ -121,6 +121,28 @@ def checkGlyphWithOutlineHasLayerNames(project):
                 )
 
 
+@lintcheck("outlines_in_non_default_layer")
+def checkGlyphWithOutlineHasLayerNames(project):
+    """For glyphs without outlines in the default layer, check whether all variation
+    glyphs have also have no outlines.
+    """
+    for glyphSetName, glyphSet, glyphName, glyph in iterGlyphs(project):
+        if not glyph.outline.isEmpty():
+            continue
+        for varDict in glyph.lib.get("robocjk.variationGlyphs"):
+            layerName = varDict.get("layerName")
+            if layerName:
+                layer = glyphSet.getLayer(layerName)
+                if glyphName in layer:
+                    layerGlyph = layer.getGlyph(glyphName)
+                    if not layerGlyph.outline.isEmpty():
+                        location = formatLocation(varDict.get("location"))
+                        yield (
+                            f"Glyph '{glyphName}' has no outlines in the default layer, "
+                            f"but does have outlines in layer '{layerName}', location={location}"
+                        )
+
+
 @lintcheck("nested_variations")
 def checkGlyphVariations(project):
     """Check whether variation glyphs have variations themselves."""
