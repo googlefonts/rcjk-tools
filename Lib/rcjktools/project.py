@@ -7,7 +7,7 @@ import pathlib
 
 from fontTools.misc.fixedTools import otRound
 from fontTools.pens.roundingPen import RoundingPointPen
-from fontTools.pens.pointPen import PointToSegmentPen
+from fontTools.pens.pointPen import PointToSegmentPen, SegmentToPointPen
 from fontTools.ufoLib.filenames import userNameToFileName
 from fontTools.varLib.models import VariationModel, normalizeLocation
 
@@ -90,7 +90,7 @@ class RoboCJKProject:
         outline = glyph.outline
         if transform is not None:
             outline = outline.transform(transform)
-        outline.drawPoints(pen)
+        outline.draw(SegmentToPointPen(pen))
         for component in glyph.components:
             ct = makeTransform(**component.transform)
             t = ct if transform is None else transform.transform(ct)
