@@ -31,6 +31,8 @@ class _MathMixin:
 
 
 class Glyph(_MathMixin):
+    anchors = ()
+
     @classmethod
     def loadFromGLIF(cls, glifPath):
         with open(glifPath) as f:
@@ -41,6 +43,7 @@ class Glyph(_MathMixin):
         except Exception:
             logger.error(f"failed to load .glif file: {glifPath}")
             raise
+        self.anchors = [MathDict(anchor) for anchor in self.anchors]
         return self
 
     @classmethod
@@ -52,6 +55,7 @@ class Glyph(_MathMixin):
         self.width = glyphObject.width
         self.unicodes = glyphObject.unicodes
         self.lib = dict(glyphObject.lib)
+        self.anchors = [MathDict(anchor) for anchor in self.anchors]
         return self
 
     def __init__(self):
@@ -129,6 +133,7 @@ class Glyph(_MathMixin):
         result.width = op(self.width, scalar)
         result.outline = op(self.outline, scalar)
         result.components = [op(compo, scalar) for compo in self.components]
+        result.anchors = [op(anchor, scalar) for anchor in self.anchors]
         return result
 
     def _doBinaryOperator(self, other, op):
@@ -142,6 +147,10 @@ class Glyph(_MathMixin):
         result.components = [
             op(compo1, compo2)
             for compo1, compo2 in zip(self.components, other.components)
+        ]
+        result.anchors = [
+            op(anchor1, anchor2)
+            for anchor1, anchor2 in zip(self.anchors, other.anchors)
         ]
         return result
 

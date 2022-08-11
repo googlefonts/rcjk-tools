@@ -97,7 +97,7 @@ class RoboCJKProject:
             coord = dict(location)
             coord.update(component.coord)
             self.drawPointsCharacterGlyph(component.name, coord, pen, t)
-        return glyph.width
+        return glyph
 
     def _getGlyphFromAnyGlyphSet(self, glyphName):
         sets = [
@@ -220,14 +220,18 @@ class RoboCJKProject:
             copyMarkColor(self.characterGlyphGlyphSet.getGlyph(glyphName), glyph)
             pen = RoundingPointPen(glyph.getPointPen(), roundFunc)
             try:
-                width = self.drawPointsCharacterGlyph(glyphName, location, pen)
+                glyphInstance = self.drawPointsCharacterGlyph(glyphName, location, pen)
             except InterpolationError as e:
                 logger.warning(f"glyph {glyphName} can't be interpolated ({e})")
             except Exception as e:
                 logger.warning(f"glyph {glyphName} caused an error: {e!r}")
                 raise
             else:
-                glyph.width = max(0, width)  # can't be negative
+                glyph.width = max(0, glyphInstance.width)  # can't be negative
+                glyph.anchors = [dict(anchor) for anchor in glyphInstance.anchors]
+                for anchor in glyph.anchors:
+                    anchor.x = roundFunc(anchor.x)
+                    anchor.y = roundFunc(anchor.y)
                 ufo[glyphName] = glyph
 
     def decomposeCharacterGlyph(self, glyphName):
