@@ -225,7 +225,7 @@ def unpackDesignSpace(doc):
         locations.append(loc)
         ufo = _loaded.get(src.path)
         if ufo is None:
-            ufo = UFont(src.path)
+            ufo = UFont.open(src.path)
             _loaded[src.path] = ufo
         if src.layerName is None:
             ufo.layers.defaultLayer
