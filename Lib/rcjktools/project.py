@@ -219,8 +219,12 @@ class RoboCJKProject:
             glyph.unicodes = revCmap[glyphName]
             copyMarkColor(self.characterGlyphGlyphSet.getGlyph(glyphName), glyph)
             pen = RoundingPointPen(glyph.getPointPen(), roundFunc)
+
+            charGlyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
+            # Adjust the location to what the glyph expects
+            glyphLocation = unnormalizeLocation(location, charGlyph.axes)
             try:
-                glyphInstance = self.drawPointsCharacterGlyph(glyphName, location, pen)
+                glyphInstance = self.drawPointsCharacterGlyph(glyphName, glyphLocation, pen)
             except InterpolationError as e:
                 logger.warning(f"glyph {glyphName} can't be interpolated ({e})")
             except Exception as e:
@@ -345,6 +349,27 @@ class RoboCJKProject:
                 None,
                 None,
             )
+
+
+def unnormalizeLocation(location, axes):
+    newLocation = {}
+    for name, value in location.items():
+        axis = axes.get(name)
+        if axis is not None:
+            minValue, defaultValue, maxValue = axis
+            if value < 0:
+                assert -1.0 <= value
+                assert minValue < defaultValue
+                d = value * (defaultValue - minValue)
+            else:
+                assert value <= 1.0
+                assert defaultValue < maxValue
+                d = value * (maxValue - defaultValue)
+            value = defaultValue + d
+            newLocation[name] = value
+        else:
+            newLocation[name] = value
+    return newLocation
 
 
 def buildVarCoDesignSpaceDocument(ufo, ufoPath, axes, axisNames):
@@ -866,6 +891,7 @@ def rcjk2ufo():
     if location:
         axes = {}
         # location = normalizeLocation(location, project.axes)
+        print("incoming location:", location)
         # print("normalized location:", location)
         project.saveFlattenedUFO(
             args.ufo,
