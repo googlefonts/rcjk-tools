@@ -224,7 +224,9 @@ class RoboCJKProject:
             # Adjust the location to what the glyph expects
             glyphLocation = unnormalizeLocation(location, charGlyph.axes)
             try:
-                glyphInstance = self.drawPointsCharacterGlyph(glyphName, glyphLocation, pen)
+                glyphInstance = self.drawPointsCharacterGlyph(
+                    glyphName, glyphLocation, pen
+                )
             except InterpolationError as e:
                 logger.warning(f"glyph {glyphName} can't be interpolated ({e})")
             except Exception as e:
