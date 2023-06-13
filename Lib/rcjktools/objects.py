@@ -31,13 +31,12 @@ class _MathMixin:
 
 
 class Glyph(_MathMixin):
-    anchors = ()
 
     @classmethod
-    def loadFromGLIF(cls, glifPath):
+    def loadFromGLIF(cls, glifPath, globalAxes):
         with open(glifPath) as f:
             data = f.read()
-        self = cls()
+        self = cls(globalAxes)
         try:
             readGlyphFromString(data, self, self.getPointPen())
         except Exception:
@@ -58,12 +57,14 @@ class Glyph(_MathMixin):
         self.anchors = [MathDict(anchor) for anchor in self.anchors]
         return self
 
-    def __init__(self):
+    def __init__(self, globalAxes=None):
+        self.globalAxes = globalAxes if globalAxes is not None else {}
         self.name = None
         self.width = 0
         self.unicodes = []
         self.outline = MathOutline()
         self.components = []
+        self.anchors = []
         self.lib = {}
         self.location = {}  # neutral
         self.axes = {}
@@ -71,6 +72,13 @@ class Glyph(_MathMixin):
         self.model = None
         self.deltas = None
         self._ensuredComponentCoords = False
+
+    @property
+    def combinedAxes(self):
+        axes = {}
+        axes.update(self.globalAxes)
+        axes.update(self.axes)
+        return axes
 
     def copy(self):
         c = self.__class__()
@@ -133,7 +141,7 @@ class Glyph(_MathMixin):
             return self  # XXX raise error?
         if self.deltas is None:
             self.deltas = self.model.getDeltas([self] + self.variations)
-        location = normalizeLocation(location, self.axes)
+        location = normalizeLocation(location, self.combinedAxes)
         return self.model.interpolateFromDeltas(location, self.deltas)
 
     def _doBinaryOperatorScalar(self, scalar, op):

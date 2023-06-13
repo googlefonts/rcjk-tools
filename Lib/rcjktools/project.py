@@ -41,9 +41,9 @@ class RoboCJKProject:
         self._loadDesignSpace(self._path / "designspace.json")
         self._loadLib(self._path / "fontLib.json")
 
-        self.characterGlyphGlyphSet = GlyphSet(self._path / "characterGlyph")
-        self.deepComponentGlyphSet = GlyphSet(self._path / "deepComponent")
-        self.atomicElementGlyphSet = GlyphSet(self._path / "atomicElement")
+        self.characterGlyphGlyphSet = GlyphSet(self._path / "characterGlyph", self.axes)
+        self.deepComponentGlyphSet = GlyphSet(self._path / "deepComponent", self.axes)
+        self.atomicElementGlyphSet = GlyphSet(self._path / "atomicElement", self.axes)
 
     def _loadDesignSpace(self, path):
         self.designspace = {}
@@ -604,8 +604,9 @@ def copyMarkColor(fromGlyph, toGlyph):
 
 
 class GlyphSet:
-    def __init__(self, path):
+    def __init__(self, path, globalAxes=None):
         self._path = path
+        self._globalAxes = globalAxes if globalAxes is not None else {}
         self._glyphs = {}
         self._layers = {}
         self._revCmap = None
@@ -648,7 +649,7 @@ class GlyphSet:
         glifPath = self._path / fileName
         if not glifPath.exists():
             raise GlyphNotFoundError(f"{glyphName}")
-        return RCJKGlyph.loadFromGLIF(glifPath)
+        return RCJKGlyph.loadFromGLIF(glifPath, self._globalAxes)
 
     def getLayerNames(self):
         if not self._path.is_dir():
@@ -787,7 +788,7 @@ class RCJKGlyph(Glyph):
             self.variations.append(varGlyph)
 
         locations = [{}] + [
-            normalizeLocation(variation.location, self.axes)
+            normalizeLocation(variation.location, self.combinedAxes)
             for variation in self.variations
         ]
         self.model = VariationModel(locations)
