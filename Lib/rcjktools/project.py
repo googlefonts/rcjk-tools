@@ -858,6 +858,11 @@ def rcjk2ufo():
         "--exclude-glyphs",
         help="A comma-separated list of glyph name patterns to exclude.",
     )
+    parser.add_argument(
+        "--normalize-location",
+        help="Normalize the input location.",
+        action="store_true",
+    )
     parser.add_argument("rcjk", help="The .rcjk project folder")
     parser.add_argument("ufo", help="The output .ufo")
 
@@ -893,9 +898,10 @@ def rcjk2ufo():
     )
     if location:
         axes = {}
-        # location = normalizeLocation(location, project.axes)
         print("incoming location:", location)
-        # print("normalized location:", location)
+        if args.normalize_location:
+            location = normalizeLocation(location, project.axes)
+        print("normalized location:", location)
         project.saveFlattenedUFO(
             args.ufo,
             location,
