@@ -85,12 +85,13 @@ class Glyph(_MathMixin):
         c.__dict__.update(self.__dict__)
         return c
 
-    def ensureComponentCoords(self, glyphSet):
+    def ensureComponentCoords(self, getGlyphFunc):
         if self._ensuredComponentCoords:
             return
 
         for compoIndex, compo in enumerate(self.components):
-            if compo.name not in glyphSet:
+            compoGlyph = getGlyphFunc(compo.name)
+            if compoGlyph is None:
                 # classic component
                 continue
 
@@ -99,7 +100,7 @@ class Glyph(_MathMixin):
                 for g in [self] + self.variations
                 for axisName in g.components[compoIndex].coord
             }
-            compoGlyph = glyphSet.getGlyph(compo.name)
+
             allAxisNames &= set(compoGlyph.axes)
             for axisName in sorted(allAxisNames):
                 defaultValue = compoGlyph.axes[axisName][1]

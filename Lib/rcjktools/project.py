@@ -1,4 +1,5 @@
 from fnmatch import fnmatchcase
+from functools import partial
 import logging
 import json
 import math
@@ -85,7 +86,8 @@ class RoboCJKProject:
         return self.characterGlyphGlyphSet.getGlyphNamesAndUnicodes()
 
     def drawPointsCharacterGlyph(self, glyphName, location, pen, transform=None):
-        glyph = self._getGlyphFromAnyGlyphSet(glyphName)
+        glyph = self.getGlyphFromAnyGlyphSet(glyphName)
+        glyph.ensureComponentCoords(partial(self.getGlyphFromAnyGlyphSet, raiseKeyError=False))
         glyph = glyph.instantiate(location)
         outline = glyph.outline
         if transform is not None:
@@ -99,7 +101,7 @@ class RoboCJKProject:
             self.drawPointsCharacterGlyph(component.name, coord, pen, t)
         return glyph
 
-    def _getGlyphFromAnyGlyphSet(self, glyphName):
+    def getGlyphFromAnyGlyphSet(self, glyphName, raiseKeyError=True):
         sets = [
             self.characterGlyphGlyphSet,
             self.deepComponentGlyphSet,
@@ -108,7 +110,8 @@ class RoboCJKProject:
         for gs in sets:
             if glyphName in gs:
                 return gs.getGlyph(glyphName)
-        raise KeyError(f"glyph not found: '{glyphName}'")
+        if raiseKeyError:
+            raise KeyError(f"glyph not found: '{glyphName}'")
 
     def instantiateCharacterGlyph(self, glyphName, location):
         glyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
