@@ -31,7 +31,6 @@ class _MathMixin:
 
 
 class Glyph(_MathMixin):
-
     @classmethod
     def loadFromGLIF(cls, glifPath, globalAxes):
         with open(glifPath) as f:

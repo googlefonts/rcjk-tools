@@ -87,7 +87,9 @@ class RoboCJKProject:
 
     def drawPointsCharacterGlyph(self, glyphName, location, pen, transform=None):
         glyph = self.getGlyphFromAnyGlyphSet(glyphName)
-        glyph.ensureComponentCoords(partial(self.getGlyphFromAnyGlyphSet, raiseKeyError=False))
+        glyph.ensureComponentCoords(
+            partial(self.getGlyphFromAnyGlyphSet, raiseKeyError=False)
+        )
         glyph = glyph.instantiate(location)
         outline = glyph.outline
         if transform is not None:
