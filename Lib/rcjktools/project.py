@@ -195,8 +195,6 @@ class RoboCJKProject:
         glyphSet=None,
         excludePatterns=(),
     ):
-        if characterSet is not None and glyphSet is not None:
-            raise TypeError("can't pass both characterSet and glyphSet")
         if numDecimalsRounding == 1:
             roundFunc = roundFuncOneDecimal
         elif numDecimalsRounding != 0:
@@ -205,14 +203,21 @@ class RoboCJKProject:
             roundFunc = otRound
         revCmap = self.getGlyphNamesAndUnicodes()
         glyphNames = filterGlyphNames(sorted(revCmap))
+
+        if glyphSet is None:
+            glyphSet = set(glyphNames) if characterSet is None else set()
+
+        if characterSet is not None:
+            characterSetGlyphs = {
+                glyphName
+                for glyphName, codePoints in revCmap.items()
+                for codePoint in codePoints
+                if codePoint in characterSet
+            }
+
         for glyphName in glyphNames:
-            if glyphSet is not None:
-                if glyphName not in glyphSet:
-                    continue
-            elif characterSet is not None:
-                codePoints = set(revCmap[glyphName])
-                if not codePoints & characterSet:
-                    continue
+            if glyphName not in glyphSet:
+                continue
             skipGlyph = False
             for excludePat in excludePatterns:
                 if fnmatchcase(glyphName, excludePat):
@@ -864,6 +869,10 @@ def rcjk2ufo():
         help="A comma-separated list of glyph name patterns to exclude.",
     )
     parser.add_argument(
+        "--glyphs",
+        help="A comma-separated list of glyph names to include.",
+    )
+    parser.add_argument(
         "--normalize-location",
         help="Normalize the input location.",
         action="store_true",
@@ -896,11 +905,15 @@ def rcjk2ufo():
         styleNameDefault = "Regular" if location else "VarCo"
     familyName = args.familyname if args.familyname else familyNameDefault
     styleName = args.stylename if args.stylename else styleNameDefault
+
+    includeGlyphs = [p.strip() for p in args.glyphs.split(",")] if args.glyphs else []
+
     excludePatterns = (
         [p.strip() for p in args.exclude_glyphs.split(",")]
         if args.exclude_glyphs
         else []
     )
+
     if location:
         axes = {}
         print("incoming location:", location)
@@ -913,10 +926,11 @@ def rcjk2ufo():
             familyName,
             styleName,
             characterSet=characterSet,
+            glyphSet=set(includeGlyphs) if includeGlyphs else None,
             excludePatterns=excludePatterns,
         )
     else:
-        # TODO: excludePatterns
+        # TODO: includeGlyphs, excludePatterns
         project.saveVarCoUFO(args.ufo, familyName, styleName, characterSet=characterSet)
 
 
