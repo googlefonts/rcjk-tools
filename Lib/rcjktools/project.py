@@ -886,7 +886,7 @@ def rcjk2ufo():
     for arg in args.location:
         try:
             tag, val = arg.split("=")
-            assert len(tag) <= 4
+            # assert len(tag) <= 4
             location[tag.ljust(4)] = float(val)
         except (ValueError, AssertionError):
             parser.error("invalid location argument format: %r" % arg)
