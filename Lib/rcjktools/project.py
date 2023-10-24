@@ -873,6 +873,12 @@ def rcjk2ufo():
         help="A comma-separated list of glyph names to include.",
     )
     parser.add_argument(
+        "--glyphs-file",
+        type=argparse.FileType("r", encoding="utf-8"),
+        help="A path to a text file that contains a whitespace-separated list of "
+        "glyph names to include.",
+    )
+    parser.add_argument(
         "--normalize-location",
         help="Normalize the input location.",
         action="store_true",
@@ -907,6 +913,8 @@ def rcjk2ufo():
     styleName = args.stylename if args.stylename else styleNameDefault
 
     includeGlyphs = [p.strip() for p in args.glyphs.split(",")] if args.glyphs else []
+    if args.glyphs_file:
+        includeGlyphs.extend(args.glyphs_file.read().split())
 
     excludePatterns = (
         [p.strip() for p in args.exclude_glyphs.split(",")]
