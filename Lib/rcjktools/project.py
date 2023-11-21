@@ -774,12 +774,12 @@ class RCJKGlyph(Glyph):
             varGlyph.status = varDict.get("status", 0)
 
             varGlyph.location = varDict["location"]
-            if self.axes and isLocationOutOfBounds(varGlyph.location, self.axes):
-                logger.warning(
-                    f"location out of bounds for {self.name}; "
-                    f"location: {_formatDict(varGlyph.location)} "
-                    f"axes: {_formatDict(self.axes)}"
-                )
+            # if self.axes and isLocationOutOfBounds(varGlyph.location, self.axes):
+            #     logger.warning(
+            #         f"location out of bounds for {self.name}; "
+            #         f"location: {_formatDict(varGlyph.location)} "
+            #         f"axes: {_formatDict(self.axes)}"
+            #     )
 
             deepComponents = varDict.get("deepComponents", [])
             if len(dcNames) != len(deepComponents):
