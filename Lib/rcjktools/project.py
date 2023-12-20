@@ -54,7 +54,7 @@ class RoboCJKProject:
             with open(path) as f:
                 self.designspace = json.load(f)
             for axis in self.designspace["axes"]:
-                self.axes[axis["tag"]] = (
+                self.axes[axis["name"]] = (
                     axis["minValue"],
                     axis["defaultValue"],
                     axis["maxValue"],
