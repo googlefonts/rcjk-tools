@@ -170,7 +170,6 @@ def normalizeLocation(location, axes):
 
 
 class Component(NamedTuple):
-
     name: str
     coord: dict
     transform: dict
