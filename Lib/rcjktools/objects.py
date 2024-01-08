@@ -103,24 +103,9 @@ class Glyph(_MathMixin):
             allAxisNames &= set(compoGlyph.axes)
             for axisName in sorted(allAxisNames):
                 defaultValue = compoGlyph.axes[axisName][1]
-                axisValues = [
-                    g.components[compoIndex].coord.get(axisName)
-                    for g in [self] + self.variations
-                ]
-                if None in axisValues:
-                    if axisValues[0] is None:
-                        # if any(v is not None and v != defaultValue for v in axisValues):
-                        #     print(
-                        #         "---",
-                        #         self.name,
-                        #         compoIndex,
-                        #         compo.name,
-                        #         axisName,
-                        #         axisValues,
-                        #     )
-                        # FIX default source only
-                        assert axisName not in compo.coord
-                        compo.coord[axisName] = defaultValue
+                for g in [self] + self.variations:
+                    if g.components[compoIndex].coord.get(axisName) is None:
+                        g.components[compoIndex].coord[axisName] = defaultValue
 
         self._ensuredComponentCoords = True
 
