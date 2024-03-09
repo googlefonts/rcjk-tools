@@ -239,6 +239,8 @@ class RoboCJKProject:
                 )
             except InterpolationError as e:
                 logger.warning(f"glyph {glyphName} can't be interpolated ({e})")
+            except ComponentMismatchError as e:
+                logger.warning(f"glyph {glyphName} can't be interpolated ({e})")
             except Exception as e:
                 logger.warning(f"glyph {glyphName} caused an error: {e!r}")
                 raise
@@ -307,6 +309,8 @@ class RoboCJKProject:
             try:
                 glyph.instantiate({"wght": 0.5})
             except InterpolationError as e:
+                logger.warning(f"glyph {glyphName} can't be interpolated ({e})")
+            except ComponentMismatchError as e:
                 logger.warning(f"glyph {glyphName} can't be interpolated ({e})")
             else:
                 characterGlyphNames.append(glyphName)
