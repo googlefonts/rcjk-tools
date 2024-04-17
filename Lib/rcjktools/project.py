@@ -113,7 +113,7 @@ class RoboCJKProject:
             if glyphName in gs:
                 return gs.getGlyph(glyphName)
         if raiseKeyError:
-            raise KeyError(f"glyph not found: '{glyphName}'")
+            raise GlyphNotFoundError(f"glyph not found: '{glyphName}'")
 
     def instantiateCharacterGlyph(self, glyphName, location):
         glyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
@@ -241,6 +241,8 @@ class RoboCJKProject:
                 logger.warning(f"glyph {glyphName} can't be interpolated ({e})")
             except ComponentMismatchError as e:
                 logger.warning(f"glyph {glyphName} can't be interpolated ({e})")
+            except GlyphNotFoundError as e:
+                logger.warning(f"glyph {glyphName} can't be found ({e})")
             except Exception as e:
                 logger.warning(f"glyph {glyphName} caused an error: {e!r}")
                 raise
