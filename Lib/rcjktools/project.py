@@ -53,7 +53,11 @@ class RoboCJKProject:
         if path.exists():
             with open(path) as f:
                 self.designspace = json.load(f)
-            for axis in self.designspace["axes"]:
+            axes = self.designspace["axes"]
+            if isinstance(axes, dict):
+                # new format
+                axes = axes["axes"]
+            for axis in axes:
                 self.axes[axis["name"]] = (
                     axis["minValue"],
                     axis["defaultValue"],
