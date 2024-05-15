@@ -231,13 +231,15 @@ class RoboCJKProject:
                 continue
             glyph = UGlyph(glyphName)
             glyph.unicodes = revCmap[glyphName]
-            copyMarkColor(self.characterGlyphGlyphSet.getGlyph(glyphName), glyph)
-            pen = RoundingPointPen(glyph.getPointPen(), roundFunc)
 
-            charGlyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
-            # Adjust the location to what the glyph expects
-            glyphLocation = unnormalizeLocation(location, charGlyph.axes)
             try:
+                charGlyph = self.characterGlyphGlyphSet.getGlyph(glyphName)
+                copyMarkColor(charGlyph, glyph)
+                pen = RoundingPointPen(glyph.getPointPen(), roundFunc)
+
+                # Adjust the location to what the glyph expects
+                glyphLocation = unnormalizeLocation(location, charGlyph.axes)
+
                 glyphInstance = self.drawPointsCharacterGlyph(
                     glyphName, glyphLocation, pen
                 )
