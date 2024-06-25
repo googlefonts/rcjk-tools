@@ -756,7 +756,9 @@ class RCJKGlyph(Glyph):
                 # They are a bit like background layers.
                 continue
             layerName = varDict.get("layerName")
-            if (not self.outline.isEmpty() or classicComponents) and layerName:
+            if (
+                not self.outline.isEmpty() or classicComponents or self.anchors
+            ) and layerName:
                 if layerName == "foreground":
                     # Special case for "foreground": it references the default layer
                     layer = glyphSet
