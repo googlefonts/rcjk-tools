@@ -294,7 +294,6 @@ class MathOutline(RecordingPointPen, _MathMixin):
 
 
 class ComponentCollector(FilterPointPen):
-
     """This pen passes all outline data on to the outPen, and
     stores component data in a list.
     """
